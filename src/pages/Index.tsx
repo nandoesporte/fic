@@ -1,9 +1,10 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlusCircle, Users, BarChart2, TrendingUp, ClipboardList, Award, Heart } from "lucide-react";
+import { FICForm } from "@/components/FICForm";
 
 const StatCard = ({ icon: Icon, label, value }: { icon: any; label: string; value: string }) => (
   <Card className="p-6">
@@ -78,6 +79,7 @@ const Index = () => {
             <TabsList>
               <TabsTrigger value="questionarios">Questionários</TabsTrigger>
               <TabsTrigger value="conquistas">Conquistas</TabsTrigger>
+              <TabsTrigger value="novo">Novo Questionário</TabsTrigger>
             </TabsList>
 
             <TabsContent value="questionarios" className="space-y-4">
@@ -134,6 +136,13 @@ const Index = () => {
                   description="Índice de satisfação acima de 80%"
                 />
               </div>
+            </TabsContent>
+
+            <TabsContent value="novo" className="space-y-4">
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-6">Novo Questionário FIC</h2>
+                <FICForm />
+              </Card>
             </TabsContent>
           </Tabs>
         </main>
