@@ -13,9 +13,22 @@ import {
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 
 const formSchema = z.object({
+  dimension: z.string({
+    required_error: "Por favor selecione uma dimensão.",
+  }),
+  satisfaction: z.enum(["1", "2", "3", "4", "5"], {
+    required_error: "Por favor selecione seu nível de satisfação.",
+  }),
   strengths: z.string().min(10, {
     message: "Os pontos fortes devem ter pelo menos 10 caracteres.",
   }),
@@ -25,10 +38,15 @@ const formSchema = z.object({
   opportunities: z.string().min(10, {
     message: "As oportunidades devem ter pelo menos 10 caracteres.",
   }),
-  satisfaction: z.enum(["1", "2", "3", "4", "5"], {
-    required_error: "Por favor selecione seu nível de satisfação.",
-  }),
 });
+
+const dimensions = [
+  { id: "bem-estar", label: "Bem-estar" },
+  { id: "desenvolvimento", label: "Desenvolvimento Humano" },
+  { id: "qualidade-vida", label: "Qualidade de Vida" },
+  { id: "relacoes", label: "Relações Interpessoais" },
+  { id: "impacto-social", label: "Impacto Social" },
+];
 
 export function FICForm() {
   const form = useForm<z.infer<typeof formSchema>>({
@@ -49,6 +67,34 @@ export function FICForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="space-y-6">
+          <FormField
+            control={form.control}
+            name="dimension"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Dimensão</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma dimensão" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {dimensions.map((dimension) => (
+                      <SelectItem key={dimension.id} value={dimension.id}>
+                        {dimension.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  Escolha a dimensão do FIC que este questionário irá avaliar
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="satisfaction"
