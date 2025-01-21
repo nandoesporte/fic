@@ -21,6 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 
 const formSchema = z.object({
   dimension: z.string({
@@ -49,6 +51,19 @@ const dimensions = [
 ];
 
 export function FICForm() {
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+      }
+    };
+    getUser();
+  }, []);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -58,9 +73,33 @@ export function FICForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    toast.success("Formulário enviado com sucesso!");
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!userId) {
+      toast.error("Você precisa estar logado para enviar um questionário.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.from("fic_questionnaires").insert({
+        dimension: values.dimension,
+        satisfaction: parseInt(values.satisfaction),
+        strengths: values.strengths,
+        challenges: values.challenges,
+        opportunities: values.opportunities,
+        user_id: userId,
+      });
+
+      if (error) throw error;
+
+      toast.success("Questionário enviado com sucesso!");
+      form.reset();
+    } catch (error) {
+      console.error("Erro ao enviar questionário:", error);
+      toast.error("Erro ao enviar questionário. Por favor, tente novamente.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -194,8 +233,8 @@ export function FICForm() {
           />
         </div>
 
-        <Button type="submit" className="w-full">
-          Enviar Avaliação
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? "Enviando..." : "Enviar Avaliação"}
         </Button>
       </form>
     </Form>

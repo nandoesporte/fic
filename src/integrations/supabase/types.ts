@@ -179,6 +179,86 @@ export type Database = {
         }
         Relationships: []
       }
+      fic_questionnaires: {
+        Row: {
+          challenges: string
+          created_at: string | null
+          dimension: string
+          id: string
+          opportunities: string
+          satisfaction: number
+          strengths: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          challenges: string
+          created_at?: string | null
+          dimension: string
+          id?: string
+          opportunities: string
+          satisfaction: number
+          strengths: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          challenges?: string
+          created_at?: string | null
+          dimension?: string
+          id?: string
+          opportunities?: string
+          satisfaction?: number
+          strengths?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fic_questionnaires_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fic_reports: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          dimension: string | null
+          end_date: string
+          id: string
+          metrics: Json
+          start_date: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          dimension?: string | null
+          end_date: string
+          id?: string
+          metrics?: Json
+          start_date: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          dimension?: string | null
+          end_date?: string
+          id?: string
+          metrics?: Json
+          start_date?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profile_goals: {
         Row: {
           created_at: string | null
@@ -442,7 +522,16 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      fic_questionnaire_analytics: {
+        Row: {
+          avg_satisfaction: number | null
+          dimension: string | null
+          first_response: string | null
+          last_response: string | null
+          total_responses: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
