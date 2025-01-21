@@ -70,6 +70,8 @@ export default function Login() {
               },
             },
           }}
+          view="sign_in"
+          showLinks={true}
           theme="light"
           providers={[]}
         />
