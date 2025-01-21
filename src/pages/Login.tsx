@@ -67,10 +67,18 @@ export default function Login() {
                 loading_button_label: 'Criando conta...',
                 social_provider_text: 'Criar conta com {{provider}}',
                 link_text: 'Não tem uma conta? Cadastre-se',
+                confirmation_text: 'Verifique seu email para o link de confirmação',
+              },
+              forgotten_password: {
+                email_label: 'Email',
+                password_label: 'Senha',
+                button_label: 'Enviar instruções',
+                loading_button_label: 'Enviando instruções...',
+                link_text: 'Esqueceu sua senha?',
               },
             },
           }}
-          view="sign_in"
+          view="sign_up"
           showLinks={true}
           theme="light"
           providers={[]}
