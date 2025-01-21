@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlusCircle, Users, BarChart2, TrendingUp, ClipboardList, Award, Heart } from "lucide-react";
 import { FICForm } from "@/components/FICForm";
+import { useState } from "react";
 
 const StatCard = ({ icon: Icon, label, value }: { icon: any; label: string; value: string }) => (
   <Card className="p-6">
@@ -52,6 +53,12 @@ const AchievementCard = ({ title, description, icon: Icon }: { title: string; de
 );
 
 const Index = () => {
+  const [activeTab, setActiveTab] = useState("questionarios");
+
+  const handleNewQuestionnaire = () => {
+    setActiveTab("novo");
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gray-50">
@@ -62,7 +69,7 @@ const Index = () => {
               <h1 className="text-3xl font-bold text-gray-900">Dashboard FIC</h1>
               <p className="text-gray-500">Bem-vindo ao Sistema de Felicidade Interna do Cooperativismo</p>
             </div>
-            <Button className="bg-primary hover:bg-primary/90">
+            <Button className="bg-primary hover:bg-primary/90" onClick={handleNewQuestionnaire}>
               <PlusCircle className="h-5 w-5 mr-2" />
               Novo Questionário
             </Button>
@@ -75,7 +82,7 @@ const Index = () => {
             <StatCard icon={TrendingUp} label="Crescimento Mensal" value="+12%" />
           </div>
 
-          <Tabs defaultValue="questionarios" className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList>
               <TabsTrigger value="questionarios">Questionários</TabsTrigger>
               <TabsTrigger value="conquistas">Conquistas</TabsTrigger>
