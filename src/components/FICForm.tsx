@@ -25,6 +25,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 
 const formSchema = z.object({
+  group: z.string({
+    required_error: "Por favor selecione um grupo.",
+  }),
   dimension: z.string({
     required_error: "Por favor selecione uma dimensão.",
   }),
@@ -68,6 +71,13 @@ const dimensions = [
   { id: "impacto-social", label: "Impacto Social" },
 ];
 
+const groups = [
+  { id: "grupo-1", label: "Grupo 1" },
+  { id: "grupo-2", label: "Grupo 2" },
+  { id: "grupo-3", label: "Grupo 3" },
+  { id: "grupo-4", label: "Grupo 4" },
+];
+
 export function FICForm() {
   const [userId, setUserId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -107,6 +117,7 @@ export function FICForm() {
     try {
       const { error } = await supabase.from("fic_questionnaires").insert({
         dimension: values.dimension,
+        group: values.group,
         satisfaction: parseInt(values.satisfaction),
         strengths: [values.strengths1, values.strengths2, values.strengths3].join('\n\n'),
         challenges: [values.challenges1, values.challenges2, values.challenges3].join('\n\n'),
@@ -178,6 +189,34 @@ export function FICForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="space-y-6">
+          <FormField
+            control={form.control}
+            name="group"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Grupo</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um grupo" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {groups.map((group) => (
+                      <SelectItem key={group.id} value={group.id}>
+                        {group.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  Escolha o grupo ao qual você pertence
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="dimension"
