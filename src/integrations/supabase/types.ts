@@ -357,6 +357,45 @@ export type Database = {
         }
         Relationships: []
       }
+      questionnaire_votes: {
+        Row: {
+          created_at: string | null
+          id: string
+          questionnaire_id: string
+          user_id: string
+          vote_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          questionnaire_id: string
+          user_id: string
+          vote_type: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          questionnaire_id?: string
+          user_id?: string
+          vote_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questionnaire_votes_questionnaire_id_fkey"
+            columns: ["questionnaire_id"]
+            isOneToOne: false
+            referencedRelation: "fic_questionnaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questionnaire_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_products: {
         Row: {
           active: boolean | null
@@ -534,6 +573,22 @@ export type Database = {
           total_responses: number | null
         }
         Relationships: []
+      }
+      questionnaire_vote_counts: {
+        Row: {
+          downvotes: number | null
+          questionnaire_id: string | null
+          upvotes: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questionnaire_votes_questionnaire_id_fkey"
+            columns: ["questionnaire_id"]
+            isOneToOne: false
+            referencedRelation: "fic_questionnaires"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
