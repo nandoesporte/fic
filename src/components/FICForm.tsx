@@ -127,9 +127,28 @@ export function FICForm() {
   }
 
   const renderTextAreas = (fieldName: string, label: string, description: string) => {
+    const getBgColor = (label: string) => {
+      switch (label) {
+        case "Pontos Fortes":
+          return "bg-[#1A1F2C]"; // Dark green background
+        case "Desafios":
+          return "bg-[#FEF7CD]"; // Yellow background
+        case "Oportunidades":
+          return "bg-[#D3E4FD]"; // Blue background
+        default:
+          return "";
+      }
+    };
+
+    const getTextColor = (label: string) => {
+      return label === "Pontos Fortes" ? "text-white" : "text-gray-900";
+    };
+
     return (
       <div className="space-y-4">
-        <h3 className="font-medium text-lg">{label}</h3>
+        <h3 className={`font-medium text-lg p-2 rounded-lg ${getBgColor(label)} ${getTextColor(label)}`}>
+          {label}
+        </h3>
         {[1, 2, 3].map((num) => (
           <FormField
             key={`${fieldName}${num}`}

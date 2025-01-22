@@ -65,12 +65,29 @@ export const QuestionnaireResponses = () => {
     );
   }
 
+  const getBgColor = (title: string) => {
+    switch (title) {
+      case "Pontos Fortes":
+        return "bg-[#1A1F2C]"; // Dark green background
+      case "Desafios":
+        return "bg-[#FEF7CD]"; // Yellow background
+      case "Oportunidades":
+        return "bg-[#D3E4FD]"; // Blue background
+      default:
+        return "";
+    }
+  };
+
+  const getTextColor = (title: string) => {
+    return title === "Pontos Fortes" ? "text-white" : "text-gray-900";
+  };
+
   return (
     <div className="space-y-4">
       {questionnaires?.map((questionnaire) => (
         <Card key={questionnaire.id} className="p-6">
           <div className="flex justify-between items-start">
-            <div>
+            <div className="w-full">
               <h3 className="font-medium text-lg mb-2">
                 Dimensão: {questionnaire.dimension}
               </h3>
@@ -83,16 +100,22 @@ export const QuestionnaireResponses = () => {
                   <p>{questionnaire.satisfaction}/5</p>
                 </div>
                 <div>
-                  <h4 className="font-medium">Pontos Fortes</h4>
-                  <p className="whitespace-pre-line">{questionnaire.strengths}</p>
+                  <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Pontos Fortes")} ${getTextColor("Pontos Fortes")}`}>
+                    Pontos Fortes
+                  </h4>
+                  <p className="whitespace-pre-line mt-2">{questionnaire.strengths}</p>
                 </div>
                 <div>
-                  <h4 className="font-medium">Desafios</h4>
-                  <p className="whitespace-pre-line">{questionnaire.challenges}</p>
+                  <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Desafios")} ${getTextColor("Desafios")}`}>
+                    Desafios
+                  </h4>
+                  <p className="whitespace-pre-line mt-2">{questionnaire.challenges}</p>
                 </div>
                 <div>
-                  <h4 className="font-medium">Oportunidades</h4>
-                  <p className="whitespace-pre-line">{questionnaire.opportunities}</p>
+                  <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Oportunidades")} ${getTextColor("Oportunidades")}`}>
+                    Oportunidades
+                  </h4>
+                  <p className="whitespace-pre-line mt-2">{questionnaire.opportunities}</p>
                 </div>
               </div>
             </div>
