@@ -371,9 +371,11 @@ export const QuestionnaireResponses = () => {
                         Dimensão: {questionnaire.dimension}
                       </h3>
                       {questionnaire.group && (
-                        <p className="text-sm text-gray-500">
-                          Grupo: {questionnaire.group}
-                        </p>
+                        <div className="mt-2 inline-block">
+                          <span className="bg-black text-white px-4 py-2 rounded-lg text-xl font-semibold">
+                            Grupo: {questionnaire.group}
+                          </span>
+                        </div>
                       )}
                     </div>
                     <div className="flex gap-2">
@@ -460,9 +462,11 @@ export const QuestionnaireResponses = () => {
                         Dimensão: {questionnaire.dimension}
                       </h3>
                       {questionnaire.group && (
-                        <p className="text-sm text-gray-500">
-                          Grupo: {questionnaire.group}
-                        </p>
+                        <div className="mt-2 inline-block">
+                          <span className="bg-black text-white px-4 py-2 rounded-lg text-xl font-semibold">
+                            Grupo: {questionnaire.group}
+                          </span>
+                        </div>
                       )}
                     </div>
                     <div className="flex gap-2">
