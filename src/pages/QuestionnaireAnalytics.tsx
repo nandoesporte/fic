@@ -16,6 +16,7 @@ type VoteData = {
   downvotes: number;
   dimension?: string;
   satisfaction?: number;
+  option_text?: string;
 };
 
 const QuestionnaireAnalytics = () => {
@@ -32,12 +33,35 @@ const QuestionnaireAnalytics = () => {
           downvotes,
           fic_questionnaires (
             dimension,
-            satisfaction
+            satisfaction,
+            strengths,
+            challenges,
+            opportunities
           )
         `);
 
       if (error) throw error;
-      return votes as VoteData[];
+
+      // Process the data to include the option text
+      const processedVotes = votes.map((vote) => {
+        let optionText = "";
+        if (vote.fic_questionnaires) {
+          const options = vote.option_type === "strengths" 
+            ? vote.fic_questionnaires.strengths
+            : vote.option_type === "challenges"
+              ? vote.fic_questionnaires.challenges
+              : vote.fic_questionnaires.opportunities;
+          
+          const optionsList = options?.split('\n').filter(Boolean) || [];
+          optionText = optionsList[vote.option_number - 1] || "";
+        }
+        return {
+          ...vote,
+          option_text: optionText,
+        };
+      });
+
+      return processedVotes as VoteData[];
     },
   });
 
@@ -51,6 +75,7 @@ const QuestionnaireAnalytics = () => {
         upvotes: item.upvotes || 0,
         downvotes: item.downvotes || 0,
         total: (item.upvotes || 0) - (item.downvotes || 0),
+        text: item.option_text || "",
       }));
   };
 
@@ -64,6 +89,32 @@ const QuestionnaireAnalytics = () => {
     total: {
       color: "#3B82F6",
     },
+  };
+
+  const renderVoteList = (type: string) => {
+    const data = processDataForChart(voteData, type);
+    return (
+      <div className="mb-6 space-y-2">
+        {data.map((item, index) => (
+          <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
+            <div className="flex-1">
+              <span className="text-sm font-medium text-gray-900">{item.text}</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-green-600">+{item.upvotes}</span>
+                <span className="text-sm font-medium text-red-600">-{item.downvotes}</span>
+              </div>
+              <div className="w-20 text-right">
+                <span className={`text-sm font-bold ${item.total >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {item.total >= 0 ? '+' : ''}{item.total}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -98,6 +149,9 @@ const QuestionnaireAnalytics = () => {
                       {type === "challenges" && "Análise dos Desafios"}
                       {type === "opportunities" && "Análise das Oportunidades"}
                     </h2>
+                    
+                    {renderVoteList(type)}
+
                     <div className="h-[400px]">
                       <ChartContainer config={chartConfig}>
                         <ResponsiveContainer width="100%" height="100%">
