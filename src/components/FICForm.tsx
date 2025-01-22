@@ -137,11 +137,11 @@ export function FICForm() {
     const getBgColor = (label: string) => {
       switch (label) {
         case "Pontos Fortes":
-          return "bg-[#228B22]"; // Forest green background
+          return "bg-[#228B22]";
         case "Desafios":
-          return "bg-[#FFD700]"; // Gold yellow background
+          return "bg-[#FFD700]";
         case "Oportunidades":
-          return "bg-[#000080]"; // Navy blue background
+          return "bg-[#000080]";
         default:
           return "";
       }
