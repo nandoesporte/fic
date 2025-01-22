@@ -361,6 +361,8 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          option_number: number
+          option_type: string
           questionnaire_id: string
           user_id: string
           vote_type: string
@@ -368,6 +370,8 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          option_number: number
+          option_type: string
           questionnaire_id: string
           user_id: string
           vote_type: string
@@ -375,6 +379,8 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          option_number?: number
+          option_type?: string
           questionnaire_id?: string
           user_id?: string
           vote_type?: string
@@ -577,6 +583,8 @@ export type Database = {
       questionnaire_vote_counts: {
         Row: {
           downvotes: number | null
+          option_number: number | null
+          option_type: string | null
           questionnaire_id: string | null
           upvotes: number | null
         }

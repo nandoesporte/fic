@@ -19,6 +19,8 @@ export const QuestionnaireResponses = () => {
         .select(`
           *,
           questionnaire_vote_counts (
+            option_type,
+            option_number,
             upvotes,
             downvotes
           )
@@ -53,8 +55,12 @@ export const QuestionnaireResponses = () => {
   });
 
   const voteMutation = useMutation({
-    mutationFn: async ({ questionnaireId, voteType }: { questionnaireId: string; voteType: 'upvote' | 'downvote' }) => {
-      // First, get the current user
+    mutationFn: async ({ questionnaireId, optionType, optionNumber, voteType }: { 
+      questionnaireId: string; 
+      optionType: 'strengths' | 'challenges' | 'opportunities';
+      optionNumber: number;
+      voteType: 'upvote' | 'downvote' 
+    }) => {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
@@ -66,40 +72,45 @@ export const QuestionnaireResponses = () => {
         .select('*')
         .eq('questionnaire_id', questionnaireId)
         .eq('user_id', user.id)
+        .eq('option_type', optionType)
+        .eq('option_number', optionNumber)
         .single();
 
-      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 means no rows returned
+      if (fetchError && fetchError.code !== 'PGRST116') {
         throw fetchError;
       }
 
       if (existingVote) {
         if (existingVote.vote_type === voteType) {
-          // Remove vote if clicking the same button
           const { error } = await supabase
             .from('questionnaire_votes')
             .delete()
             .eq('questionnaire_id', questionnaireId)
-            .eq('user_id', user.id);
+            .eq('user_id', user.id)
+            .eq('option_type', optionType)
+            .eq('option_number', optionNumber);
           
           if (error) throw error;
         } else {
-          // Update vote if changing vote type
           const { error } = await supabase
             .from('questionnaire_votes')
             .update({ vote_type: voteType })
             .eq('questionnaire_id', questionnaireId)
-            .eq('user_id', user.id);
+            .eq('user_id', user.id)
+            .eq('option_type', optionType)
+            .eq('option_number', optionNumber);
           
           if (error) throw error;
         }
       } else {
-        // Insert new vote
         const { error } = await supabase
           .from('questionnaire_votes')
           .insert({
             questionnaire_id: questionnaireId,
             user_id: user.id,
             vote_type: voteType,
+            option_type: optionType,
+            option_number: optionNumber,
           });
         
         if (error) throw error;
@@ -124,8 +135,42 @@ export const QuestionnaireResponses = () => {
     toast.info('Funcionalidade de edição em desenvolvimento');
   };
 
-  const handleVote = (questionnaireId: string, voteType: 'upvote' | 'downvote') => {
-    voteMutation.mutate({ questionnaireId, voteType });
+  const handleVote = (questionnaireId: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number, voteType: 'upvote' | 'downvote') => {
+    voteMutation.mutate({ questionnaireId, optionType, optionNumber, voteType });
+  };
+
+  const getVoteCounts = (questionnaire: any, optionType: string, optionNumber: number) => {
+    const votes = questionnaire.questionnaire_vote_counts?.find(
+      (v: any) => v.option_type === optionType && v.option_number === optionNumber
+    );
+    return {
+      upvotes: votes?.upvotes || 0,
+      downvotes: votes?.downvotes || 0,
+    };
+  };
+
+  const renderVoteButtons = (questionnaire: any, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => {
+    const votes = getVoteCounts(questionnaire, optionType, optionNumber);
+    return (
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handleVote(questionnaire.id, optionType, optionNumber, 'upvote')}
+        >
+          <ThumbsUp className="h-4 w-4 mr-1" />
+          {votes.upvotes}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handleVote(questionnaire.id, optionType, optionNumber, 'downvote')}
+        >
+          <ThumbsDown className="h-4 w-4 mr-1" />
+          {votes.downvotes}
+        </Button>
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -139,11 +184,11 @@ export const QuestionnaireResponses = () => {
   const getBgColor = (title: string) => {
     switch (title) {
       case "Pontos Fortes":
-        return "bg-[#228B22]"; // Forest green background
+        return "bg-[#228B22]";
       case "Desafios":
-        return "bg-[#FFD700]"; // Gold yellow background
+        return "bg-[#FFD700]";
       case "Oportunidades":
-        return "bg-[#000080]"; // Navy blue background
+        return "bg-[#000080]";
       default:
         return "";
     }
@@ -151,6 +196,10 @@ export const QuestionnaireResponses = () => {
 
   const getTextColor = (title: string) => {
     return title === "Desafios" ? "text-gray-900" : "text-white";
+  };
+
+  const splitText = (text: string): string[] => {
+    return text.split('\n').filter(line => line.trim() !== '');
   };
 
   return (
@@ -170,25 +219,96 @@ export const QuestionnaireResponses = () => {
                     <h3 className="font-medium text-lg">
                       Dimensão: {questionnaire.dimension}
                     </h3>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleVote(questionnaire.id, 'upvote')}
-                        >
-                          <ThumbsUp className="h-4 w-4 mr-1" />
-                          {questionnaire.questionnaire_vote_counts?.[0]?.upvotes || 0}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleVote(questionnaire.id, 'downvote')}
-                        >
-                          <ThumbsDown className="h-4 w-4 mr-1" />
-                          {questionnaire.questionnaire_vote_counts?.[0]?.downvotes || 0}
-                        </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleEdit(questionnaire.id)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleDelete(questionnaire.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Enviado em: {new Date(questionnaire.created_at).toLocaleDateString('pt-BR')}
+                  </p>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-medium">Nível de Satisfação</h4>
+                      <p>{questionnaire.satisfaction}/5</p>
+                    </div>
+                    <div>
+                      <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Pontos Fortes")} ${getTextColor("Pontos Fortes")}`}>
+                        Pontos Fortes
+                      </h4>
+                      <div className="space-y-2 mt-2">
+                        {splitText(questionnaire.strengths).map((strength, index) => (
+                          <div key={index} className="flex justify-between items-center">
+                            <p className="flex-1">{strength}</p>
+                            {renderVoteButtons(questionnaire, 'strengths', index + 1)}
+                          </div>
+                        ))}
                       </div>
+                    </div>
+                    <div>
+                      <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Desafios")} ${getTextColor("Desafios")}`}>
+                        Desafios
+                      </h4>
+                      <div className="space-y-2 mt-2">
+                        {splitText(questionnaire.challenges).map((challenge, index) => (
+                          <div key={index} className="flex justify-between items-center">
+                            <p className="flex-1">{challenge}</p>
+                            {renderVoteButtons(questionnaire, 'challenges', index + 1)}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Oportunidades")} ${getTextColor("Oportunidades")}`}>
+                        Oportunidades
+                      </h4>
+                      <div className="space-y-2 mt-2">
+                        {splitText(questionnaire.opportunities).map((opportunity, index) => (
+                          <div key={index} className="flex justify-between items-center">
+                            <p className="flex-1">{opportunity}</p>
+                            {renderVoteButtons(questionnaire, 'opportunities', index + 1)}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </TabsContent>
+
+        <TabsContent value="mais-votados">
+          {questionnaires
+            ?.sort((a, b) => {
+              const getTotalVotes = (questionnaire: any) => {
+                return (questionnaire.questionnaire_vote_counts || []).reduce((acc: number, curr: any) => {
+                  return acc + (curr.upvotes || 0) - (curr.downvotes || 0);
+                }, 0);
+              };
+              return getTotalVotes(b) - getTotalVotes(a);
+            })
+            .map((questionnaire) => (
+              // ... keep existing code (same card content as above)
+              <Card key={questionnaire.id} className="p-6">
+                <div className="flex justify-between items-start">
+                  <div className="w-full">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="font-medium text-lg">
+                        Dimensão: {questionnaire.dimension}
+                      </h3>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
@@ -206,93 +326,6 @@ export const QuestionnaireResponses = () => {
                         </Button>
                       </div>
                     </div>
-                  </div>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Enviado em: {new Date(questionnaire.created_at).toLocaleDateString('pt-BR')}
-                  </p>
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="font-medium">Nível de Satisfação</h4>
-                      <p>{questionnaire.satisfaction}/5</p>
-                    </div>
-                    <div>
-                      <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Pontos Fortes")} ${getTextColor("Pontos Fortes")}`}>
-                        Pontos Fortes
-                      </h4>
-                      <p className="whitespace-pre-line mt-2">{questionnaire.strengths}</p>
-                    </div>
-                    <div>
-                      <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Desafios")} ${getTextColor("Desafios")}`}>
-                        Desafios
-                      </h4>
-                      <p className="whitespace-pre-line mt-2">{questionnaire.challenges}</p>
-                    </div>
-                    <div>
-                      <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Oportunidades")} ${getTextColor("Oportunidades")}`}>
-                        Oportunidades
-                      </h4>
-                      <p className="whitespace-pre-line mt-2">{questionnaire.opportunities}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </TabsContent>
-
-        <TabsContent value="mais-votados">
-          {questionnaires
-            ?.sort((a, b) => {
-              const aVotes = (a.questionnaire_vote_counts?.[0]?.upvotes || 0) - (a.questionnaire_vote_counts?.[0]?.downvotes || 0);
-              const bVotes = (b.questionnaire_vote_counts?.[0]?.upvotes || 0) - (b.questionnaire_vote_counts?.[0]?.downvotes || 0);
-              return bVotes - aVotes;
-            })
-            .map((questionnaire) => (
-              // ... keep existing code (same card content as above)
-              <Card key={questionnaire.id} className="p-6">
-                <div className="flex justify-between items-start">
-                  <div className="w-full">
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="font-medium text-lg">
-                        Dimensão: {questionnaire.dimension}
-                      </h3>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleVote(questionnaire.id, 'upvote')}
-                          >
-                            <ThumbsUp className="h-4 w-4 mr-1" />
-                            {questionnaire.questionnaire_vote_counts?.[0]?.upvotes || 0}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleVote(questionnaire.id, 'downvote')}
-                          >
-                            <ThumbsDown className="h-4 w-4 mr-1" />
-                            {questionnaire.questionnaire_vote_counts?.[0]?.downvotes || 0}
-                          </Button>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleEdit(questionnaire.id)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleDelete(questionnaire.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
                     <p className="text-sm text-gray-500 mb-4">
                       Enviado em: {new Date(questionnaire.created_at).toLocaleDateString('pt-BR')}
                     </p>
@@ -305,19 +338,40 @@ export const QuestionnaireResponses = () => {
                         <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Pontos Fortes")} ${getTextColor("Pontos Fortes")}`}>
                           Pontos Fortes
                         </h4>
-                        <p className="whitespace-pre-line mt-2">{questionnaire.strengths}</p>
+                        <div className="space-y-2 mt-2">
+                          {splitText(questionnaire.strengths).map((strength, index) => (
+                            <div key={index} className="flex justify-between items-center">
+                              <p className="flex-1">{strength}</p>
+                              {renderVoteButtons(questionnaire, 'strengths', index + 1)}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                       <div>
                         <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Desafios")} ${getTextColor("Desafios")}`}>
                           Desafios
                         </h4>
-                        <p className="whitespace-pre-line mt-2">{questionnaire.challenges}</p>
+                        <div className="space-y-2 mt-2">
+                          {splitText(questionnaire.challenges).map((challenge, index) => (
+                            <div key={index} className="flex justify-between items-center">
+                              <p className="flex-1">{challenge}</p>
+                              {renderVoteButtons(questionnaire, 'challenges', index + 1)}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                       <div>
                         <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Oportunidades")} ${getTextColor("Oportunidades")}`}>
                           Oportunidades
                         </h4>
-                        <p className="whitespace-pre-line mt-2">{questionnaire.opportunities}</p>
+                        <div className="space-y-2 mt-2">
+                          {splitText(questionnaire.opportunities).map((opportunity, index) => (
+                            <div key={index} className="flex justify-between items-center">
+                              <p className="flex-1">{opportunity}</p>
+                              {renderVoteButtons(questionnaire, 'opportunities', index + 1)}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
