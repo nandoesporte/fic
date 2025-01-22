@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Loader2, ThumbsUp, ThumbsDown, Save, X } from "lucide-react";
+import { Edit, Trash2, Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -31,15 +31,7 @@ export const QuestionnaireResponses = () => {
     queryFn: async () => {
       const { data: questionnairesData, error: questionnairesError } = await supabase
         .from('fic_questionnaires')
-        .select(`
-          *,
-          questionnaire_vote_counts (
-            option_type,
-            option_number,
-            upvotes,
-            downvotes
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (questionnairesError) {
@@ -92,76 +84,6 @@ export const QuestionnaireResponses = () => {
     },
   });
 
-  const voteMutation = useMutation({
-    mutationFn: async ({ questionnaireId, optionType, optionNumber, voteType }: { 
-      questionnaireId: string; 
-      optionType: 'strengths' | 'challenges' | 'opportunities';
-      optionNumber: number;
-      voteType: 'upvote' | 'downvote' 
-    }) => {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !user) {
-        throw new Error('User not authenticated');
-      }
-
-      const { data: existingVote, error: fetchError } = await supabase
-        .from('questionnaire_votes')
-        .select('*')
-        .eq('questionnaire_id', questionnaireId)
-        .eq('user_id', user.id)
-        .eq('option_type', optionType)
-        .eq('option_number', optionNumber)
-        .maybeSingle();
-
-      if (fetchError) {
-        throw fetchError;
-      }
-
-      if (existingVote) {
-        if (existingVote.vote_type === voteType) {
-          const { error } = await supabase
-            .from('questionnaire_votes')
-            .delete()
-            .eq('questionnaire_id', questionnaireId)
-            .eq('user_id', user.id)
-            .eq('option_type', optionType)
-            .eq('option_number', optionNumber);
-          
-          if (error) throw error;
-        } else {
-          const { error } = await supabase
-            .from('questionnaire_votes')
-            .update({ vote_type: voteType })
-            .eq('questionnaire_id', questionnaireId)
-            .eq('user_id', user.id)
-            .eq('option_type', optionType)
-            .eq('option_number', optionNumber);
-          
-          if (error) throw error;
-        }
-      } else {
-        const { error } = await supabase
-          .from('questionnaire_votes')
-          .insert({
-            questionnaire_id: questionnaireId,
-            user_id: user.id,
-            vote_type: voteType,
-            option_type: optionType,
-            option_number: optionNumber,
-          });
-        
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
-    },
-    onError: () => {
-      toast.error('Erro ao registrar voto');
-    },
-  });
-
   const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este questionário?')) {
       deleteMutation.mutate(id);
@@ -171,20 +93,6 @@ export const QuestionnaireResponses = () => {
   const handleEdit = (id: string) => {
     setSelectedQuestionnaire(id);
     toast.info('Funcionalidade de edição em desenvolvimento');
-  };
-
-  const handleVote = (questionnaireId: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number, voteType: 'upvote' | 'downvote') => {
-    voteMutation.mutate({ questionnaireId, optionType, optionNumber, voteType });
-  };
-
-  const getVoteCounts = (questionnaire: any, optionType: string, optionNumber: number) => {
-    const votes = questionnaire.questionnaire_vote_counts?.find(
-      (v: any) => v.option_type === optionType && v.option_number === optionNumber
-    );
-    return {
-      upvotes: votes?.upvotes || 0,
-      downvotes: votes?.downvotes || 0,
-    };
   };
 
   const handleLineEdit = (questionnaireId: string, type: 'strengths' | 'challenges' | 'opportunities', index: number, value: string) => {
@@ -215,30 +123,6 @@ export const QuestionnaireResponses = () => {
     }
   };
 
-  const renderVoteButtons = (questionnaire: any, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => {
-    const votes = getVoteCounts(questionnaire, optionType, optionNumber);
-    return (
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handleVote(questionnaire.id, optionType, optionNumber, 'upvote')}
-        >
-          <ThumbsUp className="h-4 w-4 mr-1" />
-          {votes.upvotes}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handleVote(questionnaire.id, optionType, optionNumber, 'downvote')}
-        >
-          <ThumbsDown className="h-4 w-4 mr-1" />
-          {votes.downvotes}
-        </Button>
-      </div>
-    );
-  };
-
   const renderLine = (questionnaire: any, type: 'strengths' | 'challenges' | 'opportunities', line: string, index: number) => {
     const isEditing = editingLine?.questionnaireId === questionnaire.id && 
                      editingLine?.type === type && 
@@ -257,14 +141,14 @@ export const QuestionnaireResponses = () => {
             size="sm"
             onClick={() => handleLineSave(questionnaire)}
           >
-            <Save className="h-4 w-4" />
+            <Edit className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setEditingLine(null)}
           >
-            <X className="h-4 w-4" />
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       );
@@ -274,7 +158,6 @@ export const QuestionnaireResponses = () => {
       <div className="flex justify-between items-center">
         <p className="flex-1">{line}</p>
         <div className="flex items-center gap-2">
-          {renderVoteButtons(questionnaire, type, index + 1)}
           <Button
             variant="ghost"
             size="sm"
@@ -354,185 +237,87 @@ export const QuestionnaireResponses = () => {
         </Select>
       </div>
 
-      <Tabs defaultValue="todos" className="w-full">
-        <TabsList className="w-full">
-          <TabsTrigger value="todos" className="flex-1">Todos</TabsTrigger>
-          <TabsTrigger value="mais-votados" className="flex-1">Mais Votados</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="todos">
-          {filterQuestionnairesByGroup(questionnaires || []).map((questionnaire) => (
-            <Card key={questionnaire.id} className="p-6 mb-4">
-              <div className="flex justify-between items-start">
-                <div className="w-full">
-                  <div className="flex justify-between items-center mb-2">
-                    <div>
-                      <h3 className="font-medium text-lg">
-                        Dimensão: {questionnaire.dimension}
-                      </h3>
-                      {questionnaire.group && (
-                        <div className="mt-2 inline-block">
-                          <span className="bg-black text-white px-4 py-2 rounded-lg text-xl font-semibold">
-                            Grupo: {questionnaire.group}
-                          </span>
+      <div className="space-y-6">
+        {filterQuestionnairesByGroup(questionnaires || []).map((questionnaire) => (
+          <Card key={questionnaire.id} className="p-6">
+            <div className="flex justify-between items-start">
+              <div className="w-full">
+                <div className="flex justify-between items-center mb-2">
+                  <div>
+                    <h3 className="font-medium text-lg">
+                      Dimensão: {questionnaire.dimension}
+                    </h3>
+                    {questionnaire.group && (
+                      <div className="mt-2 inline-block">
+                        <span className="bg-black text-white px-4 py-2 rounded-lg text-xl font-semibold">
+                          Grupo: {questionnaire.group}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleEdit(questionnaire.id)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleDelete(questionnaire.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500 mb-4">
+                  Enviado em: {new Date(questionnaire.created_at).toLocaleDateString('pt-BR')}
+                </p>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Pontos Fortes")} ${getTextColor("Pontos Fortes")}`}>
+                      Pontos Fortes
+                    </h4>
+                    <div className="space-y-2 mt-2">
+                      {splitText(questionnaire.strengths).map((strength, index) => (
+                        <div key={index}>
+                          {renderLine(questionnaire, 'strengths', strength, index)}
                         </div>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleEdit(questionnaire.id)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleDelete(questionnaire.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      ))}
                     </div>
                   </div>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Enviado em: {new Date(questionnaire.created_at).toLocaleDateString('pt-BR')}
-                  </p>
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Pontos Fortes")} ${getTextColor("Pontos Fortes")}`}>
-                        Pontos Fortes
-                      </h4>
-                      <div className="space-y-2 mt-2">
-                        {splitText(questionnaire.strengths).map((strength, index) => (
-                          <div key={index}>
-                            {renderLine(questionnaire, 'strengths', strength, index)}
-                          </div>
-                        ))}
-                      </div>
+                  <div>
+                    <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Desafios")} ${getTextColor("Desafios")}`}>
+                      Desafios
+                    </h4>
+                    <div className="space-y-2 mt-2">
+                      {splitText(questionnaire.challenges).map((challenge, index) => (
+                        <div key={index}>
+                          {renderLine(questionnaire, 'challenges', challenge, index)}
+                        </div>
+                      ))}
                     </div>
-                    <div>
-                      <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Desafios")} ${getTextColor("Desafios")}`}>
-                        Desafios
-                      </h4>
-                      <div className="space-y-2 mt-2">
-                        {splitText(questionnaire.challenges).map((challenge, index) => (
-                          <div key={index}>
-                            {renderLine(questionnaire, 'challenges', challenge, index)}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Oportunidades")} ${getTextColor("Oportunidades")}`}>
-                        Oportunidades
-                      </h4>
-                      <div className="space-y-2 mt-2">
-                        {splitText(questionnaire.opportunities).map((opportunity, index) => (
-                          <div key={index}>
-                            {renderLine(questionnaire, 'opportunities', opportunity, index)}
-                          </div>
-                        ))}
-                      </div>
+                  </div>
+                  <div>
+                    <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Oportunidades")} ${getTextColor("Oportunidades")}`}>
+                      Oportunidades
+                    </h4>
+                    <div className="space-y-2 mt-2">
+                      {splitText(questionnaire.opportunities).map((opportunity, index) => (
+                        <div key={index}>
+                          {renderLine(questionnaire, 'opportunities', opportunity, index)}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
               </div>
-            </Card>
-          ))}
-        </TabsContent>
-
-        <TabsContent value="mais-votados">
-          {filterQuestionnairesByGroup(
-            questionnaires?.sort((a, b) => {
-              const getTotalVotes = (questionnaire: any) => {
-                return (questionnaire.questionnaire_vote_counts || []).reduce((acc: number, curr: any) => {
-                  return acc + (curr.upvotes || 0) - (curr.downvotes || 0);
-                }, 0);
-              };
-              return getTotalVotes(b) - getTotalVotes(a);
-            }) || []
-          ).map((questionnaire) => (
-            <Card key={questionnaire.id} className="p-6 mb-4">
-              <div className="flex justify-between items-start">
-                <div className="w-full">
-                  <div className="flex justify-between items-center mb-2">
-                    <div>
-                      <h3 className="font-medium text-lg">
-                        Dimensão: {questionnaire.dimension}
-                      </h3>
-                      {questionnaire.group && (
-                        <div className="mt-2 inline-block">
-                          <span className="bg-black text-white px-4 py-2 rounded-lg text-xl font-semibold">
-                            Grupo: {questionnaire.group}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleEdit(questionnaire.id)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleDelete(questionnaire.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Enviado em: {new Date(questionnaire.created_at).toLocaleDateString('pt-BR')}
-                  </p>
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Pontos Fortes")} ${getTextColor("Pontos Fortes")}`}>
-                        Pontos Fortes
-                      </h4>
-                      <div className="space-y-2 mt-2">
-                        {splitText(questionnaire.strengths).map((strength, index) => (
-                          <div key={index}>
-                            {renderLine(questionnaire, 'strengths', strength, index)}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Desafios")} ${getTextColor("Desafios")}`}>
-                        Desafios
-                      </h4>
-                      <div className="space-y-2 mt-2">
-                        {splitText(questionnaire.challenges).map((challenge, index) => (
-                          <div key={index}>
-                            {renderLine(questionnaire, 'challenges', challenge, index)}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Oportunidades")} ${getTextColor("Oportunidades")}`}>
-                        Oportunidades
-                      </h4>
-                      <div className="space-y-2 mt-2">
-                        {splitText(questionnaire.opportunities).map((opportunity, index) => (
-                          <div key={index}>
-                            {renderLine(questionnaire, 'opportunities', opportunity, index)}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </TabsContent>
-      </Tabs>
+            </div>
+          </Card>
+        ))}
+      </div>
 
       {(!questionnaires || questionnaires.length === 0) && (
         <p className="text-center text-gray-500 py-4">
