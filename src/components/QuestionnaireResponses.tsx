@@ -54,10 +54,18 @@ export const QuestionnaireResponses = () => {
 
   const voteMutation = useMutation({
     mutationFn: async ({ questionnaireId, voteType }: { questionnaireId: string; voteType: 'upvote' | 'downvote' }) => {
+      // First, get the current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        throw new Error('User not authenticated');
+      }
+
       const { data: existingVote, error: fetchError } = await supabase
         .from('questionnaire_votes')
         .select('*')
         .eq('questionnaire_id', questionnaireId)
+        .eq('user_id', user.id)
         .single();
 
       if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 means no rows returned
@@ -70,7 +78,8 @@ export const QuestionnaireResponses = () => {
           const { error } = await supabase
             .from('questionnaire_votes')
             .delete()
-            .eq('questionnaire_id', questionnaireId);
+            .eq('questionnaire_id', questionnaireId)
+            .eq('user_id', user.id);
           
           if (error) throw error;
         } else {
@@ -78,7 +87,8 @@ export const QuestionnaireResponses = () => {
           const { error } = await supabase
             .from('questionnaire_votes')
             .update({ vote_type: voteType })
-            .eq('questionnaire_id', questionnaireId);
+            .eq('questionnaire_id', questionnaireId)
+            .eq('user_id', user.id);
           
           if (error) throw error;
         }
@@ -88,6 +98,7 @@ export const QuestionnaireResponses = () => {
           .from('questionnaire_votes')
           .insert({
             questionnaire_id: questionnaireId,
+            user_id: user.id,
             vote_type: voteType,
           });
         
