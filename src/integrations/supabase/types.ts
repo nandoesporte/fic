@@ -187,6 +187,7 @@ export type Database = {
           id: string
           opportunities: string
           satisfaction: number
+          status: string | null
           strengths: string
           updated_at: string | null
           user_id: string
@@ -198,6 +199,7 @@ export type Database = {
           id?: string
           opportunities: string
           satisfaction: number
+          status?: string | null
           strengths: string
           updated_at?: string | null
           user_id: string
@@ -209,6 +211,7 @@ export type Database = {
           id?: string
           opportunities?: string
           satisfaction?: number
+          status?: string | null
           strengths?: string
           updated_at?: string | null
           user_id?: string

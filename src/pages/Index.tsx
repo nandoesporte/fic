@@ -3,9 +3,12 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlusCircle, Users, BarChart2, TrendingUp, ClipboardList, Award, Heart } from "lucide-react";
+import { PlusCircle, Users, BarChart2, TrendingUp, ClipboardList, Award, Heart, Loader2 } from "lucide-react";
 import { FICForm } from "@/components/FICForm";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const StatCard = ({ icon: Icon, label, value }: { icon: any; label: string; value: string }) => (
   <Card className="p-6">
@@ -21,8 +24,16 @@ const StatCard = ({ icon: Icon, label, value }: { icon: any; label: string; valu
   </Card>
 );
 
-const QuestionnaireCard = ({ title, status, date }: { title: string; status: string; date: string }) => (
-  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+const QuestionnaireCard = ({ title, status, date, onClick }: { 
+  title: string; 
+  status: string; 
+  date: string;
+  onClick?: () => void;
+}) => (
+  <div 
+    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+    onClick={onClick}
+  >
     <div className="flex items-center gap-4">
       <ClipboardList className="h-5 w-5 text-primary" />
       <div>
@@ -55,8 +66,30 @@ const AchievementCard = ({ title, description, icon: Icon }: { title: string; de
 const Index = () => {
   const [activeTab, setActiveTab] = useState("questionarios");
 
+  const { data: questionnaires, isLoading } = useQuery({
+    queryKey: ['questionnaires'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('fic_questionnaires')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        toast.error('Erro ao carregar questionários');
+        throw error;
+      }
+
+      return data;
+    },
+  });
+
   const handleNewQuestionnaire = () => {
     setActiveTab("novo");
+  };
+
+  const handleQuestionnaireClick = (id: string) => {
+    setActiveTab("novo");
+    // You could also store the questionnaire ID in state if you need to pre-fill the form
   };
 
   return (
@@ -92,19 +125,29 @@ const Index = () => {
             <TabsContent value="questionarios" className="space-y-4">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card className="p-6">
-                  <h2 className="text-xl font-semibold mb-4">Questionários Ativos</h2>
-                  <div className="space-y-4">
-                    <QuestionnaireCard 
-                      title="Dimensão Bem-estar"
-                      status="Ativo"
-                      date="Iniciado em 15/03/2024"
-                    />
-                    <QuestionnaireCard 
-                      title="Dimensão Relações Interpessoais"
-                      status="Pendente"
-                      date="Inicia em 20/03/2024"
-                    />
-                  </div>
+                  <h2 className="text-xl font-semibold mb-4">Questionários Disponíveis</h2>
+                  {isLoading ? (
+                    <div className="flex items-center justify-center p-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {questionnaires?.map((questionnaire) => (
+                        <QuestionnaireCard 
+                          key={questionnaire.id}
+                          title={`Dimensão ${questionnaire.dimension}`}
+                          status={questionnaire.status === 'pending' ? 'Pendente' : 'Completo'}
+                          date={`Criado em ${new Date(questionnaire.created_at).toLocaleDateString('pt-BR')}`}
+                          onClick={() => handleQuestionnaireClick(questionnaire.id)}
+                        />
+                      ))}
+                      {questionnaires?.length === 0 && (
+                        <p className="text-center text-gray-500 py-4">
+                          Nenhum questionário disponível no momento.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </Card>
 
                 <Card className="p-6">
