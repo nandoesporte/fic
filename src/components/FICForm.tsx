@@ -119,7 +119,6 @@ export function FICForm() {
         challenges: [values.challenges1, values.challenges2, values.challenges3].join('\n\n'),
         opportunities: [values.opportunities1, values.opportunities2, values.opportunities3].join('\n\n'),
         user_id: userId,
-        group_name: values.group,
       });
 
       if (error) throw error;
@@ -267,4 +266,3 @@ export function FICForm() {
       </form>
     </Form>
   );
-}
