@@ -12,7 +12,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -30,9 +29,6 @@ const formSchema = z.object({
   }),
   dimension: z.string({
     required_error: "Por favor selecione uma dimensão.",
-  }),
-  satisfaction: z.enum(["1", "2", "3", "4", "5"], {
-    required_error: "Por favor selecione seu nível de satisfação.",
   }),
   strengths1: z.string().min(10, {
     message: "O primeiro ponto forte deve ter pelo menos 10 caracteres.",
@@ -118,7 +114,7 @@ export function FICForm() {
       const { error } = await supabase.from("fic_questionnaires").insert({
         dimension: values.dimension,
         group: values.group,
-        satisfaction: parseInt(values.satisfaction),
+        satisfaction: 0,
         strengths: [values.strengths1, values.strengths2, values.strengths3].join('\n\n'),
         challenges: [values.challenges1, values.challenges2, values.challenges3].join('\n\n'),
         opportunities: [values.opportunities1, values.opportunities2, values.opportunities3].join('\n\n'),
@@ -153,7 +149,7 @@ export function FICForm() {
     };
 
     const getTextColor = (label: string) => {
-      return label === "Pontos Fortes" ? "text-white" : "text-gray-900";
+      return label === "Desafios" ? "text-gray-900" : "text-white";
     };
 
     return (
@@ -240,41 +236,6 @@ export function FICForm() {
                 </Select>
                 <FormDescription>
                   Escolha a dimensão do FIC que este questionário irá avaliar
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="satisfaction"
-            render={({ field }) => (
-              <FormItem className="space-y-3">
-                <FormLabel>Nível de Satisfação Geral</FormLabel>
-                <FormControl>
-                  <RadioGroup
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    className="flex space-x-4"
-                  >
-                    {[1, 2, 3, 4, 5].map((value) => (
-                      <FormItem
-                        key={value}
-                        className="flex items-center space-x-2"
-                      >
-                        <FormControl>
-                          <RadioGroupItem value={value.toString()} />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          {value}
-                        </FormLabel>
-                      </FormItem>
-                    ))}
-                  </RadioGroup>
-                </FormControl>
-                <FormDescription>
-                  1 = Muito insatisfeito, 5 = Muito satisfeito
                 </FormDescription>
                 <FormMessage />
               </FormItem>
