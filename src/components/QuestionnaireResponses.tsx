@@ -1,14 +1,21 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Loader2, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Edit, Trash2, Loader2, ThumbsUp, ThumbsDown, Save, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 
 export const QuestionnaireResponses = () => {
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<string | null>(null);
+  const [editingLine, setEditingLine] = useState<{
+    questionnaireId: string;
+    type: 'strengths' | 'challenges' | 'opportunities';
+    index: number;
+    value: string;
+  } | null>(null);
   const queryClient = useQueryClient();
 
   const { data: questionnaires, isLoading } = useQuery({
@@ -33,6 +40,29 @@ export const QuestionnaireResponses = () => {
       }
 
       return questionnairesData;
+    },
+  });
+
+  const updateLineMutation = useMutation({
+    mutationFn: async ({ questionnaireId, type, lines }: { 
+      questionnaireId: string; 
+      type: 'strengths' | 'challenges' | 'opportunities';
+      lines: string[];
+    }) => {
+      const { error } = await supabase
+        .from('fic_questionnaires')
+        .update({ [type]: lines.join('\n\n') })
+        .eq('id', questionnaireId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
+      toast.success('Linha atualizada com sucesso');
+      setEditingLine(null);
+    },
+    onError: () => {
+      toast.error('Erro ao atualizar linha');
     },
   });
 
@@ -149,6 +179,34 @@ export const QuestionnaireResponses = () => {
     };
   };
 
+  const handleLineEdit = (questionnaireId: string, type: 'strengths' | 'challenges' | 'opportunities', index: number, value: string) => {
+    setEditingLine({ questionnaireId, type, index, value });
+  };
+
+  const handleLineSave = (questionnaire: any) => {
+    if (!editingLine) return;
+
+    const lines = splitText(questionnaire[editingLine.type]);
+    lines[editingLine.index] = editingLine.value;
+    
+    updateLineMutation.mutate({
+      questionnaireId: editingLine.questionnaireId,
+      type: editingLine.type,
+      lines,
+    });
+  };
+
+  const handleLineDelete = (questionnaire: any, type: 'strengths' | 'challenges' | 'opportunities', indexToDelete: number) => {
+    if (window.confirm('Tem certeza que deseja excluir esta linha?')) {
+      const lines = splitText(questionnaire[type]).filter((_, index) => index !== indexToDelete);
+      updateLineMutation.mutate({
+        questionnaireId: questionnaire.id,
+        type,
+        lines,
+      });
+    }
+  };
+
   const renderVoteButtons = (questionnaire: any, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => {
     const votes = getVoteCounts(questionnaire, optionType, optionNumber);
     return (
@@ -169,6 +227,61 @@ export const QuestionnaireResponses = () => {
           <ThumbsDown className="h-4 w-4 mr-1" />
           {votes.downvotes}
         </Button>
+      </div>
+    );
+  };
+
+  const renderLine = (questionnaire: any, type: 'strengths' | 'challenges' | 'opportunities', line: string, index: number) => {
+    const isEditing = editingLine?.questionnaireId === questionnaire.id && 
+                     editingLine?.type === type && 
+                     editingLine?.index === index;
+
+    if (isEditing) {
+      return (
+        <div className="flex items-center gap-2">
+          <Input
+            value={editingLine.value}
+            onChange={(e) => setEditingLine({ ...editingLine, value: e.target.value })}
+            className="flex-1"
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleLineSave(questionnaire)}
+          >
+            <Save className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setEditingLine(null)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex justify-between items-center">
+        <p className="flex-1">{line}</p>
+        <div className="flex items-center gap-2">
+          {renderVoteButtons(questionnaire, type, index + 1)}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleLineEdit(questionnaire.id, type, index, line)}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleLineDelete(questionnaire, type, index)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     );
   };
@@ -241,18 +354,13 @@ export const QuestionnaireResponses = () => {
                   </p>
                   <div className="space-y-4">
                     <div>
-                      <h4 className="font-medium">Nível de Satisfação</h4>
-                      <p>{questionnaire.satisfaction}/5</p>
-                    </div>
-                    <div>
                       <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Pontos Fortes")} ${getTextColor("Pontos Fortes")}`}>
                         Pontos Fortes
                       </h4>
                       <div className="space-y-2 mt-2">
                         {splitText(questionnaire.strengths).map((strength, index) => (
-                          <div key={index} className="flex justify-between items-center">
-                            <p className="flex-1">{strength}</p>
-                            {renderVoteButtons(questionnaire, 'strengths', index + 1)}
+                          <div key={index}>
+                            {renderLine(questionnaire, 'strengths', strength, index)}
                           </div>
                         ))}
                       </div>
@@ -263,9 +371,8 @@ export const QuestionnaireResponses = () => {
                       </h4>
                       <div className="space-y-2 mt-2">
                         {splitText(questionnaire.challenges).map((challenge, index) => (
-                          <div key={index} className="flex justify-between items-center">
-                            <p className="flex-1">{challenge}</p>
-                            {renderVoteButtons(questionnaire, 'challenges', index + 1)}
+                          <div key={index}>
+                            {renderLine(questionnaire, 'challenges', challenge, index)}
                           </div>
                         ))}
                       </div>
@@ -276,9 +383,8 @@ export const QuestionnaireResponses = () => {
                       </h4>
                       <div className="space-y-2 mt-2">
                         {splitText(questionnaire.opportunities).map((opportunity, index) => (
-                          <div key={index} className="flex justify-between items-center">
-                            <p className="flex-1">{opportunity}</p>
-                            {renderVoteButtons(questionnaire, 'opportunities', index + 1)}
+                          <div key={index}>
+                            {renderLine(questionnaire, 'opportunities', opportunity, index)}
                           </div>
                         ))}
                       </div>
@@ -301,7 +407,6 @@ export const QuestionnaireResponses = () => {
               return getTotalVotes(b) - getTotalVotes(a);
             })
             .map((questionnaire) => (
-              // ... keep existing code (same card content as above)
               <Card key={questionnaire.id} className="p-6">
                 <div className="flex justify-between items-start">
                   <div className="w-full">
@@ -331,18 +436,13 @@ export const QuestionnaireResponses = () => {
                     </p>
                     <div className="space-y-4">
                       <div>
-                        <h4 className="font-medium">Nível de Satisfação</h4>
-                        <p>{questionnaire.satisfaction}/5</p>
-                      </div>
-                      <div>
                         <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Pontos Fortes")} ${getTextColor("Pontos Fortes")}`}>
                           Pontos Fortes
                         </h4>
                         <div className="space-y-2 mt-2">
                           {splitText(questionnaire.strengths).map((strength, index) => (
-                            <div key={index} className="flex justify-between items-center">
-                              <p className="flex-1">{strength}</p>
-                              {renderVoteButtons(questionnaire, 'strengths', index + 1)}
+                            <div key={index}>
+                              {renderLine(questionnaire, 'strengths', strength, index)}
                             </div>
                           ))}
                         </div>
@@ -353,9 +453,8 @@ export const QuestionnaireResponses = () => {
                         </h4>
                         <div className="space-y-2 mt-2">
                           {splitText(questionnaire.challenges).map((challenge, index) => (
-                            <div key={index} className="flex justify-between items-center">
-                              <p className="flex-1">{challenge}</p>
-                              {renderVoteButtons(questionnaire, 'challenges', index + 1)}
+                            <div key={index}>
+                              {renderLine(questionnaire, 'challenges', challenge, index)}
                             </div>
                           ))}
                         </div>
@@ -366,9 +465,8 @@ export const QuestionnaireResponses = () => {
                         </h4>
                         <div className="space-y-2 mt-2">
                           {splitText(questionnaire.opportunities).map((opportunity, index) => (
-                            <div key={index} className="flex justify-between items-center">
-                              <p className="flex-1">{opportunity}</p>
-                              {renderVoteButtons(questionnaire, 'opportunities', index + 1)}
+                            <div key={index}>
+                              {renderLine(questionnaire, 'opportunities', opportunity, index)}
                             </div>
                           ))}
                         </div>
