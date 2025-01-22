@@ -44,7 +44,14 @@ export const QuestionnaireCard = ({ questionnaire, onVote }: QuestionnaireCardPr
         <h3 className="font-medium text-lg">
           Dimensão: {questionnaire.dimension}
         </h3>
-        <p className="text-sm text-gray-500">
+        {questionnaire.group && (
+          <div className="mt-2 inline-block">
+            <span className="bg-black text-white px-4 py-2 rounded-lg text-xl font-semibold">
+              Grupo: {questionnaire.group}
+            </span>
+          </div>
+        )}
+        <p className="text-sm text-gray-500 mt-2">
           Enviado em: {new Date(questionnaire.created_at).toLocaleDateString('pt-BR')}
         </p>
       </div>
