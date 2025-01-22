@@ -194,22 +194,22 @@ export function FICForm() {
             name="group"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Grupo</FormLabel>
+                <FormLabel className="text-xl font-semibold">Grupo</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-black text-white hover:bg-black/90 transition-colors">
                       <SelectValue placeholder="Selecione um grupo" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     {groups.map((group) => (
-                      <SelectItem key={group.id} value={group.id}>
+                      <SelectItem key={group.id} value={group.id} className="text-lg">
                         {group.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <FormDescription>
+                <FormDescription className="text-base">
                   Escolha o grupo ao qual você pertence
                 </FormDescription>
                 <FormMessage />
