@@ -13,7 +13,7 @@ import {
 const menuItems = [
   { icon: Home, label: "Dashboard", href: "/" },
   { icon: ClipboardList, label: "Questionários", href: "/questionarios" },
-  { icon: BarChart2, label: "Relatórios", href: "/relatorios" },
+  { icon: BarChart2, label: "Análise de Votos", href: "/analytics" },
   { icon: Users, label: "Cooperados", href: "/cooperados" },
   { icon: Settings, label: "Configurações", href: "/configuracoes" },
 ];

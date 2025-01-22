@@ -7,6 +7,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import QuestionnaireAnalytics from "./pages/QuestionnaireAnalytics";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -33,6 +34,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Index />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/analytics"
+                element={
+                  <ProtectedRoute>
+                    <QuestionnaireAnalytics />
                   </ProtectedRoute>
                 }
               />
