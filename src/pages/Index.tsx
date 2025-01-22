@@ -3,12 +3,10 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlusCircle, Users, BarChart2, TrendingUp, ClipboardList, Award, Heart, Loader2 } from "lucide-react";
+import { PlusCircle, Users, BarChart2, TrendingUp, ClipboardList, Award, Heart } from "lucide-react";
 import { FICForm } from "@/components/FICForm";
+import { QuestionnaireResponses } from "@/components/QuestionnaireResponses";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 const StatCard = ({ icon: Icon, label, value }: { icon: any; label: string; value: string }) => (
   <Card className="p-6">
@@ -22,31 +20,6 @@ const StatCard = ({ icon: Icon, label, value }: { icon: any; label: string; valu
       </div>
     </div>
   </Card>
-);
-
-const QuestionnaireCard = ({ title, status, date, onClick }: { 
-  title: string; 
-  status: string; 
-  date: string;
-  onClick?: () => void;
-}) => (
-  <div 
-    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-    onClick={onClick}
-  >
-    <div className="flex items-center gap-4">
-      <ClipboardList className="h-5 w-5 text-primary" />
-      <div>
-        <h3 className="font-medium">{title}</h3>
-        <p className="text-sm text-gray-500">{date}</p>
-      </div>
-    </div>
-    <span className={`px-3 py-1 rounded-full text-sm ${
-      status === 'Ativo' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-    }`}>
-      {status}
-    </span>
-  </div>
 );
 
 const AchievementCard = ({ title, description, icon: Icon }: { title: string; description: string; icon: any }) => (
@@ -66,30 +39,8 @@ const AchievementCard = ({ title, description, icon: Icon }: { title: string; de
 const Index = () => {
   const [activeTab, setActiveTab] = useState("questionarios");
 
-  const { data: questionnaires, isLoading } = useQuery({
-    queryKey: ['questionnaires'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('fic_questionnaires')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        toast.error('Erro ao carregar questionários');
-        throw error;
-      }
-
-      return data;
-    },
-  });
-
   const handleNewQuestionnaire = () => {
     setActiveTab("novo");
-  };
-
-  const handleQuestionnaireClick = (id: string) => {
-    setActiveTab("novo");
-    // You could also store the questionnaire ID in state if you need to pre-fill the form
   };
 
   return (
@@ -122,50 +73,11 @@ const Index = () => {
               <TabsTrigger value="novo">Novo Questionário</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="questionarios" className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="p-6">
-                  <h2 className="text-xl font-semibold mb-4">Questionários Disponíveis</h2>
-                  {isLoading ? (
-                    <div className="flex items-center justify-center p-8">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {questionnaires?.map((questionnaire) => (
-                        <QuestionnaireCard 
-                          key={questionnaire.id}
-                          title={`Dimensão ${questionnaire.dimension}`}
-                          status={questionnaire.status === 'pending' ? 'Pendente' : 'Completo'}
-                          date={`Criado em ${new Date(questionnaire.created_at).toLocaleDateString('pt-BR')}`}
-                          onClick={() => handleQuestionnaireClick(questionnaire.id)}
-                        />
-                      ))}
-                      {questionnaires?.length === 0 && (
-                        <p className="text-center text-gray-500 py-4">
-                          Nenhum questionário disponível no momento.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </Card>
-
-                <Card className="p-6">
-                  <h2 className="text-xl font-semibold mb-4">Atividade Recente</h2>
-                  <div className="space-y-4">
-                    {[
-                      "Nova resposta ao questionário de Bem-estar",
-                      "Meta mensal de participação atingida",
-                      "Novo relatório disponível",
-                    ].map((item) => (
-                      <div key={item} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                        <div className="h-2 w-2 rounded-full bg-primary" />
-                        <span>{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              </div>
+            <TabsContent value="questionarios">
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-6">Respostas dos Questionários</h2>
+                <QuestionnaireResponses />
+              </Card>
             </TabsContent>
 
             <TabsContent value="conquistas" className="space-y-4">
