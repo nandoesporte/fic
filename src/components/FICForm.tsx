@@ -30,6 +30,9 @@ const formSchema = z.object({
   dimension: z.string({
     required_error: "Por favor selecione uma dimensão.",
   }),
+  satisfaction: z.number({
+    required_error: "Por favor selecione um nível de satisfação.",
+  }).min(1).max(10),
   strengths1: z.string().min(10, {
     message: "O primeiro ponto forte deve ter pelo menos 10 caracteres.",
   }),
@@ -91,6 +94,7 @@ export function FICForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      satisfaction: 5,
       strengths1: "",
       strengths2: "",
       strengths3: "",
@@ -114,7 +118,7 @@ export function FICForm() {
       const { error } = await supabase.from("fic_questionnaires").insert({
         dimension: values.dimension,
         group: values.group,
-        satisfaction: 0,
+        satisfaction: values.satisfaction,
         strengths: [values.strengths1, values.strengths2, values.strengths3].join('\n\n'),
         challenges: [values.challenges1, values.challenges2, values.challenges3].join('\n\n'),
         opportunities: [values.opportunities1, values.opportunities2, values.opportunities3].join('\n\n'),
@@ -133,24 +137,24 @@ export function FICForm() {
     }
   }
 
+  const getBgColor = (label: string) => {
+    switch (label) {
+      case "Pontos Fortes":
+        return "bg-[#228B22]";
+      case "Desafios":
+        return "bg-[#FFD700]";
+      case "Oportunidades":
+        return "bg-[#000080]";
+      default:
+        return "";
+    }
+  };
+
+  const getTextColor = (label: string) => {
+    return label === "Desafios" ? "text-gray-900" : "text-white";
+  };
+
   const renderTextAreas = (fieldName: string, label: string, description: string) => {
-    const getBgColor = (label: string) => {
-      switch (label) {
-        case "Pontos Fortes":
-          return "bg-[#228B22]";
-        case "Desafios":
-          return "bg-[#FFD700]";
-        case "Oportunidades":
-          return "bg-[#000080]";
-        default:
-          return "";
-      }
-    };
-
-    const getTextColor = (label: string) => {
-      return label === "Desafios" ? "text-gray-900" : "text-white";
-    };
-
     return (
       <div className="space-y-4">
         <h3 className={`font-medium text-lg p-2 rounded-lg ${getBgColor(label)} ${getTextColor(label)}`}>
@@ -235,6 +239,37 @@ export function FICForm() {
                 </Select>
                 <FormDescription>
                   Escolha a dimensão do FIC que este questionário irá avaliar
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="satisfaction"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nível de Satisfação</FormLabel>
+                <Select 
+                  onValueChange={(value) => field.onChange(parseInt(value))} 
+                  defaultValue={field.value?.toString()}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o nível de satisfação" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
+                      <SelectItem key={value} value={value.toString()}>
+                        {value}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  Avalie seu nível de satisfação de 1 a 10
                 </FormDescription>
                 <FormMessage />
               </FormItem>
