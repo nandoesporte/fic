@@ -74,9 +74,9 @@ export const QuestionnaireResponses = () => {
         .eq('user_id', user.id)
         .eq('option_type', optionType)
         .eq('option_number', optionNumber)
-        .single();
+        .maybeSingle();
 
-      if (fetchError && fetchError.code !== 'PGRST116') {
+      if (fetchError) {
         throw fetchError;
       }
 
