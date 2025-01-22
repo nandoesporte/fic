@@ -1,81 +1,15 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Form } from "@/components/ui/form";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
-
-const formSchema = z.object({
-  group: z.string({
-    required_error: "Por favor selecione um grupo.",
-  }),
-  dimension: z.string({
-    required_error: "Por favor selecione uma dimensão.",
-  }),
-  satisfaction: z.number({
-    required_error: "Por favor selecione um nível de satisfação.",
-  }).min(1).max(10),
-  strengths1: z.string().min(10, {
-    message: "O primeiro ponto forte deve ter pelo menos 10 caracteres.",
-  }),
-  strengths2: z.string().min(10, {
-    message: "O segundo ponto forte deve ter pelo menos 10 caracteres.",
-  }),
-  strengths3: z.string().min(10, {
-    message: "O terceiro ponto forte deve ter pelo menos 10 caracteres.",
-  }),
-  challenges1: z.string().min(10, {
-    message: "O primeiro desafio deve ter pelo menos 10 caracteres.",
-  }),
-  challenges2: z.string().min(10, {
-    message: "O segundo desafio deve ter pelo menos 10 caracteres.",
-  }),
-  challenges3: z.string().min(10, {
-    message: "O terceiro desafio deve ter pelo menos 10 caracteres.",
-  }),
-  opportunities1: z.string().min(10, {
-    message: "A primeira oportunidade deve ter pelo menos 10 caracteres.",
-  }),
-  opportunities2: z.string().min(10, {
-    message: "A segunda oportunidade deve ter pelo menos 10 caracteres.",
-  }),
-  opportunities3: z.string().min(10, {
-    message: "A terceira oportunidade deve ter pelo menos 10 caracteres.",
-  }),
-});
-
-const dimensions = [
-  { id: "bem-estar", label: "Bem-estar" },
-  { id: "desenvolvimento", label: "Desenvolvimento Humano" },
-  { id: "qualidade-vida", label: "Qualidade de Vida" },
-  { id: "relacoes", label: "Relações Interpessoais" },
-  { id: "impacto-social", label: "Impacto Social" },
-];
-
-const groups = [
-  { id: "grupo-1", label: "Grupo 1" },
-  { id: "grupo-2", label: "Grupo 2" },
-  { id: "grupo-3", label: "Grupo 3" },
-  { id: "grupo-4", label: "Grupo 4" },
-];
+import { GroupSelect } from "./FICForm/GroupSelect";
+import { DimensionSelect } from "./FICForm/DimensionSelect";
+import { SatisfactionSelect } from "./FICForm/SatisfactionSelect";
+import { TextAreaSection } from "./FICForm/TextAreaSection";
+import { formSchema, type FICFormSchema } from "./FICForm/types";
 
 export function FICForm() {
   const [userId, setUserId] = useState<string | null>(null);
@@ -91,7 +25,7 @@ export function FICForm() {
     getUser();
   }, []);
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FICFormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       satisfaction: 5,
@@ -107,7 +41,7 @@ export function FICForm() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: FICFormSchema) {
     if (!userId) {
       toast.error("Você precisa estar logado para enviar um questionário.");
       return;
@@ -137,162 +71,34 @@ export function FICForm() {
     }
   }
 
-  const getBgColor = (label: string) => {
-    switch (label) {
-      case "Pontos Fortes":
-        return "bg-[#228B22]";
-      case "Desafios":
-        return "bg-[#FFD700]";
-      case "Oportunidades":
-        return "bg-[#000080]";
-      default:
-        return "";
-    }
-  };
-
-  const getTextColor = (label: string) => {
-    return label === "Desafios" ? "text-gray-900" : "text-white";
-  };
-
-  const renderTextAreas = (fieldName: string, label: string, description: string) => {
-    return (
-      <div className="space-y-4">
-        <h3 className={`font-medium text-lg p-2 rounded-lg ${getBgColor(label)} ${getTextColor(label)}`}>
-          {label}
-        </h3>
-        {[1, 2, 3].map((num) => (
-          <FormField
-            key={`${fieldName}${num}`}
-            control={form.control}
-            name={`${fieldName}${num}` as any}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{`${label} ${num}`}</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder={`Descreva ${label.toLowerCase()} ${num}...`}
-                    className="min-h-[100px]"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        ))}
-        <FormDescription>{description}</FormDescription>
-      </div>
-    );
-  };
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="space-y-6">
-          <FormField
-            control={form.control}
-            name="group"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-xl font-semibold">Grupo</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger className="bg-black text-white hover:bg-black/90 transition-colors">
-                      <SelectValue placeholder="Selecione um grupo" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {groups.map((group) => (
-                      <SelectItem key={group.id} value={group.id} className="text-lg">
-                        {group.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription className="text-base">
-                  Escolha o grupo ao qual você pertence
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
+          <GroupSelect form={form} />
+          <DimensionSelect form={form} />
+          <SatisfactionSelect form={form} />
+
+          <TextAreaSection
+            form={form}
+            fieldName="strengths"
+            label="Pontos Fortes"
+            description="Compartilhe os elementos que contribuem positivamente para sua experiência."
           />
 
-          <FormField
-            control={form.control}
-            name="dimension"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Dimensão</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma dimensão" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {dimensions.map((dimension) => (
-                      <SelectItem key={dimension.id} value={dimension.id}>
-                        {dimension.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  Escolha a dimensão do FIC que este questionário irá avaliar
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
+          <TextAreaSection
+            form={form}
+            fieldName="challenges"
+            label="Desafios"
+            description="Identifique áreas que precisam de atenção ou melhorias."
           />
 
-          <FormField
-            control={form.control}
-            name="satisfaction"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nível de Satisfação</FormLabel>
-                <Select 
-                  onValueChange={(value) => field.onChange(parseInt(value))} 
-                  defaultValue={field.value?.toString()}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o nível de satisfação" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
-                      <SelectItem key={value} value={value.toString()}>
-                        {value}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  Avalie seu nível de satisfação de 1 a 10
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
+          <TextAreaSection
+            form={form}
+            fieldName="opportunities"
+            label="Oportunidades"
+            description="Sugira ideias e possibilidades para aprimorar o ambiente cooperativo."
           />
-
-          {renderTextAreas(
-            "strengths",
-            "Pontos Fortes",
-            "Compartilhe os elementos que contribuem positivamente para sua experiência."
-          )}
-
-          {renderTextAreas(
-            "challenges",
-            "Desafios",
-            "Identifique áreas que precisam de atenção ou melhorias."
-          )}
-
-          {renderTextAreas(
-            "opportunities",
-            "Oportunidades",
-            "Sugira ideias e possibilidades para aprimorar o ambiente cooperativo."
-          )}
         </div>
 
         <Button type="submit" className="w-full" disabled={isSubmitting}>
