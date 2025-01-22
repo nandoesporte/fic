@@ -7,9 +7,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const QuestionnaireResponses = () => {
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<string | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<string>("todos");
   const [editingLine, setEditingLine] = useState<{
     questionnaireId: string;
     type: 'strengths' | 'challenges' | 'opportunities';
@@ -315,8 +323,37 @@ export const QuestionnaireResponses = () => {
     return text.split('\n').filter(line => line.trim() !== '');
   };
 
+  const getUniqueGroups = () => {
+    if (!questionnaires) return [];
+    const groups = questionnaires.map(q => q.group || 'Sem grupo').filter((value, index, self) => self.indexOf(value) === index);
+    return groups;
+  };
+
+  const filterQuestionnairesByGroup = (questionnaires: any[]) => {
+    if (selectedGroup === "todos") return questionnaires;
+    return questionnaires.filter(q => (q.group || 'Sem grupo') === selectedGroup);
+  };
+
+  const uniqueGroups = getUniqueGroups();
+
   return (
     <div className="space-y-4">
+      <div className="flex justify-end mb-4">
+        <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Selecione um grupo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os grupos</SelectItem>
+            {uniqueGroups.map((group) => (
+              <SelectItem key={group} value={group}>
+                {group}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <Tabs defaultValue="todos" className="w-full">
         <TabsList className="w-full">
           <TabsTrigger value="todos" className="flex-1">Todos</TabsTrigger>
@@ -324,14 +361,21 @@ export const QuestionnaireResponses = () => {
         </TabsList>
 
         <TabsContent value="todos">
-          {questionnaires?.map((questionnaire) => (
-            <Card key={questionnaire.id} className="p-6">
+          {filterQuestionnairesByGroup(questionnaires || []).map((questionnaire) => (
+            <Card key={questionnaire.id} className="p-6 mb-4">
               <div className="flex justify-between items-start">
                 <div className="w-full">
                   <div className="flex justify-between items-center mb-2">
-                    <h3 className="font-medium text-lg">
-                      Dimensão: {questionnaire.dimension}
-                    </h3>
+                    <div>
+                      <h3 className="font-medium text-lg">
+                        Dimensão: {questionnaire.dimension}
+                      </h3>
+                      {questionnaire.group && (
+                        <p className="text-sm text-gray-500">
+                          Grupo: {questionnaire.group}
+                        </p>
+                      )}
+                    </div>
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
@@ -397,89 +441,96 @@ export const QuestionnaireResponses = () => {
         </TabsContent>
 
         <TabsContent value="mais-votados">
-          {questionnaires
-            ?.sort((a, b) => {
+          {filterQuestionnairesByGroup(
+            questionnaires?.sort((a, b) => {
               const getTotalVotes = (questionnaire: any) => {
                 return (questionnaire.questionnaire_vote_counts || []).reduce((acc: number, curr: any) => {
                   return acc + (curr.upvotes || 0) - (curr.downvotes || 0);
                 }, 0);
               };
               return getTotalVotes(b) - getTotalVotes(a);
-            })
-            .map((questionnaire) => (
-              <Card key={questionnaire.id} className="p-6">
-                <div className="flex justify-between items-start">
-                  <div className="w-full">
-                    <div className="flex justify-between items-center mb-2">
+            }) || []
+          ).map((questionnaire) => (
+            <Card key={questionnaire.id} className="p-6 mb-4">
+              <div className="flex justify-between items-start">
+                <div className="w-full">
+                  <div className="flex justify-between items-center mb-2">
+                    <div>
                       <h3 className="font-medium text-lg">
                         Dimensão: {questionnaire.dimension}
                       </h3>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => handleEdit(questionnaire.id)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => handleDelete(questionnaire.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      {questionnaire.group && (
+                        <p className="text-sm text-gray-500">
+                          Grupo: {questionnaire.group}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleEdit(questionnaire.id)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleDelete(questionnaire.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Enviado em: {new Date(questionnaire.created_at).toLocaleDateString('pt-BR')}
+                  </p>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Pontos Fortes")} ${getTextColor("Pontos Fortes")}`}>
+                        Pontos Fortes
+                      </h4>
+                      <div className="space-y-2 mt-2">
+                        {splitText(questionnaire.strengths).map((strength, index) => (
+                          <div key={index}>
+                            {renderLine(questionnaire, 'strengths', strength, index)}
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    <p className="text-sm text-gray-500 mb-4">
-                      Enviado em: {new Date(questionnaire.created_at).toLocaleDateString('pt-BR')}
-                    </p>
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Pontos Fortes")} ${getTextColor("Pontos Fortes")}`}>
-                          Pontos Fortes
-                        </h4>
-                        <div className="space-y-2 mt-2">
-                          {splitText(questionnaire.strengths).map((strength, index) => (
-                            <div key={index}>
-                              {renderLine(questionnaire, 'strengths', strength, index)}
-                            </div>
-                          ))}
-                        </div>
+                    <div>
+                      <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Desafios")} ${getTextColor("Desafios")}`}>
+                        Desafios
+                      </h4>
+                      <div className="space-y-2 mt-2">
+                        {splitText(questionnaire.challenges).map((challenge, index) => (
+                          <div key={index}>
+                            {renderLine(questionnaire, 'challenges', challenge, index)}
+                          </div>
+                        ))}
                       </div>
-                      <div>
-                        <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Desafios")} ${getTextColor("Desafios")}`}>
-                          Desafios
-                        </h4>
-                        <div className="space-y-2 mt-2">
-                          {splitText(questionnaire.challenges).map((challenge, index) => (
-                            <div key={index}>
-                              {renderLine(questionnaire, 'challenges', challenge, index)}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Oportunidades")} ${getTextColor("Oportunidades")}`}>
-                          Oportunidades
-                        </h4>
-                        <div className="space-y-2 mt-2">
-                          {splitText(questionnaire.opportunities).map((opportunity, index) => (
-                            <div key={index}>
-                              {renderLine(questionnaire, 'opportunities', opportunity, index)}
-                            </div>
-                          ))}
-                        </div>
+                    </div>
+                    <div>
+                      <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Oportunidades")} ${getTextColor("Oportunidades")}`}>
+                        Oportunidades
+                      </h4>
+                      <div className="space-y-2 mt-2">
+                        {splitText(questionnaire.opportunities).map((opportunity, index) => (
+                          <div key={index}>
+                            {renderLine(questionnaire, 'opportunities', opportunity, index)}
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
                 </div>
-              </Card>
-            ))}
+              </div>
+            </Card>
+          ))}
         </TabsContent>
       </Tabs>
 
-      {questionnaires?.length === 0 && (
+      {(!questionnaires || questionnaires.length === 0) && (
         <p className="text-center text-gray-500 py-4">
           Nenhum questionário encontrado.
         </p>
