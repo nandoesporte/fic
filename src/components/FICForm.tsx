@@ -31,14 +31,32 @@ const formSchema = z.object({
   satisfaction: z.enum(["1", "2", "3", "4", "5"], {
     required_error: "Por favor selecione seu nível de satisfação.",
   }),
-  strengths: z.string().min(10, {
-    message: "Os pontos fortes devem ter pelo menos 10 caracteres.",
+  strengths1: z.string().min(10, {
+    message: "O primeiro ponto forte deve ter pelo menos 10 caracteres.",
   }),
-  challenges: z.string().min(10, {
-    message: "Os desafios devem ter pelo menos 10 caracteres.",
+  strengths2: z.string().min(10, {
+    message: "O segundo ponto forte deve ter pelo menos 10 caracteres.",
   }),
-  opportunities: z.string().min(10, {
-    message: "As oportunidades devem ter pelo menos 10 caracteres.",
+  strengths3: z.string().min(10, {
+    message: "O terceiro ponto forte deve ter pelo menos 10 caracteres.",
+  }),
+  challenges1: z.string().min(10, {
+    message: "O primeiro desafio deve ter pelo menos 10 caracteres.",
+  }),
+  challenges2: z.string().min(10, {
+    message: "O segundo desafio deve ter pelo menos 10 caracteres.",
+  }),
+  challenges3: z.string().min(10, {
+    message: "O terceiro desafio deve ter pelo menos 10 caracteres.",
+  }),
+  opportunities1: z.string().min(10, {
+    message: "A primeira oportunidade deve ter pelo menos 10 caracteres.",
+  }),
+  opportunities2: z.string().min(10, {
+    message: "A segunda oportunidade deve ter pelo menos 10 caracteres.",
+  }),
+  opportunities3: z.string().min(10, {
+    message: "A terceira oportunidade deve ter pelo menos 10 caracteres.",
   }),
 });
 
@@ -67,9 +85,15 @@ export function FICForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      strengths: "",
-      challenges: "",
-      opportunities: "",
+      strengths1: "",
+      strengths2: "",
+      strengths3: "",
+      challenges1: "",
+      challenges2: "",
+      challenges3: "",
+      opportunities1: "",
+      opportunities2: "",
+      opportunities3: "",
     },
   });
 
@@ -84,9 +108,9 @@ export function FICForm() {
       const { error } = await supabase.from("fic_questionnaires").insert({
         dimension: values.dimension,
         satisfaction: parseInt(values.satisfaction),
-        strengths: values.strengths,
-        challenges: values.challenges,
-        opportunities: values.opportunities,
+        strengths: [values.strengths1, values.strengths2, values.strengths3].join('\n\n'),
+        challenges: [values.challenges1, values.challenges2, values.challenges3].join('\n\n'),
+        opportunities: [values.opportunities1, values.opportunities2, values.opportunities3].join('\n\n'),
         user_id: userId,
       });
 
@@ -101,6 +125,35 @@ export function FICForm() {
       setIsSubmitting(false);
     }
   }
+
+  const renderTextAreas = (fieldName: string, label: string, description: string) => {
+    return (
+      <div className="space-y-4">
+        <h3 className="font-medium text-lg">{label}</h3>
+        {[1, 2, 3].map((num) => (
+          <FormField
+            key={`${fieldName}${num}`}
+            control={form.control}
+            name={`${fieldName}${num}` as any}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{`${label} ${num}`}</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder={`Descreva ${label.toLowerCase()} ${num}...`}
+                    className="min-h-[100px]"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ))}
+        <FormDescription>{description}</FormDescription>
+      </div>
+    );
+  };
 
   return (
     <Form {...form}>
@@ -169,68 +222,23 @@ export function FICForm() {
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="strengths"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Pontos Fortes</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Descreva os aspectos positivos que você identifica no ambiente cooperativo..."
-                    className="min-h-[100px]"
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Compartilhe os elementos que contribuem positivamente para sua experiência.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {renderTextAreas(
+            "strengths",
+            "Pontos Fortes",
+            "Compartilhe os elementos que contribuem positivamente para sua experiência."
+          )}
 
-          <FormField
-            control={form.control}
-            name="challenges"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Desafios</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Quais são os principais desafios que você enfrenta..."
-                    className="min-h-[100px]"
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Identifique áreas que precisam de atenção ou melhorias.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {renderTextAreas(
+            "challenges",
+            "Desafios",
+            "Identifique áreas que precisam de atenção ou melhorias."
+          )}
 
-          <FormField
-            control={form.control}
-            name="opportunities"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Oportunidades</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Que oportunidades você vê para melhorar a felicidade na cooperativa..."
-                    className="min-h-[100px]"
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Sugira ideias e possibilidades para aprimorar o ambiente cooperativo.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {renderTextAreas(
+            "opportunities",
+            "Oportunidades",
+            "Sugira ideias e possibilidades para aprimorar o ambiente cooperativo."
+          )}
         </div>
 
         <Button type="submit" className="w-full" disabled={isSubmitting}>
