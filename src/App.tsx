@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import QuestionnaireAnalytics from "./pages/QuestionnaireAnalytics";
+import QuestionnaireVoting from "./pages/QuestionnaireVoting";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -45,6 +46,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route path="/voting" element={<QuestionnaireVoting />} />
             </Routes>
           </AuthProvider>
         </BrowserRouter>
