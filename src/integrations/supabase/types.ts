@@ -184,6 +184,7 @@ export type Database = {
           challenges: string
           created_at: string | null
           dimension: string
+          group_name: string | null
           id: string
           opportunities: string
           satisfaction: number
@@ -196,6 +197,7 @@ export type Database = {
           challenges: string
           created_at?: string | null
           dimension: string
+          group_name?: string | null
           id?: string
           opportunities: string
           satisfaction: number
@@ -208,6 +210,7 @@ export type Database = {
           challenges?: string
           created_at?: string | null
           dimension?: string
+          group_name?: string | null
           id?: string
           opportunities?: string
           satisfaction?: number
