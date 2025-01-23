@@ -22,6 +22,9 @@ type ConsolidatedQuestionnaire = {
   challenges: string;
   opportunities: string;
   created_at: string;
+  strengths_statuses?: string;
+  challenges_statuses?: string;
+  opportunities_statuses?: string;
 };
 
 export const QuestionnaireVoting = () => {
@@ -51,22 +54,57 @@ export const QuestionnaireVoting = () => {
         throw questionnairesError;
       }
 
-      // Consolidate questionnaires by dimension
+      // Consolidate questionnaires by dimension and filter active options
       const consolidatedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: ConsolidatedQuestionnaire }, curr) => {
         if (!acc[curr.dimension]) {
+          // Filter strengths, challenges, and opportunities based on their status
+          const strengths_array = curr.strengths.split('\n\n');
+          const challenges_array = curr.challenges.split('\n\n');
+          const opportunities_array = curr.opportunities.split('\n\n');
+          
+          const strengths_statuses = (curr.strengths_statuses || 'pending,pending,pending').split(',');
+          const challenges_statuses = (curr.challenges_statuses || 'pending,pending,pending').split(',');
+          const opportunities_statuses = (curr.opportunities_statuses || 'pending,pending,pending').split(',');
+          
+          // Only keep items that have 'active' status
+          const filtered_strengths = strengths_array.filter((_, index) => strengths_statuses[index] === 'active');
+          const filtered_challenges = challenges_array.filter((_, index) => challenges_statuses[index] === 'active');
+          const filtered_opportunities = opportunities_array.filter((_, index) => opportunities_statuses[index] === 'active');
+
           acc[curr.dimension] = {
             id: curr.dimension,
             dimension: curr.dimension,
-            strengths: curr.strengths,
-            challenges: curr.challenges,
-            opportunities: curr.opportunities,
+            strengths: filtered_strengths.join('\n\n'),
+            challenges: filtered_challenges.join('\n\n'),
+            opportunities: filtered_opportunities.join('\n\n'),
             created_at: curr.created_at,
+            strengths_statuses: curr.strengths_statuses,
+            challenges_statuses: curr.challenges_statuses,
+            opportunities_statuses: curr.opportunities_statuses,
           };
         } else {
-          // Combine the text content, separating with line breaks
-          acc[curr.dimension].strengths += '\n\n' + curr.strengths;
-          acc[curr.dimension].challenges += '\n\n' + curr.challenges;
-          acc[curr.dimension].opportunities += '\n\n' + curr.opportunities;
+          // For subsequent entries, append only active items
+          const strengths_array = curr.strengths.split('\n\n');
+          const challenges_array = curr.challenges.split('\n\n');
+          const opportunities_array = curr.opportunities.split('\n\n');
+          
+          const strengths_statuses = (curr.strengths_statuses || 'pending,pending,pending').split(',');
+          const challenges_statuses = (curr.challenges_statuses || 'pending,pending,pending').split(',');
+          const opportunities_statuses = (curr.opportunities_statuses || 'pending,pending,pending').split(',');
+          
+          const filtered_strengths = strengths_array.filter((_, index) => strengths_statuses[index] === 'active');
+          const filtered_challenges = challenges_array.filter((_, index) => challenges_statuses[index] === 'active');
+          const filtered_opportunities = opportunities_array.filter((_, index) => opportunities_statuses[index] === 'active');
+
+          if (filtered_strengths.length > 0) {
+            acc[curr.dimension].strengths += '\n\n' + filtered_strengths.join('\n\n');
+          }
+          if (filtered_challenges.length > 0) {
+            acc[curr.dimension].challenges += '\n\n' + filtered_challenges.join('\n\n');
+          }
+          if (filtered_opportunities.length > 0) {
+            acc[curr.dimension].opportunities += '\n\n' + filtered_opportunities.join('\n\n');
+          }
         }
         return acc;
       }, {});
