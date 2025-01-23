@@ -84,7 +84,10 @@ export const QuestionnaireResponses = () => {
       const statuses = (questionnaire[`${type}_statuses`] || 'pending,pending,pending').split(',')
         .map((status, i) => i === index ? (status === 'active' ? 'pending' : 'active') : status);
 
-      const newStatus = statuses[index];
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
 
       // Update the questionnaire status
       const { error: updateError } = await supabase
@@ -98,7 +101,7 @@ export const QuestionnaireResponses = () => {
       if (updateError) throw updateError;
 
       // Handle voting table updates
-      if (newStatus === 'active') {
+      if (statuses[index] === 'active') {
         const { error: voteError } = await supabase
           .from('questionnaire_votes')
           .insert({
@@ -106,10 +109,12 @@ export const QuestionnaireResponses = () => {
             option_type: type,
             option_number: index + 1,
             vote_type: 'upvote',
-            user_id: questionnaire.user_id
+            user_id: user.id
           });
 
-        if (voteError) throw voteError;
+        if (voteError && voteError.code !== '23505') { // Ignore duplicate key errors
+          throw voteError;
+        }
       } else {
         const { error: deleteError } = await supabase
           .from('questionnaire_votes')
@@ -117,7 +122,8 @@ export const QuestionnaireResponses = () => {
           .match({
             questionnaire_id: questionnaire.id,
             option_type: type,
-            option_number: index + 1
+            option_number: index + 1,
+            user_id: user.id
           });
 
         if (deleteError) throw deleteError;
@@ -164,8 +170,8 @@ export const QuestionnaireResponses = () => {
                      editingLine?.type === type && 
                      editingLine?.index === index;
 
-    const statuses = (questionnaire[`${type}_statuses`] || 'active,active,active').split(',');
-    const currentStatus = statuses[index] || 'active';
+    const statuses = (questionnaire[`${type}_statuses`] || 'pending,pending,pending').split(',');
+    const currentStatus = statuses[index] || 'pending';
 
     if (isEditing) {
       return (
@@ -208,11 +214,12 @@ export const QuestionnaireResponses = () => {
             variant="ghost"
             size="sm"
             onClick={() => handleToggleStatus(questionnaire.id, type, index, currentStatus)}
+            className={currentStatus === 'active' ? 'bg-primary/10' : ''}
           >
             {currentStatus === 'pending' ? (
               <Circle className="h-4 w-4" />
             ) : (
-              <Check className="h-4 w-4" />
+              <Check className="h-4 w-4 text-primary" />
             )}
           </Button>
         </div>
