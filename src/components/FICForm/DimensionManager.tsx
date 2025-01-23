@@ -28,6 +28,7 @@ export function DimensionManager() {
         .order('label');
 
       if (error) {
+        console.error("Error fetching dimensions:", error);
         toast.error('Erro ao carregar dimensões');
         throw error;
       }
@@ -54,7 +55,10 @@ export function DimensionManager() {
         .from('fic_dimensions')
         .insert([{ label, identifier, background_color: '#F1F0FB' }]);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error adding dimension:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dimensions'] });
@@ -62,6 +66,7 @@ export function DimensionManager() {
       toast.success('Dimensão adicionada com sucesso');
     },
     onError: (error: Error) => {
+      console.error("Error in add mutation:", error);
       toast.error(error.message || 'Erro ao adicionar dimensão');
     },
   });
@@ -87,7 +92,10 @@ export function DimensionManager() {
         })
         .eq('id', dimension.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating dimension:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dimensions'] });
@@ -95,6 +103,7 @@ export function DimensionManager() {
       toast.success('Dimensão atualizada com sucesso');
     },
     onError: (error: Error) => {
+      console.error("Error in update mutation:", error);
       toast.error(error.message || 'Erro ao atualizar dimensão');
     },
   });
@@ -107,7 +116,7 @@ export function DimensionManager() {
         .eq('id', id);
 
       if (error) {
-        console.error('Error deleting dimension:', error);
+        console.error("Error deleting dimension:", error);
         throw error;
       }
     },
@@ -116,18 +125,22 @@ export function DimensionManager() {
       toast.success('Dimensão excluída com sucesso');
     },
     onError: (error: any) => {
-      console.error('Error in delete mutation:', error);
+      console.error("Error in delete mutation:", error);
       toast.error('Erro ao excluir dimensão');
     },
   });
 
-  const handleAddDimension = (e: React.FormEvent) => {
+  const handleAddDimension = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDimension.trim()) {
       toast.error('Digite o nome da dimensão');
       return;
     }
-    addDimensionMutation.mutate(newDimension);
+    try {
+      await addDimensionMutation.mutateAsync(newDimension);
+    } catch (error) {
+      console.error("Error in handleAddDimension:", error);
+    }
   };
 
   const handleUpdateDimension = async (e: React.FormEvent) => {
@@ -136,7 +149,11 @@ export function DimensionManager() {
       toast.error('Digite o nome da dimensão');
       return;
     }
-    await updateDimensionMutation.mutateAsync(editingDimension);
+    try {
+      await updateDimensionMutation.mutateAsync(editingDimension);
+    } catch (error) {
+      console.error("Error in handleUpdateDimension:", error);
+    }
   };
 
   const handleDeleteDimension = async (id: string) => {
@@ -144,7 +161,7 @@ export function DimensionManager() {
       try {
         await deleteDimensionMutation.mutateAsync(id);
       } catch (error) {
-        console.error('Error in handleDeleteDimension:', error);
+        console.error("Error in handleDeleteDimension:", error);
       }
     }
   };
