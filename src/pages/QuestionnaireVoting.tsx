@@ -3,13 +3,13 @@ import { Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
 import { EmailInput } from "@/components/EmailInput";
 import { QuestionnaireCard } from "@/components/QuestionnaireCard";
+import { Button } from "@/components/ui/button";
 
 export const QuestionnaireVoting = () => {
   const [userEmail, setUserEmail] = useState("");
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: questionnaires, isLoading } = useQuery({
@@ -35,7 +35,29 @@ export const QuestionnaireVoting = () => {
 
       return questionnairesData;
     },
+    enabled: isEmailVerified, // Only fetch when email is verified
   });
+
+  const verifyEmail = async () => {
+    if (!userEmail) {
+      toast.error('Por favor, insira seu email');
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', userEmail)
+      .single();
+
+    if (error || !data) {
+      toast.error('Email não encontrado no sistema');
+      return;
+    }
+
+    setIsEmailVerified(true);
+    toast.success('Email verificado com sucesso!');
+  };
 
   const voteMutation = useMutation({
     mutationFn: async ({ questionnaireId, optionType, optionNumber, voteType, email }: { 
@@ -121,38 +143,53 @@ export const QuestionnaireVoting = () => {
     voteMutation.mutate({ questionnaireId, optionType, optionNumber, voteType, email: userEmail });
   };
 
-  return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gray-50">
-        <AppSidebar />
-        <main className="flex-1 p-8">
-          <div className="mb-8">
+  if (!isEmailVerified) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="w-full max-w-md space-y-6">
+          <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900">Sistema de Votação</h1>
-            <p className="text-gray-500">Vote nos questionários usando seu email cadastrado</p>
+            <p className="mt-2 text-gray-500">Digite seu email cadastrado para acessar o sistema de votação</p>
           </div>
-
           <EmailInput email={userEmail} onChange={setUserEmail} />
-
-          {isLoading ? (
-            <div className="flex items-center justify-center p-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {questionnaires?.map((questionnaire) => (
-                <QuestionnaireCard
-                  key={questionnaire.id}
-                  questionnaire={questionnaire}
-                  onVote={(optionType, optionNumber, voteType) => 
-                    handleVote(questionnaire.id, optionType, optionNumber, voteType)
-                  }
-                />
-              ))}
-            </div>
-          )}
-        </main>
+          <Button 
+            className="w-full" 
+            onClick={verifyEmail}
+          >
+            Acessar Sistema de Votação
+          </Button>
+        </div>
       </div>
-    </SidebarProvider>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Sistema de Votação</h1>
+          <p className="text-gray-500">Votando com o email: {userEmail}</p>
+        </div>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {questionnaires?.map((questionnaire) => (
+              <QuestionnaireCard
+                key={questionnaire.id}
+                questionnaire={questionnaire}
+                onVote={(optionType, optionNumber, voteType) => 
+                  handleVote(questionnaire.id, optionType, optionNumber, voteType)
+                }
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
