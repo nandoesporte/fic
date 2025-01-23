@@ -22,6 +22,7 @@ type ConsolidatedQuestionnaire = {
   challenges: string;
   opportunities: string;
   created_at: string;
+  questionnaire_ids: string[]; // Array to store original questionnaire IDs
 };
 
 export const QuestionnaireVoting = () => {
@@ -61,12 +62,14 @@ export const QuestionnaireVoting = () => {
             challenges: curr.challenges,
             opportunities: curr.opportunities,
             created_at: curr.created_at,
+            questionnaire_ids: [curr.id], // Initialize with first questionnaire ID
           };
         } else {
           // Combine the text content, separating with line breaks
           acc[curr.dimension].strengths += '\n\n' + curr.strengths;
           acc[curr.dimension].challenges += '\n\n' + curr.challenges;
           acc[curr.dimension].opportunities += '\n\n' + curr.opportunities;
+          acc[curr.dimension].questionnaire_ids.push(curr.id); // Add questionnaire ID to array
         }
         return acc;
       }, {});
@@ -118,17 +121,24 @@ export const QuestionnaireVoting = () => {
 
       if (!voter) throw new Error('Usuário não encontrado');
 
-      const votePromises = votes.flatMap(({ optionType, optionNumbers }) =>
-        optionNumbers.map(optionNumber =>
-          supabase
-            .from('questionnaire_votes')
-            .insert({
-              questionnaire_id: questionnaireId,
-              user_id: voter.id,
-              vote_type: 'upvote',
-              option_type: optionType,
-              option_number: optionNumber,
-            })
+      // Find the consolidated questionnaire
+      const consolidatedQuestionnaire = questionnaires?.find(q => q.id === questionnaireId);
+      if (!consolidatedQuestionnaire) throw new Error('Questionário não encontrado');
+
+      // Create votes for each original questionnaire
+      const votePromises = consolidatedQuestionnaire.questionnaire_ids.flatMap(originalQuestionnaireId =>
+        votes.flatMap(({ optionType, optionNumbers }) =>
+          optionNumbers.map(optionNumber =>
+            supabase
+              .from('questionnaire_votes')
+              .insert({
+                questionnaire_id: originalQuestionnaireId, // Use original questionnaire ID
+                user_id: voter.id,
+                vote_type: 'upvote',
+                option_type: optionType,
+                option_number: optionNumber,
+              })
+          )
         )
       );
 
