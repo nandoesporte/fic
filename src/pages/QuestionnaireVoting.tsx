@@ -90,29 +90,35 @@ export const QuestionnaireVoting = () => {
       return;
     }
 
-    const { data, error } = await supabase
-      .from('registered_voters')
-      .select('id')
-      .eq('email', userEmail.toLowerCase())
-      .maybeSingle();
+    try {
+      const { data: voterData, error: voterError } = await supabase
+        .from('registered_voters')
+        .select('*')
+        .eq('email', userEmail.toLowerCase())
+        .maybeSingle();
 
-    if (error) {
-      toast.error('Erro ao verificar email');
-      return;
+      if (voterError) {
+        console.error('Erro ao verificar email:', voterError);
+        toast.error('Erro ao verificar email');
+        return;
+      }
+
+      if (!voterData) {
+        toast.error('Email não encontrado no sistema. Por favor, verifique se digitou corretamente.');
+        return;
+      }
+
+      if (session.user.email !== userEmail) {
+        toast.error('O email informado não corresponde ao usuário autenticado');
+        return;
+      }
+
+      setIsEmailVerified(true);
+      toast.success('Email verificado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao verificar email:', error);
+      toast.error('Erro ao verificar email. Por favor, tente novamente.');
     }
-
-    if (!data) {
-      toast.error('Email não encontrado no sistema');
-      return;
-    }
-
-    if (session.user.email !== userEmail) {
-      toast.error('O email informado não corresponde ao usuário autenticado');
-      return;
-    }
-
-    setIsEmailVerified(true);
-    toast.success('Email verificado com sucesso!');
   };
 
   const submitVotesMutation = useMutation({
