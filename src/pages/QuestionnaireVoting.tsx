@@ -113,13 +113,10 @@ export const QuestionnaireVoting = () => {
         optionNumbers: number[];
       }[];
     }) => {
-      const { data: voter } = await supabase
-        .from('registered_voters')
-        .select('id')
-        .eq('email', userEmail.toLowerCase())
-        .single();
-
-      if (!voter) throw new Error('Usuário não encontrado');
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.user?.id) {
+        throw new Error('User not authenticated');
+      }
 
       // Find the consolidated questionnaire
       const consolidatedQuestionnaire = questionnaires?.find(q => q.id === questionnaireId);
@@ -132,8 +129,8 @@ export const QuestionnaireVoting = () => {
             supabase
               .from('questionnaire_votes')
               .insert({
-                questionnaire_id: originalQuestionnaireId, // Use original questionnaire ID
-                user_id: voter.id,
+                questionnaire_id: originalQuestionnaireId,
+                user_id: session.session.user.id, // Use the authenticated user's ID
                 vote_type: 'upvote',
                 option_type: optionType,
                 option_number: optionNumber,
