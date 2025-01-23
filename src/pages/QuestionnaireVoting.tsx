@@ -35,7 +35,7 @@ export const QuestionnaireVoting = () => {
 
       return questionnairesData;
     },
-    enabled: isEmailVerified, // Only fetch when email is verified
+    enabled: isEmailVerified,
   });
 
   const verifyEmail = async () => {
@@ -45,12 +45,17 @@ export const QuestionnaireVoting = () => {
     }
 
     const { data, error } = await supabase
-      .from('profiles')
+      .from('registered_voters')
       .select('id')
-      .eq('email', userEmail)
-      .single();
+      .eq('email', userEmail.toLowerCase())
+      .maybeSingle();
 
-    if (error || !data) {
+    if (error) {
+      toast.error('Erro ao verificar email');
+      return;
+    }
+
+    if (!data) {
       toast.error('Email não encontrado no sistema');
       return;
     }
@@ -60,20 +65,19 @@ export const QuestionnaireVoting = () => {
   };
 
   const voteMutation = useMutation({
-    mutationFn: async ({ questionnaireId, optionType, optionNumber, voteType, email }: { 
+    mutationFn: async ({ questionnaireId, optionType, optionNumber, voteType }: { 
       questionnaireId: string; 
       optionType: 'strengths' | 'challenges' | 'opportunities';
       optionNumber: number;
       voteType: 'upvote' | 'downvote';
-      email: string;
     }) => {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
+      const { data: voter, error: voterError } = await supabase
+        .from('registered_voters')
         .select('id')
-        .eq('email', email)
-        .single();
+        .eq('email', userEmail.toLowerCase())
+        .maybeSingle();
 
-      if (profileError || !profile) {
+      if (voterError || !voter) {
         throw new Error('Email não encontrado');
       }
 
@@ -81,7 +85,7 @@ export const QuestionnaireVoting = () => {
         .from('questionnaire_votes')
         .select('*')
         .eq('questionnaire_id', questionnaireId)
-        .eq('user_id', profile.id)
+        .eq('user_id', voter.id)
         .eq('option_type', optionType)
         .eq('option_number', optionNumber)
         .maybeSingle();
@@ -96,7 +100,7 @@ export const QuestionnaireVoting = () => {
             .from('questionnaire_votes')
             .delete()
             .eq('questionnaire_id', questionnaireId)
-            .eq('user_id', profile.id)
+            .eq('user_id', voter.id)
             .eq('option_type', optionType)
             .eq('option_number', optionNumber);
           
@@ -106,7 +110,7 @@ export const QuestionnaireVoting = () => {
             .from('questionnaire_votes')
             .update({ vote_type: voteType })
             .eq('questionnaire_id', questionnaireId)
-            .eq('user_id', profile.id)
+            .eq('user_id', voter.id)
             .eq('option_type', optionType)
             .eq('option_number', optionNumber);
           
@@ -117,7 +121,7 @@ export const QuestionnaireVoting = () => {
           .from('questionnaire_votes')
           .insert({
             questionnaire_id: questionnaireId,
-            user_id: profile.id,
+            user_id: voter.id,
             vote_type: voteType,
             option_type: optionType,
             option_number: optionNumber,
@@ -140,7 +144,7 @@ export const QuestionnaireVoting = () => {
       toast.error('Por favor, insira seu email para votar');
       return;
     }
-    voteMutation.mutate({ questionnaireId, optionType, optionNumber, voteType, email: userEmail });
+    voteMutation.mutate({ questionnaireId, optionType, optionNumber, voteType });
   };
 
   if (!isEmailVerified) {
