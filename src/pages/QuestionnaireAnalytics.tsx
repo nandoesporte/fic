@@ -37,7 +37,8 @@ const QuestionnaireAnalytics = () => {
             challenges,
             opportunities
           )
-        `);
+        `)
+        .filter('upvotes', 'gt', 0);
 
       if (error) throw error;
 
@@ -97,7 +98,7 @@ const QuestionnaireAnalytics = () => {
         case "challenges":
           return "bg-[#FFD700] text-gray-900 shadow-lg hover:shadow-xl transition-all duration-300";
         case "opportunities":
-          return "bg-[#221F26] text-white shadow-lg hover:shadow-xl transition-all duration-300";
+          return "bg-[#000080] text-white shadow-lg hover:shadow-xl transition-all duration-300";
         default:
           return "bg-white text-gray-900";
       }
@@ -130,10 +131,10 @@ const QuestionnaireAnalytics = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gray-50">
         <AppSidebar />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Análise de Votos</h1>
-            <p className="text-gray-600">Visualização detalhada dos votos por questionário</p>
+            <h1 className="text-3xl font-bold text-gray-900">Análise de Votos</h1>
+            <p className="text-gray-500">Visualização detalhada dos votos por questionário</p>
           </div>
 
           {isLoading ? (
@@ -177,7 +178,7 @@ const QuestionnaireAnalytics = () => {
                   <TabsTrigger value="challenges" className="data-[state=active]:bg-[#FFD700] data-[state=active]:text-gray-900 px-6">
                     Desafios
                   </TabsTrigger>
-                  <TabsTrigger value="opportunities" className="data-[state=active]:bg-[#221F26] data-[state=active]:text-white px-6">
+                  <TabsTrigger value="opportunities" className="data-[state=active]:bg-[#000080] data-[state=active]:text-white px-6">
                     Oportunidades
                   </TabsTrigger>
                 </TabsList>
