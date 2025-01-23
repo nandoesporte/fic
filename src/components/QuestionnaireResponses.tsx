@@ -5,8 +5,6 @@ import { Edit, Trash2, Loader2, Download, RefreshCw } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -17,7 +15,6 @@ import {
 
 export const QuestionnaireResponses = () => {
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<string | null>(null);
-  const [selectedGroup, setSelectedGroup] = useState<string>("todos");
   const [selectedDimension, setSelectedDimension] = useState<string>("todos");
   const [editingLine, setEditingLine] = useState<{
     questionnaireId: string;
@@ -186,31 +183,8 @@ export const QuestionnaireResponses = () => {
     );
   }
 
-  const getBgColor = (title: string) => {
-    switch (title) {
-      case "Pontos Fortes":
-        return "bg-[#228B22]";
-      case "Desafios":
-        return "bg-[#FFD700]";
-      case "Oportunidades":
-        return "bg-[#000080]";
-      default:
-        return "";
-    }
-  };
-
-  const getTextColor = (title: string) => {
-    return title === "Desafios" ? "text-gray-900" : "text-white";
-  };
-
   const splitText = (text: string): string[] => {
     return text.split('\n').filter(line => line.trim() !== '');
-  };
-
-  const getUniqueGroups = () => {
-    if (!questionnaires) return [];
-    const groups = questionnaires.map(q => q.group || 'Sem grupo').filter((value, index, self) => self.indexOf(value) === index);
-    return groups;
   };
 
   const getUniqueDimensions = () => {
@@ -223,13 +197,16 @@ export const QuestionnaireResponses = () => {
     if (!questionnaires) return [];
     let filtered = questionnaires;
     
-    if (selectedGroup !== "todos") {
-      filtered = filtered.filter(q => (q.group || 'Sem grupo') === selectedGroup);
-    }
-    
     if (selectedDimension !== "todos") {
       filtered = filtered.filter(q => q.dimension === selectedDimension);
     }
+    
+    // Sort by group in ascending order
+    filtered.sort((a, b) => {
+      const groupA = a.group || '';
+      const groupB = b.group || '';
+      return groupA.localeCompare(groupB);
+    });
     
     return filtered;
   };
@@ -300,7 +277,6 @@ export const QuestionnaireResponses = () => {
     }
   };
 
-  const uniqueGroups = getUniqueGroups();
   const uniqueDimensions = getUniqueDimensions();
 
   return (
@@ -315,19 +291,6 @@ export const QuestionnaireResponses = () => {
             {uniqueDimensions.map((dimension) => (
               <SelectItem key={dimension} value={dimension}>
                 {dimension}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Selecione um grupo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os grupos</SelectItem>
-            {uniqueGroups.map((group) => (
-              <SelectItem key={group} value={group}>
-                {group}
               </SelectItem>
             ))}
           </SelectContent>
@@ -374,7 +337,7 @@ export const QuestionnaireResponses = () => {
                 </p>
                 <div className="space-y-4">
                   <div>
-                    <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Pontos Fortes")} ${getTextColor("Pontos Fortes")}`}>
+                    <h4 className={`font-medium p-2 rounded-lg bg-[#228B22] text-white`}>
                       Pontos Fortes
                     </h4>
                     <div className="space-y-2 mt-2">
@@ -386,7 +349,7 @@ export const QuestionnaireResponses = () => {
                     </div>
                   </div>
                   <div>
-                    <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Desafios")} ${getTextColor("Desafios")}`}>
+                    <h4 className={`font-medium p-2 rounded-lg bg-[#FFD700] text-gray-900`}>
                       Desafios
                     </h4>
                     <div className="space-y-2 mt-2">
@@ -398,7 +361,7 @@ export const QuestionnaireResponses = () => {
                     </div>
                   </div>
                   <div>
-                    <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Oportunidades")} ${getTextColor("Oportunidades")}`}>
+                    <h4 className={`font-medium p-2 rounded-lg bg-[#000080] text-white`}>
                       Oportunidades
                     </h4>
                     <div className="space-y-2 mt-2">
