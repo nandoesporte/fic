@@ -456,6 +456,13 @@ export type Database = {
             foreignKeyName: "questionnaire_votes_questionnaire_id_fkey"
             columns: ["questionnaire_id"]
             isOneToOne: false
+            referencedRelation: "active_questionnaire_responses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questionnaire_votes_questionnaire_id_fkey"
+            columns: ["questionnaire_id"]
+            isOneToOne: false
             referencedRelation: "fic_questionnaires"
             referencedColumns: ["id"]
           },
@@ -660,6 +667,40 @@ export type Database = {
       }
     }
     Views: {
+      active_questionnaire_responses: {
+        Row: {
+          challenge: string | null
+          challenge_status: string | null
+          challenges: string | null
+          challenges_statuses: string | null
+          created_at: string | null
+          dimension: string | null
+          group: string | null
+          group_name: string | null
+          id: string | null
+          opportunities: string | null
+          opportunities_statuses: string | null
+          opportunity: string | null
+          opportunity_status: string | null
+          satisfaction: number | null
+          status: string | null
+          strength: string | null
+          strength_status: string | null
+          strengths: string | null
+          strengths_statuses: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fic_questionnaires_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fic_questionnaire_analytics: {
         Row: {
           avg_satisfaction: number | null
@@ -679,6 +720,13 @@ export type Database = {
           upvotes: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "questionnaire_votes_questionnaire_id_fkey"
+            columns: ["questionnaire_id"]
+            isOneToOne: false
+            referencedRelation: "active_questionnaire_responses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "questionnaire_votes_questionnaire_id_fkey"
             columns: ["questionnaire_id"]
