@@ -45,7 +45,7 @@ export function DimensionSelect({ form }: DimensionSelectProps) {
           <FormLabel>Dimensão</FormLabel>
           <Select onValueChange={field.onChange} defaultValue={field.value}>
             <FormControl>
-              <SelectTrigger>
+              <SelectTrigger className="bg-[#F97316] bg-opacity-10 border-[#F97316] border-opacity-20">
                 <SelectValue placeholder="Selecione uma dimensão" />
               </SelectTrigger>
             </FormControl>

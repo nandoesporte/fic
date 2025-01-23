@@ -8,7 +8,6 @@ import { useEffect, useState } from "react";
 import { GroupSelect } from "./FICForm/GroupSelect";
 import { DimensionSelect } from "./FICForm/DimensionSelect";
 import { TextAreaSection } from "./FICForm/TextAreaSection";
-import { SatisfactionSelect } from "./FICForm/SatisfactionSelect";
 import { formSchema, type FICFormSchema } from "./FICForm/types";
 
 export function FICForm() {
@@ -28,7 +27,6 @@ export function FICForm() {
   const form = useForm<FICFormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      satisfaction: undefined,
       strengths1: "",
       strengths2: "",
       strengths3: "",
@@ -52,7 +50,6 @@ export function FICForm() {
       const { error } = await supabase.from("fic_questionnaires").insert({
         dimension: values.dimension,
         group: values.group,
-        satisfaction: values.satisfaction,
         strengths: [values.strengths1, values.strengths2, values.strengths3].join('\n\n'),
         challenges: [values.challenges1, values.challenges2, values.challenges3].join('\n\n'),
         opportunities: [values.opportunities1, values.opportunities2, values.opportunities3].join('\n\n'),
@@ -77,7 +74,6 @@ export function FICForm() {
         <div className="space-y-6">
           <GroupSelect form={form} />
           <DimensionSelect form={form} />
-          <SatisfactionSelect form={form} />
 
           <TextAreaSection
             form={form}
