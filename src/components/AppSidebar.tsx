@@ -2,14 +2,14 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sidebar, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Sidebar } from "@/components/ui/sidebar";
 import { FileText, BarChart2, Database, FormInput, LayoutDashboard } from "lucide-react";
 
 export function AppSidebar() {
   const { pathname } = useLocation();
 
   return (
-    <Sidebar className="border-r bg-gray-100/40 w-[300px]" collapsible="icon">
+    <Sidebar className="border-r bg-gray-100/40 w-[300px]">
       <ScrollArea className="h-full">
         <div className="space-y-4 py-4">
           <div className="px-3 py-2">
@@ -20,7 +20,7 @@ export function AppSidebar() {
                   className="w-full justify-start"
                 >
                   <LayoutDashboard className="mr-2 h-4 w-4" />
-                  <span>Dashboard</span>
+                  Dashboard
                 </Button>
               </Link>
               <Link to="/formulario">
@@ -29,7 +29,7 @@ export function AppSidebar() {
                   className="w-full justify-start"
                 >
                   <FormInput className="mr-2 h-4 w-4" />
-                  <span>Formulário</span>
+                  Formulário
                 </Button>
               </Link>
               <Link to="/voting">
@@ -38,7 +38,7 @@ export function AppSidebar() {
                   className="w-full justify-start"
                 >
                   <FileText className="mr-2 h-4 w-4" />
-                  <span>Questionários</span>
+                  Questionários
                 </Button>
               </Link>
               <Link to="/analytics">
@@ -47,7 +47,7 @@ export function AppSidebar() {
                   className="w-full justify-start"
                 >
                   <BarChart2 className="mr-2 h-4 w-4" />
-                  <span>Análise de Votos</span>
+                  Análise de Votos
                 </Button>
               </Link>
               <Link to="/export">
@@ -56,7 +56,7 @@ export function AppSidebar() {
                   className="w-full justify-start"
                 >
                   <Database className="mr-2 h-4 w-4" />
-                  <span>Exportar Dados</span>
+                  Exportar Dados
                 </Button>
               </Link>
             </div>
