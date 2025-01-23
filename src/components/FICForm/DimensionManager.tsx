@@ -40,7 +40,6 @@ export function DimensionManager() {
     mutationFn: async (label: string) => {
       const identifier = label.toLowerCase().replace(/\s+/g, '-');
       
-      // Check if dimension with same label or identifier already exists
       const { data: existingDimension } = await supabase
         .from('fic_dimensions')
         .select('id')
@@ -69,7 +68,6 @@ export function DimensionManager() {
 
   const updateDimensionMutation = useMutation({
     mutationFn: async (dimension: Dimension) => {
-      // Check if another dimension with same label exists (excluding current one)
       const { data: existingDimension } = await supabase
         .from('fic_dimensions')
         .select('id')
@@ -226,6 +224,7 @@ export function DimensionManager() {
                       variant="ghost"
                       size="icon"
                       onClick={() => setEditingDimension(dimension)}
+                      disabled={updateDimensionMutation.isPending || deleteDimensionMutation.isPending}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -233,6 +232,7 @@ export function DimensionManager() {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleDeleteDimension(dimension.id)}
+                      disabled={updateDimensionMutation.isPending || deleteDimensionMutation.isPending}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
