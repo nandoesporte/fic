@@ -1,30 +1,28 @@
 import { Button } from "@/components/ui/button";
-import { ThumbsUp, ThumbsDown } from "lucide-react";
+import { CheckSquare } from "lucide-react";
 
 interface VoteButtonsProps {
   upvotes: number;
   downvotes: number;
   onVote: (voteType: 'upvote' | 'downvote') => void;
+  isSelected?: boolean;
+  disabled?: boolean;
 }
 
-export const VoteButtons = ({ upvotes, downvotes, onVote }: VoteButtonsProps) => {
+export const VoteButtons = ({ upvotes, downvotes, onVote, isSelected, disabled }: VoteButtonsProps) => {
+  const totalVotes = upvotes - downvotes;
+  
   return (
     <div className="flex items-center gap-2">
       <Button
-        variant="outline"
+        variant={isSelected ? "default" : "outline"}
         size="sm"
         onClick={() => onVote('upvote')}
+        disabled={disabled}
+        className={isSelected ? "bg-green-600 hover:bg-green-700" : ""}
       >
-        <ThumbsUp className="h-4 w-4 mr-1" />
-        {upvotes}
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => onVote('downvote')}
-      >
-        <ThumbsDown className="h-4 w-4 mr-1" />
-        {downvotes}
+        <CheckSquare className="h-4 w-4 mr-1" />
+        {totalVotes}
       </Button>
     </div>
   );
