@@ -7,9 +7,6 @@ export const formSchema = z.object({
   dimension: z.string({
     required_error: "Por favor selecione uma dimensão.",
   }),
-  satisfaction: z.number({
-    required_error: "Por favor selecione um nível de satisfação.",
-  }).min(1).max(10),
   strengths1: z.string().min(10, {
     message: "O primeiro ponto forte deve ter pelo menos 10 caracteres.",
   }),

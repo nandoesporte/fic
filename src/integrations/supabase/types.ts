@@ -205,6 +205,7 @@ export type Database = {
       }
       fic_dimensions: {
         Row: {
+          background_color: string | null
           created_at: string | null
           id: string
           identifier: string
@@ -212,6 +213,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          background_color?: string | null
           created_at?: string | null
           id?: string
           identifier: string
@@ -219,6 +221,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          background_color?: string | null
           created_at?: string | null
           id?: string
           identifier?: string

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Plus, Edit, Trash2, Save, X } from "lucide-react";
+import { Plus, Edit, Trash2, Save, X, Palette } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ interface Dimension {
   id: string;
   label: string;
   identifier: string;
+  background_color?: string;
 }
 
 export function DimensionManager() {
@@ -40,7 +41,7 @@ export function DimensionManager() {
       const identifier = label.toLowerCase().replace(/\s+/g, '-');
       const { error } = await supabase
         .from('fic_dimensions')
-        .insert([{ label, identifier }]);
+        .insert([{ label, identifier, background_color: '#F1F0FB' }]);
 
       if (error) throw error;
     },
@@ -58,7 +59,10 @@ export function DimensionManager() {
     mutationFn: async (dimension: Dimension) => {
       const { error } = await supabase
         .from('fic_dimensions')
-        .update({ label: dimension.label })
+        .update({ 
+          label: dimension.label,
+          background_color: dimension.background_color 
+        })
         .eq('id', dimension.id);
 
       if (error) throw error;
@@ -140,7 +144,8 @@ export function DimensionManager() {
           dimensions?.map((dimension) => (
             <div
               key={dimension.id}
-              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+              className="flex items-center justify-between p-3 rounded-lg"
+              style={{ backgroundColor: dimension.background_color }}
             >
               {editingDimension?.id === dimension.id ? (
                 <form onSubmit={handleUpdateDimension} className="flex-1 flex gap-2">
@@ -152,6 +157,17 @@ export function DimensionManager() {
                         label: e.target.value,
                       })
                     }
+                  />
+                  <Input
+                    type="color"
+                    value={editingDimension.background_color || '#F1F0FB'}
+                    onChange={(e) =>
+                      setEditingDimension({
+                        ...editingDimension,
+                        background_color: e.target.value,
+                      })
+                    }
+                    className="w-16 p-1 h-10"
                   />
                   <Button type="submit" variant="ghost" size="icon">
                     <Save className="h-4 w-4" />
