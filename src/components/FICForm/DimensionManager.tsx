@@ -44,7 +44,7 @@ export function DimensionManager() {
       const { data: existingDimension } = await supabase
         .from('fic_dimensions')
         .select('id')
-        .or(`label.eq.${label},identifier.eq.${identifier}`)
+        .or(`label.eq."${label}",identifier.eq."${identifier}"`)
         .maybeSingle();
 
       if (existingDimension) {
