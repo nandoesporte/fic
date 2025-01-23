@@ -38,7 +38,14 @@ export const QuestionnaireResponses = () => {
         throw questionnairesError;
       }
 
-      return questionnairesData;
+      // Modify the data to set all statuses as 'active' by default
+      return questionnairesData?.map(q => ({
+        ...q,
+        strengths_statuses: 'active,active,active',
+        challenges_statuses: 'active,active,active',
+        opportunities_statuses: 'active,active,active',
+        status: 'active'
+      }));
     },
   });
 
@@ -76,7 +83,8 @@ export const QuestionnaireResponses = () => {
       if (!questionnaire) return;
 
       const lines = splitText(questionnaire[type]);
-      const statuses = lines.map((_, i) => i === index ? (currentStatus === 'pending' ? 'active' : 'pending') : 'pending');
+      const statuses = (questionnaire[`${type}_statuses`] || 'active,active,active').split(',')
+        .map((status, i) => i === index ? (status === 'active' ? 'pending' : 'active') : status);
 
       const { error } = await supabase
         .from('fic_questionnaires')
