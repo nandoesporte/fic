@@ -48,29 +48,6 @@ export const QuestionnaireResponses = () => {
     },
   });
 
-  const updateLineMutation = useMutation({
-    mutationFn: async ({ questionnaireId, type, lines }: { 
-      questionnaireId: string; 
-      type: 'strengths' | 'challenges' | 'opportunities';
-      lines: string[];
-    }) => {
-      const { error } = await supabase
-        .from('fic_questionnaires')
-        .update({ [type]: lines.join('\n\n') })
-        .eq('id', questionnaireId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
-      toast.success('Linha atualizada com sucesso');
-      setEditingLine(null);
-    },
-    onError: () => {
-      toast.error('Erro ao atualizar linha');
-    },
-  });
-
   const toggleStatusMutation = useMutation({
     mutationFn: async ({ questionnaireId, type, index, currentStatus }: { 
       questionnaireId: string; 
@@ -227,102 +204,8 @@ export const QuestionnaireResponses = () => {
     );
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   const splitText = (text: string): string[] => {
     return text.split('\n').filter(line => line.trim() !== '');
-  };
-
-  const getUniqueDimensions = () => {
-    if (!questionnaires) return [];
-    const dimensions = questionnaires.map(q => q.dimension).filter((value, index, self) => self.indexOf(value) === index);
-    return dimensions;
-  };
-
-  const filterQuestionnaires = (questionnaires: any[]) => {
-    if (!questionnaires) return [];
-    let filtered = questionnaires;
-    
-    if (selectedDimension !== "todos") {
-      filtered = filtered.filter(q => q.dimension === selectedDimension);
-    }
-    
-    filtered.sort((a, b) => {
-      const groupA = a.group || '';
-      const groupB = b.group || '';
-      return groupA.localeCompare(groupB);
-    });
-    
-    return filtered;
-  };
-
-  const handleExport = () => {
-    const filteredData = filterQuestionnaires(questionnaires || []);
-    const csvContent = filteredData.map(q => {
-      return {
-        Dimensao: q.dimension,
-        Grupo: q.group || 'Sem grupo',
-        'Pontos Fortes': q.strengths.replace(/\n\n/g, ' | '),
-        Desafios: q.challenges.replace(/\n\n/g, ' | '),
-        Oportunidades: q.opportunities.replace(/\n\n/g, ' | '),
-        'Data de Criação': new Date(q.created_at).toLocaleDateString('pt-BR')
-      };
-    });
-
-    const csvString = [
-      Object.keys(csvContent[0]).join(','),
-      ...csvContent.map(row => Object.values(row).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'questionarios.csv';
-    link.click();
-    toast.success('Dados exportados com sucesso!');
-  };
-
-  const handleClear = async () => {
-    if (window.confirm('Tem certeza que deseja limpar todos os questionários? Esta ação não pode ser desfeita.')) {
-      try {
-        const { data: questionnaires, error: fetchError } = await supabase
-          .from('fic_questionnaires')
-          .select('*');
-          
-        if (fetchError) throw fetchError;
-
-        if (questionnaires && questionnaires.length > 0) {
-          const { error: backupError } = await supabase
-            .from('data_backups')
-            .insert({
-              filename: `questionarios_${new Date().toISOString()}.json`,
-              data: questionnaires,
-              type: 'questionnaires'
-            });
-            
-          if (backupError) throw backupError;
-        }
-
-        const { error: deleteError } = await supabase
-          .from('fic_questionnaires')
-          .delete()
-          .not('id', 'is', null);
-
-        if (deleteError) throw deleteError;
-        
-        queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
-        toast.success('Questionários limpos com sucesso e backup criado!');
-      } catch (error) {
-        console.error('Error:', error);
-        toast.error('Erro ao limpar questionários');
-      }
-    }
   };
 
   return (
