@@ -42,7 +42,6 @@ const QuestionnaireAnalytics = () => {
 
       if (error) throw error;
 
-      // Process the data to include the option text
       const processedVotes = votes.map((vote) => {
         let optionText = "";
         if (vote.fic_questionnaires) {
@@ -52,7 +51,7 @@ const QuestionnaireAnalytics = () => {
               ? vote.fic_questionnaires.challenges
               : vote.fic_questionnaires.opportunities;
           
-          const optionsList = options?.split('\n').filter(Boolean) || [];
+          const optionsList = options?.split('\n\n').filter(Boolean) || [];
           optionText = optionsList[vote.option_number - 1] || "";
         }
         return {

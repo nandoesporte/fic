@@ -107,8 +107,8 @@ export const QuestionnaireVoting = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
+      queryClient.invalidateQueries({ queryKey: ['questionnaire-votes'] });
       toast.success('Votos registrados com sucesso!');
-      // Limpar seleções após o sucesso
       setSelections({});
     },
     onError: (error) => {
@@ -126,7 +126,6 @@ export const QuestionnaireVoting = () => {
     const isSelected = currentSelections.includes(optionNumber);
 
     if (isSelected) {
-      // Remove selection
       setSelections(prev => ({
         ...prev,
         [questionnaireId]: {
@@ -135,7 +134,6 @@ export const QuestionnaireVoting = () => {
         }
       }));
     } else {
-      // Add selection if less than 3 options are selected
       if (currentSelections.length >= 3) {
         toast.error('Você já selecionou 3 opções nesta seção. Remova uma seleção para escolher outra.');
         return;
