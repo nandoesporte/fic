@@ -86,7 +86,7 @@ export const QuestionnaireResponses = () => {
 
       const newStatus = statuses[index];
 
-      // First update the questionnaire status
+      // Update the questionnaire status
       const { error: updateError } = await supabase
         .from('fic_questionnaires')
         .update({ 
@@ -97,38 +97,30 @@ export const QuestionnaireResponses = () => {
 
       if (updateError) throw updateError;
 
-      // Then handle the voting table
+      // Handle voting table updates
       if (newStatus === 'active') {
-        // Add to voting
         const { error: voteError } = await supabase
           .from('questionnaire_votes')
           .insert({
-            questionnaire_id: questionnaire.id, // Use the actual questionnaire ID
+            questionnaire_id: questionnaire.id,
             option_type: type,
-            option_number: index,
+            option_number: index + 1,
             vote_type: 'upvote',
             user_id: questionnaire.user_id
           });
 
-        if (voteError) {
-          console.error('Vote error:', voteError);
-          throw voteError;
-        }
+        if (voteError) throw voteError;
       } else {
-        // Remove from voting
         const { error: deleteError } = await supabase
           .from('questionnaire_votes')
           .delete()
           .match({
-            questionnaire_id: questionnaire.id, // Use the actual questionnaire ID
+            questionnaire_id: questionnaire.id,
             option_type: type,
-            option_number: index
+            option_number: index + 1
           });
 
-        if (deleteError) {
-          console.error('Delete error:', deleteError);
-          throw deleteError;
-        }
+        if (deleteError) throw deleteError;
       }
     },
     onSuccess: () => {
