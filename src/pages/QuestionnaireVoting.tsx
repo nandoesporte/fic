@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { EmailInput } from "@/components/EmailInput";
 import { QuestionnaireCard } from "@/components/QuestionnaireCard";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/components/AuthProvider";
 
 type VoteSelection = {
   [key: string]: {
@@ -22,7 +23,7 @@ type ConsolidatedQuestionnaire = {
   challenges: string;
   opportunities: string;
   created_at: string;
-  questionnaire_ids: string[]; // Array to store original questionnaire IDs
+  questionnaire_ids: string[];
 };
 
 export const QuestionnaireVoting = () => {
@@ -30,6 +31,7 @@ export const QuestionnaireVoting = () => {
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [selections, setSelections] = useState<VoteSelection>({});
   const queryClient = useQueryClient();
+  const { session } = useAuth();
 
   const { data: questionnaires, isLoading } = useQuery({
     queryKey: ['questionnaires'],
@@ -52,7 +54,6 @@ export const QuestionnaireVoting = () => {
         throw questionnairesError;
       }
 
-      // Consolidate questionnaires by dimension
       const consolidatedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: ConsolidatedQuestionnaire }, curr) => {
         if (!acc[curr.dimension]) {
           acc[curr.dimension] = {
@@ -85,6 +86,11 @@ export const QuestionnaireVoting = () => {
       return;
     }
 
+    if (!session?.user) {
+      toast.error('Você precisa estar autenticado para votar');
+      return;
+    }
+
     const { data, error } = await supabase
       .from('registered_voters')
       .select('id')
@@ -101,6 +107,11 @@ export const QuestionnaireVoting = () => {
       return;
     }
 
+    if (session.user.email !== userEmail) {
+      toast.error('O email informado não corresponde ao usuário autenticado');
+      return;
+    }
+
     setIsEmailVerified(true);
     toast.success('Email verificado com sucesso!');
   };
@@ -113,9 +124,8 @@ export const QuestionnaireVoting = () => {
         optionNumbers: number[];
       }[];
     }) => {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.user?.id) {
-        throw new Error('User not authenticated');
+      if (!session?.user?.id) {
+        throw new Error('Você precisa estar autenticado para votar');
       }
 
       // Find the consolidated questionnaire
@@ -130,7 +140,7 @@ export const QuestionnaireVoting = () => {
               .from('questionnaire_votes')
               .insert({
                 questionnaire_id: originalQuestionnaireId,
-                user_id: session.session.user.id, // Use the authenticated user's ID
+                user_id: session.user.id,
                 vote_type: 'upvote',
                 option_type: optionType,
                 option_number: optionNumber,
@@ -204,6 +214,19 @@ export const QuestionnaireVoting = () => {
   const getSelectionCount = (questionnaireId: string, optionType: string) => {
     return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.length || 0;
   };
+
+  if (!session?.user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="w-full max-w-md space-y-6">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-900">Sistema de Votação</h1>
+            <p className="mt-2 text-gray-500">Você precisa estar autenticado para acessar o sistema de votação</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!isEmailVerified) {
     return (
