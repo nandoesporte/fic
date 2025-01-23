@@ -263,16 +263,38 @@ export const QuestionnaireResponses = () => {
   const handleClear = async () => {
     if (window.confirm('Tem certeza que deseja limpar todos os questionários? Esta ação não pode ser desfeita.')) {
       try {
-        const { error } = await supabase
+        // First fetch all questionnaires to create backup
+        const { data: questionnaires, error: fetchError } = await supabase
+          .from('fic_questionnaires')
+          .select('*');
+          
+        if (fetchError) throw fetchError;
+
+        // Create backup if there are questionnaires
+        if (questionnaires && questionnaires.length > 0) {
+          const { error: backupError } = await supabase
+            .from('data_backups')
+            .insert({
+              filename: `questionarios_${new Date().toISOString()}.json`,
+              data: questionnaires,
+              type: 'questionnaires'
+            });
+            
+          if (backupError) throw backupError;
+        }
+
+        // Then proceed with deletion
+        const { error: deleteError } = await supabase
           .from('fic_questionnaires')
           .delete()
-          .not('id', 'is', null); // Delete all records
+          .not('id', 'is', null);
 
-        if (error) throw error;
+        if (deleteError) throw deleteError;
         
         queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
-        toast.success('Questionários limpos com sucesso!');
+        toast.success('Questionários limpos com sucesso e backup criado!');
       } catch (error) {
+        console.error('Error:', error);
         toast.error('Erro ao limpar questionários');
       }
     }
