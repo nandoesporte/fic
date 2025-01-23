@@ -41,10 +41,10 @@ export const QuestionnaireResponses = () => {
       // Modify the data to set all statuses as 'active' by default
       return questionnairesData?.map(q => ({
         ...q,
-        strengths_statuses: 'active,active,active',
-        challenges_statuses: 'active,active,active',
-        opportunities_statuses: 'active,active,active',
-        status: 'active'
+        strengths_statuses: q.strengths_statuses || 'active,active,active',
+        challenges_statuses: q.challenges_statuses || 'active,active,active',
+        opportunities_statuses: q.opportunities_statuses || 'active,active,active',
+        status: q.status || 'active'
       }));
     },
   });
@@ -136,8 +136,8 @@ export const QuestionnaireResponses = () => {
                      editingLine?.type === type && 
                      editingLine?.index === index;
 
-    const statuses = (questionnaire[`${type}_statuses`] || '').split(',');
-    const currentStatus = statuses[index] || 'pending';
+    const statuses = (questionnaire[`${type}_statuses`] || 'active,active,active').split(',');
+    const currentStatus = statuses[index] || 'active';
 
     if (isEditing) {
       return (
