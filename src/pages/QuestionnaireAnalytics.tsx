@@ -203,7 +203,7 @@ const QuestionnaireAnalytics = () => {
                                     <ChartTooltipContent
                                       className="bg-white p-2 shadow-lg rounded-lg border"
                                       payload={payload}
-                                    />;
+                                    />
                                   );
                                 }}
                               />
