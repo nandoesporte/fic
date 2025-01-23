@@ -106,13 +106,17 @@ export function DimensionManager() {
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting dimension:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dimensions'] });
       toast.success('Dimensão excluída com sucesso');
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Error in delete mutation:', error);
       toast.error('Erro ao excluir dimensão');
     },
   });
@@ -137,7 +141,11 @@ export function DimensionManager() {
 
   const handleDeleteDimension = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir esta dimensão?')) {
-      await deleteDimensionMutation.mutateAsync(id);
+      try {
+        await deleteDimensionMutation.mutateAsync(id);
+      } catch (error) {
+        console.error('Error in handleDeleteDimension:', error);
+      }
     }
   };
 
@@ -224,7 +232,7 @@ export function DimensionManager() {
                       variant="ghost"
                       size="icon"
                       onClick={() => setEditingDimension(dimension)}
-                      disabled={updateDimensionMutation.isPending || deleteDimensionMutation.isPending}
+                      disabled={deleteDimensionMutation.isPending || updateDimensionMutation.isPending}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -232,7 +240,7 @@ export function DimensionManager() {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleDeleteDimension(dimension.id)}
-                      disabled={updateDimensionMutation.isPending || deleteDimensionMutation.isPending}
+                      disabled={deleteDimensionMutation.isPending || updateDimensionMutation.isPending}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
