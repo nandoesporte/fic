@@ -91,12 +91,6 @@ const QuestionnaireAnalytics = () => {
   };
 
   const chartConfig = {
-    upvotes: {
-      color: "#22C55E",
-    },
-    downvotes: {
-      color: "#EF4444",
-    },
     total: {
       color: "#3B82F6",
     },
@@ -105,15 +99,15 @@ const QuestionnaireAnalytics = () => {
   const renderVoteList = (type: string) => {
     const data = processDataForChart(voteData, type);
     return (
-      <div className="mb-6 space-y-2">
+      <div className="mb-4 space-y-2">
         {data.map((item, index) => (
-          <div key={index} className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+          <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
             <div className="flex-1">
               <span className="text-sm font-medium text-gray-900">{item.text}</span>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="w-16 text-right">
-                <span className={`text-sm font-bold ${item.total >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className="flex items-center">
+              <div className="w-12 text-right">
+                <span className="text-sm font-semibold text-gray-900">
                   {item.total}
                 </span>
               </div>
@@ -128,46 +122,46 @@ const QuestionnaireAnalytics = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gray-50">
         <AppSidebar />
-        <main className="flex-1 p-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Análise de Votos</h1>
+        <main className="flex-1 p-6">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Análise de Votos</h1>
             <p className="text-gray-500">Visualização detalhada dos votos por questionário</p>
           </div>
 
           {isLoading ? (
             <div className="space-y-4">
-              <Skeleton className="h-[200px] w-full" />
-              <Skeleton className="h-[200px] w-full" />
+              <Skeleton className="h-[150px] w-full" />
+              <Skeleton className="h-[150px] w-full" />
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <Card className="p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-blue-100 rounded-full">
-                      <Users className="w-6 h-6 text-blue-600" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <Card className="p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-full">
+                      <Users className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-500">Total de Participantes</p>
-                      <h3 className="text-2xl font-bold text-gray-900">{getTotalParticipants(voteData)}</h3>
+                      <h3 className="text-xl font-bold text-gray-900">{getTotalParticipants(voteData)}</h3>
                     </div>
                   </div>
                 </Card>
 
-                <Card className="p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-green-100 rounded-full">
-                      <Vote className="w-6 h-6 text-green-600" />
+                <Card className="p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-100 rounded-full">
+                      <Vote className="w-5 h-5 text-green-600" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-500">Total de Votos</p>
-                      <h3 className="text-2xl font-bold text-gray-900">{getTotalVotes(voteData)}</h3>
+                      <h3 className="text-xl font-bold text-gray-900">{getTotalVotes(voteData)}</h3>
                     </div>
                   </div>
                 </Card>
               </div>
 
-              <Tabs defaultValue="strengths" className="space-y-6">
+              <Tabs defaultValue="strengths" className="space-y-4">
                 <TabsList className="bg-white p-1 rounded-lg">
                   <TabsTrigger value="strengths" className="data-[state=active]:bg-blue-50">
                     Pontos Fortes
@@ -182,8 +176,8 @@ const QuestionnaireAnalytics = () => {
 
                 {["strengths", "challenges", "opportunities"].map((type) => (
                   <TabsContent key={type} value={type}>
-                    <Card className="p-6">
-                      <h2 className="text-xl font-semibold mb-6">
+                    <Card className="p-4">
+                      <h2 className="text-lg font-semibold mb-4">
                         {type === "strengths" && "Análise dos Pontos Fortes"}
                         {type === "challenges" && "Análise dos Desafios"}
                         {type === "opportunities" && "Análise das Oportunidades"}
@@ -191,17 +185,17 @@ const QuestionnaireAnalytics = () => {
                       
                       {renderVoteList(type)}
 
-                      <div className="h-[300px]">
+                      <div className="h-[200px] mt-4">
                         <ChartContainer config={chartConfig}>
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart
                               data={processDataForChart(voteData, type)}
-                              margin={{ top: 10, right: 10, left: 10, bottom: 5 }}
-                              barSize={20}
+                              margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                              barSize={16}
                             >
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis dataKey="optionNumber" />
-                              <YAxis />
+                              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                              <XAxis dataKey="optionNumber" fontSize={12} />
+                              <YAxis fontSize={12} />
                               <ChartTooltip
                                 content={({ active, payload }) => {
                                   if (!active || !payload?.length) return null;
@@ -209,11 +203,16 @@ const QuestionnaireAnalytics = () => {
                                     <ChartTooltipContent
                                       className="bg-white p-2 shadow-lg rounded-lg border"
                                       payload={payload}
-                                    />
+                                    />;
                                   );
                                 }}
                               />
-                              <Bar dataKey="total" name="Total" fill={chartConfig.total.color} />
+                              <Bar 
+                                dataKey="total" 
+                                name="Total" 
+                                fill={chartConfig.total.color}
+                                radius={[4, 4, 0, 0]}
+                              />
                             </BarChart>
                           </ResponsiveContainer>
                         </ChartContainer>
