@@ -15,6 +15,15 @@ type VoteSelection = {
   };
 };
 
+type ConsolidatedQuestionnaire = {
+  id: string;
+  dimension: string;
+  strengths: string;
+  challenges: string;
+  opportunities: string;
+  created_at: string;
+};
+
 export const QuestionnaireVoting = () => {
   const [userEmail, setUserEmail] = useState("");
   const [isEmailVerified, setIsEmailVerified] = useState(false);
@@ -42,7 +51,27 @@ export const QuestionnaireVoting = () => {
         throw questionnairesError;
       }
 
-      return questionnairesData;
+      // Consolidate questionnaires by dimension
+      const consolidatedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: ConsolidatedQuestionnaire }, curr) => {
+        if (!acc[curr.dimension]) {
+          acc[curr.dimension] = {
+            id: curr.dimension,
+            dimension: curr.dimension,
+            strengths: curr.strengths,
+            challenges: curr.challenges,
+            opportunities: curr.opportunities,
+            created_at: curr.created_at,
+          };
+        } else {
+          // Combine the text content, separating with line breaks
+          acc[curr.dimension].strengths += '\n\n' + curr.strengths;
+          acc[curr.dimension].challenges += '\n\n' + curr.challenges;
+          acc[curr.dimension].opportunities += '\n\n' + curr.opportunities;
+        }
+        return acc;
+      }, {});
+
+      return Object.values(consolidatedQuestionnaires);
     },
     enabled: isEmailVerified,
   });
