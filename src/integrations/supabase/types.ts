@@ -233,43 +233,52 @@ export type Database = {
       fic_questionnaires: {
         Row: {
           challenges: string
+          challenges_statuses: string | null
           created_at: string | null
           dimension: string
           group: string | null
           group_name: string | null
           id: string
           opportunities: string
+          opportunities_statuses: string | null
           satisfaction: number | null
           status: string | null
           strengths: string
+          strengths_statuses: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
           challenges: string
+          challenges_statuses?: string | null
           created_at?: string | null
           dimension: string
           group?: string | null
           group_name?: string | null
           id?: string
           opportunities: string
+          opportunities_statuses?: string | null
           satisfaction?: number | null
           status?: string | null
           strengths: string
+          strengths_statuses?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           challenges?: string
+          challenges_statuses?: string | null
           created_at?: string | null
           dimension?: string
           group?: string | null
           group_name?: string | null
           id?: string
           opportunities?: string
+          opportunities_statuses?: string | null
           satisfaction?: number | null
           status?: string | null
           strengths?: string
+          strengths_statuses?: string | null
           updated_at?: string | null
           user_id?: string
         }

@@ -291,7 +291,7 @@ export const QuestionnaireResponses = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todas as dimensões</SelectItem>
-            {uniqueDimensions.map((dimension) => (
+            {getUniqueDimensions().map((dimension) => (
               <SelectItem key={dimension} value={dimension}>
                 {dimension}
               </SelectItem>
