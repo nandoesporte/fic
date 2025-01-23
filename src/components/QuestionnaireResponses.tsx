@@ -38,13 +38,12 @@ export const QuestionnaireResponses = () => {
         throw questionnairesError;
       }
 
-      // Modify the data to set all statuses as 'active' by default
       return questionnairesData?.map(q => ({
         ...q,
-        strengths_statuses: q.strengths_statuses || 'active,active,active',
-        challenges_statuses: q.challenges_statuses || 'active,active,active',
-        opportunities_statuses: q.opportunities_statuses || 'active,active,active',
-        status: q.status || 'active'
+        strengths_statuses: q.strengths_statuses || 'pending,pending,pending',
+        challenges_statuses: q.challenges_statuses || 'pending,pending,pending',
+        opportunities_statuses: q.opportunities_statuses || 'pending,pending,pending',
+        status: q.status || 'pending'
       }));
     },
   });
@@ -83,10 +82,13 @@ export const QuestionnaireResponses = () => {
       if (!questionnaire) return;
 
       const lines = splitText(questionnaire[type]);
-      const statuses = (questionnaire[`${type}_statuses`] || 'active,active,active').split(',')
+      const statuses = (questionnaire[`${type}_statuses`] || 'pending,pending,pending').split(',')
         .map((status, i) => i === index ? (status === 'active' ? 'pending' : 'active') : status);
 
-      const { error } = await supabase
+      const newStatus = statuses[index];
+
+      // First update the questionnaire status
+      const { error: updateError } = await supabase
         .from('fic_questionnaires')
         .update({ 
           [`${type}_statuses`]: statuses.join(','),
@@ -94,7 +96,35 @@ export const QuestionnaireResponses = () => {
         })
         .eq('id', questionnaireId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // Then handle the voting table
+      if (newStatus === 'active') {
+        // Add to voting
+        const { error: voteError } = await supabase
+          .from('questionnaire_votes')
+          .insert({
+            questionnaire_id: questionnaireId,
+            option_type: type,
+            option_number: index,
+            vote_type: 'upvote',
+            user_id: questionnaire.user_id
+          });
+
+        if (voteError) throw voteError;
+      } else {
+        // Remove from voting
+        const { error: deleteError } = await supabase
+          .from('questionnaire_votes')
+          .delete()
+          .match({
+            questionnaire_id: questionnaireId,
+            option_type: type,
+            option_number: index
+          });
+
+        if (deleteError) throw deleteError;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
