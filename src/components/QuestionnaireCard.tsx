@@ -1,126 +1,113 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { VoteButtons } from "@/components/VoteButtons";
-import { toast } from "sonner";
-
-interface QuestionnaireVoteCounts {
-  option_type: string;
-  option_number: number;
-  upvotes: number;
-  downvotes: number;
-}
-
-interface Questionnaire {
-  id: string;
-  dimension: string;
-  strengths: string;
-  challenges: string;
-  opportunities: string;
-  questionnaire_vote_counts: QuestionnaireVoteCounts[];
-}
+import { Card } from "@/components/ui/card";
+import { VoteButtons } from "./VoteButtons";
 
 interface QuestionnaireCardProps {
-  questionnaire: Questionnaire;
+  questionnaire: any;
   onVote: (optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number, voteType: 'upvote' | 'downvote') => void;
 }
 
 export const QuestionnaireCard = ({ questionnaire, onVote }: QuestionnaireCardProps) => {
-  const [selectedVotes, setSelectedVotes] = useState<{
-    strengths: number[];
-    challenges: number[];
-    opportunities: number[];
-  }>({
-    strengths: [],
-    challenges: [],
-    opportunities: [],
-  });
+  const splitText = (text: string): string[] => {
+    return text.split('\n').filter(line => line.trim() !== '');
+  };
 
   const getVoteCounts = (optionType: string, optionNumber: number) => {
-    const voteCount = questionnaire.questionnaire_vote_counts?.find(
-      count => count.option_type === optionType && count.option_number === optionNumber
+    const votes = questionnaire.questionnaire_vote_counts?.find(
+      (v: any) => v.option_type === optionType && v.option_number === optionNumber
     );
     return {
-      upvotes: voteCount?.upvotes || 0,
-      downvotes: voteCount?.downvotes || 0,
+      upvotes: votes?.upvotes || 0,
+      downvotes: votes?.downvotes || 0,
     };
   };
 
-  const handleVote = (optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => {
-    setSelectedVotes(prev => {
-      const currentSelections = prev[optionType];
-      
-      if (currentSelections.includes(optionNumber)) {
-        // Remove selection
-        return {
-          ...prev,
-          [optionType]: currentSelections.filter(num => num !== optionNumber)
-        };
-      } else if (currentSelections.length < 3) {
-        // Add selection if less than 3 options are selected
-        return {
-          ...prev,
-          [optionType]: [...currentSelections, optionNumber]
-        };
-      } else {
-        toast.error(`Você já selecionou 3 opções em ${optionType}. Remova uma seleção antes de adicionar outra.`);
-        return prev;
-      }
-    });
+  const getBgColor = (title: string) => {
+    switch (title) {
+      case "Pontos Fortes":
+        return "bg-[#228B22]";
+      case "Desafios":
+        return "bg-[#FFD700]";
+      case "Oportunidades":
+        return "bg-[#000080]";
+      default:
+        return "";
+    }
   };
 
-  const isOptionSelected = (optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => {
-    return selectedVotes[optionType].includes(optionNumber);
-  };
-
-  const renderOptions = (text: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => {
-    const { upvotes, downvotes } = getVoteCounts(optionType, optionNumber);
-    const isSelected = isOptionSelected(optionType, optionNumber);
-    const isDisabled = selectedVotes[optionType].length >= 3 && !isSelected;
-
-    return (
-      <div key={`${optionType}-${optionNumber}`} className="flex items-center justify-between p-2 border-b last:border-b-0">
-        <span className="flex-1">{text}</span>
-        <VoteButtons
-          upvotes={upvotes}
-          downvotes={downvotes}
-          onVote={() => {
-            handleVote(optionType, optionNumber);
-            onVote(optionType, optionNumber, 'upvote');
-          }}
-          isSelected={isSelected}
-          disabled={isDisabled}
-        />
-      </div>
-    );
-  };
-
-  const renderSection = (title: string, content: string, type: 'strengths' | 'challenges' | 'opportunities') => {
-    const options = content.split('\n').filter(Boolean);
-    return (
-      <div className="space-y-2">
-        <h3 className="font-semibold text-lg">
-          {title} 
-          <span className="text-sm font-normal text-gray-500 ml-2">
-            (Selecione exatamente 3 opções - {selectedVotes[type].length}/3)
-          </span>
-        </h3>
-        <div className="space-y-1">
-          {options.map((option, index) => renderOptions(option, type, index + 1))}
-        </div>
-      </div>
-    );
+  const getTextColor = (title: string) => {
+    return title === "Desafios" ? "text-gray-900" : "text-white";
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Questionário - {questionnaire.dimension}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {renderSection("Pontos Fortes", questionnaire.strengths, "strengths")}
-        {renderSection("Desafios", questionnaire.challenges, "challenges")}
-        {renderSection("Oportunidades", questionnaire.opportunities, "opportunities")}
-      </CardContent>
+    <Card className="p-6">
+      <div className="mb-4">
+        <h3 className="font-medium text-lg">
+          Dimensão: {questionnaire.dimension}
+        </h3>
+        {questionnaire.group && (
+          <div className="mt-2 inline-block">
+            <span className="bg-black text-white px-4 py-2 rounded-lg text-xl font-semibold">
+              Grupo: {questionnaire.group}
+            </span>
+          </div>
+        )}
+        <p className="text-sm text-gray-500 mt-2">
+          Enviado em: {new Date(questionnaire.created_at).toLocaleDateString('pt-BR')}
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Pontos Fortes")} ${getTextColor("Pontos Fortes")}`}>
+            Pontos Fortes
+          </h4>
+          <div className="space-y-2 mt-2">
+            {splitText(questionnaire.strengths).map((strength, index) => (
+              <div key={index} className="flex justify-between items-center">
+                <p className="flex-1">{strength}</p>
+                <VoteButtons
+                  {...getVoteCounts('strengths', index + 1)}
+                  onVote={(voteType) => onVote('strengths', index + 1, voteType)}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Desafios")} ${getTextColor("Desafios")}`}>
+            Desafios
+          </h4>
+          <div className="space-y-2 mt-2">
+            {splitText(questionnaire.challenges).map((challenge, index) => (
+              <div key={index} className="flex justify-between items-center">
+                <p className="flex-1">{challenge}</p>
+                <VoteButtons
+                  {...getVoteCounts('challenges', index + 1)}
+                  onVote={(voteType) => onVote('challenges', index + 1, voteType)}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Oportunidades")} ${getTextColor("Oportunidades")}`}>
+            Oportunidades
+          </h4>
+          <div className="space-y-2 mt-2">
+            {splitText(questionnaire.opportunities).map((opportunity, index) => (
+              <div key={index} className="flex justify-between items-center">
+                <p className="flex-1">{opportunity}</p>
+                <VoteButtons
+                  {...getVoteCounts('opportunities', index + 1)}
+                  onVote={(voteType) => onVote('opportunities', index + 1, voteType)}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </Card>
   );
 };
