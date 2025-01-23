@@ -81,7 +81,6 @@ export const QuestionnaireResponses = () => {
       const questionnaire = questionnaires?.find(q => q.id === questionnaireId);
       if (!questionnaire) return;
 
-      const lines = splitText(questionnaire[type]);
       const statuses = (questionnaire[`${type}_statuses`] || 'pending,pending,pending').split(',')
         .map((status, i) => i === index ? (status === 'active' ? 'pending' : 'active') : status);
 
