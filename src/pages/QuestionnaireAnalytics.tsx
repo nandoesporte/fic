@@ -112,13 +112,9 @@ const QuestionnaireAnalytics = () => {
               <span className="text-sm font-medium text-gray-900">{item.text}</span>
             </div>
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-green-600">{item.upvotes}</span>
-                <span className="text-sm font-medium text-red-600">{item.downvotes}</span>
-              </div>
               <div className="w-16 text-right">
                 <span className={`text-sm font-bold ${item.total >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {item.total >= 0 ? '+' : ''}{item.total}
+                  {item.total}
                 </span>
               </div>
             </div>
@@ -217,9 +213,7 @@ const QuestionnaireAnalytics = () => {
                                   );
                                 }}
                               />
-                              <Bar dataKey="upvotes" name="+" fill={chartConfig.upvotes.color} />
-                              <Bar dataKey="downvotes" name="-" fill={chartConfig.downvotes.color} />
-                              <Bar dataKey="total" name="=" fill={chartConfig.total.color} />
+                              <Bar dataKey="total" name="Total" fill={chartConfig.total.color} />
                             </BarChart>
                           </ResponsiveContainer>
                         </ChartContainer>
