@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Vote } from "lucide-react";
+import { Vote } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type VoteData = {
