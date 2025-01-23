@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Loader2, Download, RefreshCw, Check, Circle } from "lucide-react";
+import { Edit, Loader2, Download, RefreshCw, Check, MinusCircle } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -193,7 +193,7 @@ export const QuestionnaireResponses = () => {
             size="sm"
             onClick={() => setEditingLine(null)}
           >
-            <Circle className="h-4 w-4" />
+            <MinusCircle className="h-4 w-4" />
           </Button>
         </div>
       );
@@ -216,7 +216,7 @@ export const QuestionnaireResponses = () => {
             onClick={() => handleToggleStatus(questionnaire.id, type, index, currentStatus)}
           >
             {currentStatus === 'pending' ? (
-              <Circle className="h-4 w-4" />
+              <MinusCircle className="h-4 w-4" />
             ) : (
               <Check className="h-4 w-4" />
             )}
