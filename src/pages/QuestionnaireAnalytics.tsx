@@ -7,7 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 
 import { Skeleton } from "@/components/ui/skeleton";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Users, Vote, TrendingUp } from "lucide-react";
+import { Users, Vote } from "lucide-react";
 
 type VoteData = {
   questionnaire_id: string;
@@ -113,10 +113,10 @@ const QuestionnaireAnalytics = () => {
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-green-600">+{item.upvotes}</span>
-                <span className="text-sm font-medium text-red-600">-{item.downvotes}</span>
+                <span className="text-sm font-medium text-green-600">{item.upvotes}</span>
+                <span className="text-sm font-medium text-red-600">{item.downvotes}</span>
               </div>
-              <div className="w-20 text-right">
+              <div className="w-16 text-right">
                 <span className={`text-sm font-bold ${item.total >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {item.total >= 0 ? '+' : ''}{item.total}
                 </span>
@@ -140,13 +140,12 @@ const QuestionnaireAnalytics = () => {
 
           {isLoading ? (
             <div className="space-y-4">
-              <Skeleton className="h-[300px] w-full" />
-              <Skeleton className="h-[300px] w-full" />
-              <Skeleton className="h-[300px] w-full" />
+              <Skeleton className="h-[200px] w-full" />
+              <Skeleton className="h-[200px] w-full" />
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <Card className="p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-4">
                     <div className="p-3 bg-blue-100 rounded-full">
@@ -167,20 +166,6 @@ const QuestionnaireAnalytics = () => {
                     <div>
                       <p className="text-sm font-medium text-gray-500">Total de Votos</p>
                       <h3 className="text-2xl font-bold text-gray-900">{getTotalVotes(voteData)}</h3>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card className="p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-purple-100 rounded-full">
-                      <TrendingUp className="w-6 h-6 text-purple-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Média de Votos</p>
-                      <h3 className="text-2xl font-bold text-gray-900">
-                        {getTotalParticipants(voteData) ? (getTotalVotes(voteData) / getTotalParticipants(voteData)).toFixed(1) : '0'}
-                      </h3>
                     </div>
                   </div>
                 </Card>
@@ -210,12 +195,13 @@ const QuestionnaireAnalytics = () => {
                       
                       {renderVoteList(type)}
 
-                      <div className="h-[400px]">
+                      <div className="h-[300px]">
                         <ChartContainer config={chartConfig}>
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart
                               data={processDataForChart(voteData, type)}
-                              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                              margin={{ top: 10, right: 10, left: 10, bottom: 5 }}
+                              barSize={20}
                             >
                               <CartesianGrid strokeDasharray="3 3" />
                               <XAxis dataKey="optionNumber" />
@@ -231,9 +217,9 @@ const QuestionnaireAnalytics = () => {
                                   );
                                 }}
                               />
-                              <Bar dataKey="upvotes" name="Votos Positivos" fill={chartConfig.upvotes.color} />
-                              <Bar dataKey="downvotes" name="Votos Negativos" fill={chartConfig.downvotes.color} />
-                              <Bar dataKey="total" name="Saldo" fill={chartConfig.total.color} />
+                              <Bar dataKey="upvotes" name="+" fill={chartConfig.upvotes.color} />
+                              <Bar dataKey="downvotes" name="-" fill={chartConfig.downvotes.color} />
+                              <Bar dataKey="total" name="=" fill={chartConfig.total.color} />
                             </BarChart>
                           </ResponsiveContainer>
                         </ChartContainer>
