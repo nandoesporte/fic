@@ -31,6 +31,10 @@ export const QuestionnaireVoting = () => {
   const { data: questionnaires, isLoading } = useQuery({
     queryKey: ['questionnaires'],
     queryFn: async () => {
+      if (!isEmailVerified) {
+        return [];
+      }
+
       const { data: questionnairesData, error: questionnairesError } = await supabase
         .from('fic_questionnaires')
         .select(`
@@ -45,6 +49,7 @@ export const QuestionnaireVoting = () => {
         .order('created_at', { ascending: false });
 
       if (questionnairesError) {
+        console.error('Erro ao carregar questionários:', questionnairesError);
         toast.error('Erro ao carregar questionários');
         throw questionnairesError;
       }
