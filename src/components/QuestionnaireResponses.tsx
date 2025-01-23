@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Loader2, Download, RefreshCw, Check, MinusCircle } from "lucide-react";
+import { Edit, Loader2, Download, RefreshCw, Check, Circle } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -38,12 +38,13 @@ export const QuestionnaireResponses = () => {
         throw questionnairesError;
       }
 
+      // Modify the data to set all statuses as 'active' by default
       return questionnairesData?.map(q => ({
         ...q,
-        strengths_statuses: 'active,active,active',
-        challenges_statuses: 'active,active,active',
-        opportunities_statuses: 'active,active,active',
-        status: 'active'
+        strengths_statuses: q.strengths_statuses || 'active,active,active',
+        challenges_statuses: q.challenges_statuses || 'active,active,active',
+        opportunities_statuses: q.opportunities_statuses || 'active,active,active',
+        status: q.status || 'active'
       }));
     },
   });
@@ -82,11 +83,9 @@ export const QuestionnaireResponses = () => {
       if (!questionnaire) return;
 
       const lines = splitText(questionnaire[type]);
-      const newStatus = currentStatus === 'active' ? 'pending' : 'active';
       const statuses = (questionnaire[`${type}_statuses`] || 'active,active,active').split(',')
-        .map((status, i) => i === index ? newStatus : status);
+        .map((status, i) => i === index ? (status === 'active' ? 'pending' : 'active') : status);
 
-      // Update the questionnaire status
       const { error } = await supabase
         .from('fic_questionnaires')
         .update({ 
@@ -96,39 +95,6 @@ export const QuestionnaireResponses = () => {
         .eq('id', questionnaireId);
 
       if (error) throw error;
-
-      // If marking as active, add to voting
-      if (newStatus === 'active') {
-        const { error: voteError } = await supabase
-          .from('questionnaire_votes')
-          .insert({
-            questionnaire_id: questionnaireId,
-            option_type: type,
-            option_number: index + 1,
-            vote_type: 'upvote',
-            user_id: questionnaire.user_id
-          });
-
-        if (voteError) {
-          toast.error('Erro ao adicionar à votação');
-          throw voteError;
-        }
-      } else {
-        // If marking as pending, remove from voting
-        const { error: deleteError } = await supabase
-          .from('questionnaire_votes')
-          .delete()
-          .match({
-            questionnaire_id: questionnaireId,
-            option_type: type,
-            option_number: index + 1
-          });
-
-        if (deleteError) {
-          toast.error('Erro ao remover da votação');
-          throw deleteError;
-        }
-      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
@@ -193,7 +159,7 @@ export const QuestionnaireResponses = () => {
             size="sm"
             onClick={() => setEditingLine(null)}
           >
-            <MinusCircle className="h-4 w-4" />
+            <Circle className="h-4 w-4" />
           </Button>
         </div>
       );
@@ -216,7 +182,7 @@ export const QuestionnaireResponses = () => {
             onClick={() => handleToggleStatus(questionnaire.id, type, index, currentStatus)}
           >
             {currentStatus === 'pending' ? (
-              <MinusCircle className="h-4 w-4" />
+              <Circle className="h-4 w-4" />
             ) : (
               <Check className="h-4 w-4" />
             )}
@@ -435,5 +401,3 @@ export const QuestionnaireResponses = () => {
     </div>
   );
 };
-
-export default QuestionnaireResponses;
