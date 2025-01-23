@@ -63,14 +63,13 @@ export const QuestionnaireVoting = () => {
             challenges: curr.challenges,
             opportunities: curr.opportunities,
             created_at: curr.created_at,
-            questionnaire_ids: [curr.id], // Initialize with first questionnaire ID
+            questionnaire_ids: [curr.id],
           };
         } else {
-          // Combine the text content, separating with line breaks
           acc[curr.dimension].strengths += '\n\n' + curr.strengths;
           acc[curr.dimension].challenges += '\n\n' + curr.challenges;
           acc[curr.dimension].opportunities += '\n\n' + curr.opportunities;
-          acc[curr.dimension].questionnaire_ids.push(curr.id); // Add questionnaire ID to array
+          acc[curr.dimension].questionnaire_ids.push(curr.id);
         }
         return acc;
       }, {});
@@ -128,11 +127,9 @@ export const QuestionnaireVoting = () => {
         throw new Error('Você precisa estar autenticado para votar');
       }
 
-      // Find the consolidated questionnaire
       const consolidatedQuestionnaire = questionnaires?.find(q => q.id === questionnaireId);
       if (!consolidatedQuestionnaire) throw new Error('Questionário não encontrado');
 
-      // Create votes for each original questionnaire
       const votePromises = consolidatedQuestionnaire.questionnaire_ids.flatMap(originalQuestionnaireId =>
         votes.flatMap(({ optionType, optionNumbers }) =>
           optionNumbers.map(optionNumber =>
@@ -158,6 +155,7 @@ export const QuestionnaireVoting = () => {
       setSelections({});
     },
     onError: (error) => {
+      console.error('Error submitting votes:', error);
       toast.error('Erro ao registrar votos: ' + error.message);
     },
   });
