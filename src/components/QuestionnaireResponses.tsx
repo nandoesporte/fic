@@ -103,33 +103,40 @@ export const QuestionnaireResponses = () => {
         const { error: voteError } = await supabase
           .from('questionnaire_votes')
           .insert({
-            questionnaire_id: questionnaireId,
+            questionnaire_id: questionnaire.id, // Use the actual questionnaire ID
             option_type: type,
             option_number: index,
             vote_type: 'upvote',
             user_id: questionnaire.user_id
           });
 
-        if (voteError) throw voteError;
+        if (voteError) {
+          console.error('Vote error:', voteError);
+          throw voteError;
+        }
       } else {
         // Remove from voting
         const { error: deleteError } = await supabase
           .from('questionnaire_votes')
           .delete()
           .match({
-            questionnaire_id: questionnaireId,
+            questionnaire_id: questionnaire.id, // Use the actual questionnaire ID
             option_type: type,
             option_number: index
           });
 
-        if (deleteError) throw deleteError;
+        if (deleteError) {
+          console.error('Delete error:', deleteError);
+          throw deleteError;
+        }
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
       toast.success('Status atualizado com sucesso');
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Toggle status error:', error);
       toast.error('Erro ao atualizar status');
     },
   });
