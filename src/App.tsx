@@ -6,6 +6,7 @@ import Index from "@/pages/Index";
 import Login from "@/pages/Login";
 import QuestionnaireVoting from "@/pages/QuestionnaireVoting";
 import QuestionnaireAnalytics from "@/pages/QuestionnaireAnalytics";
+import QuestionnaireForm from "@/pages/QuestionnaireForm";
 import ExportData from "@/pages/ExportData";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
@@ -19,6 +20,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/formulario" element={<QuestionnaireForm />} />
             <Route
               path="/voting"
               element={

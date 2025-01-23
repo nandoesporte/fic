@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sidebar } from "@/components/ui/sidebar";
-import { FileText, BarChart2, Database } from "lucide-react";
+import { FileText, BarChart2, Database, FormInput } from "lucide-react";
 
 export function AppSidebar() {
   const { pathname } = useLocation();
@@ -14,6 +14,15 @@ export function AppSidebar() {
         <div className="space-y-4 py-4">
           <div className="px-3 py-2">
             <div className="space-y-1">
+              <Link to="/formulario">
+                <Button
+                  variant={pathname === "/formulario" ? "secondary" : "ghost"}
+                  className="w-full justify-start"
+                >
+                  <FormInput className="mr-2 h-4 w-4" />
+                  Formulário
+                </Button>
+              </Link>
               <Link to="/voting">
                 <Button
                   variant={pathname === "/voting" ? "secondary" : "ghost"}
