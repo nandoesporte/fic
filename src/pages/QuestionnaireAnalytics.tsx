@@ -3,10 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { Users, Vote } from "lucide-react";
 
 type VoteData = {
   questionnaire_id: string;
@@ -78,6 +79,17 @@ const QuestionnaireAnalytics = () => {
       }));
   };
 
+  const getTotalVotes = (data: VoteData[] | undefined) => {
+    if (!data) return 0;
+    return data.reduce((acc, curr) => acc + (curr.upvotes || 0) + (curr.downvotes || 0), 0);
+  };
+
+  const getTotalParticipants = (data: VoteData[] | undefined) => {
+    if (!data) return 0;
+    const uniqueQuestionnaires = new Set(data.map(vote => vote.questionnaire_id));
+    return uniqueQuestionnaires.size;
+  };
+
   const chartConfig = {
     upvotes: {
       color: "#22C55E",
@@ -95,16 +107,16 @@ const QuestionnaireAnalytics = () => {
     return (
       <div className="mb-6 space-y-2">
         {data.map((item, index) => (
-          <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
+          <div key={index} className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
             <div className="flex-1">
               <span className="text-sm font-medium text-gray-900">{item.text}</span>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-green-600">+{item.upvotes}</span>
-                <span className="text-sm font-medium text-red-600">-{item.downvotes}</span>
+                <span className="text-sm font-medium text-green-600">{item.upvotes}</span>
+                <span className="text-sm font-medium text-red-600">{item.downvotes}</span>
               </div>
-              <div className="w-20 text-right">
+              <div className="w-16 text-right">
                 <span className={`text-sm font-bold ${item.total >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {item.total >= 0 ? '+' : ''}{item.total}
                 </span>
@@ -128,62 +140,95 @@ const QuestionnaireAnalytics = () => {
 
           {isLoading ? (
             <div className="space-y-4">
-              <Skeleton className="h-[300px] w-full" />
-              <Skeleton className="h-[300px] w-full" />
-              <Skeleton className="h-[300px] w-full" />
+              <Skeleton className="h-[200px] w-full" />
+              <Skeleton className="h-[200px] w-full" />
             </div>
           ) : (
-            <Tabs defaultValue="strengths" className="space-y-6">
-              <TabsList>
-                <TabsTrigger value="strengths">Pontos Fortes</TabsTrigger>
-                <TabsTrigger value="challenges">Desafios</TabsTrigger>
-                <TabsTrigger value="opportunities">Oportunidades</TabsTrigger>
-              </TabsList>
-
-              {["strengths", "challenges", "opportunities"].map((type) => (
-                <TabsContent key={type} value={type}>
-                  <Card className="p-6">
-                    <h2 className="text-xl font-semibold mb-6">
-                      {type === "strengths" && "Análise dos Pontos Fortes"}
-                      {type === "challenges" && "Análise dos Desafios"}
-                      {type === "opportunities" && "Análise das Oportunidades"}
-                    </h2>
-                    
-                    {renderVoteList(type)}
-
-                    <div className="h-[400px]">
-                      <ChartContainer config={chartConfig}>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart
-                            data={processDataForChart(voteData, type)}
-                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="optionNumber" />
-                            <YAxis />
-                            <Tooltip
-                              content={({ active, payload }) => {
-                                if (!active || !payload?.length) return null;
-                                return (
-                                  <ChartTooltipContent
-                                    className="bg-white p-2 shadow-lg rounded-lg border"
-                                    payload={payload}
-                                  />
-                                );
-                              }}
-                            />
-                            <Legend />
-                            <Bar dataKey="upvotes" name="Votos Positivos" fill={chartConfig.upvotes.color} />
-                            <Bar dataKey="downvotes" name="Votos Negativos" fill={chartConfig.downvotes.color} />
-                            <Bar dataKey="total" name="Saldo" fill={chartConfig.total.color} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </ChartContainer>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <Card className="p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-100 rounded-full">
+                      <Users className="w-6 h-6 text-blue-600" />
                     </div>
-                  </Card>
-                </TabsContent>
-              ))}
-            </Tabs>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Total de Participantes</p>
+                      <h3 className="text-2xl font-bold text-gray-900">{getTotalParticipants(voteData)}</h3>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-green-100 rounded-full">
+                      <Vote className="w-6 h-6 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Total de Votos</p>
+                      <h3 className="text-2xl font-bold text-gray-900">{getTotalVotes(voteData)}</h3>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+
+              <Tabs defaultValue="strengths" className="space-y-6">
+                <TabsList className="bg-white p-1 rounded-lg">
+                  <TabsTrigger value="strengths" className="data-[state=active]:bg-blue-50">
+                    Pontos Fortes
+                  </TabsTrigger>
+                  <TabsTrigger value="challenges" className="data-[state=active]:bg-blue-50">
+                    Desafios
+                  </TabsTrigger>
+                  <TabsTrigger value="opportunities" className="data-[state=active]:bg-blue-50">
+                    Oportunidades
+                  </TabsTrigger>
+                </TabsList>
+
+                {["strengths", "challenges", "opportunities"].map((type) => (
+                  <TabsContent key={type} value={type}>
+                    <Card className="p-6">
+                      <h2 className="text-xl font-semibold mb-6">
+                        {type === "strengths" && "Análise dos Pontos Fortes"}
+                        {type === "challenges" && "Análise dos Desafios"}
+                        {type === "opportunities" && "Análise das Oportunidades"}
+                      </h2>
+                      
+                      {renderVoteList(type)}
+
+                      <div className="h-[300px]">
+                        <ChartContainer config={chartConfig}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                              data={processDataForChart(voteData, type)}
+                              margin={{ top: 10, right: 10, left: 10, bottom: 5 }}
+                              barSize={20}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="optionNumber" />
+                              <YAxis />
+                              <ChartTooltip
+                                content={({ active, payload }) => {
+                                  if (!active || !payload?.length) return null;
+                                  return (
+                                    <ChartTooltipContent
+                                      className="bg-white p-2 shadow-lg rounded-lg border"
+                                      payload={payload}
+                                    />
+                                  );
+                                }}
+                              />
+                              <Bar dataKey="upvotes" name="+" fill={chartConfig.upvotes.color} />
+                              <Bar dataKey="downvotes" name="-" fill={chartConfig.downvotes.color} />
+                              <Bar dataKey="total" name="=" fill={chartConfig.total.color} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </ChartContainer>
+                      </div>
+                    </Card>
+                  </TabsContent>
+                ))}
+              </Tabs>
+            </>
           )}
         </main>
       </div>
