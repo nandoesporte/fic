@@ -7,9 +7,18 @@ import { EmailInput } from "@/components/EmailInput";
 import { QuestionnaireCard } from "@/components/QuestionnaireCard";
 import { Button } from "@/components/ui/button";
 
+type VoteSelection = {
+  [key: string]: {
+    strengths: number[];
+    challenges: number[];
+    opportunities: number[];
+  };
+};
+
 export const QuestionnaireVoting = () => {
   const [userEmail, setUserEmail] = useState("");
   const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [selections, setSelections] = useState<VoteSelection>({});
   const queryClient = useQueryClient();
 
   const { data: questionnaires, isLoading } = useQuery({
@@ -65,11 +74,10 @@ export const QuestionnaireVoting = () => {
   };
 
   const voteMutation = useMutation({
-    mutationFn: async ({ questionnaireId, optionType, optionNumber, voteType }: { 
+    mutationFn: async ({ questionnaireId, optionType, optionNumber }: { 
       questionnaireId: string; 
       optionType: 'strengths' | 'challenges' | 'opportunities';
       optionNumber: number;
-      voteType: 'upvote' | 'downvote';
     }) => {
       const { data: voter, error: voterError } = await supabase
         .from('registered_voters')
@@ -95,34 +103,22 @@ export const QuestionnaireVoting = () => {
       }
 
       if (existingVote) {
-        if (existingVote.vote_type === voteType) {
-          const { error } = await supabase
-            .from('questionnaire_votes')
-            .delete()
-            .eq('questionnaire_id', questionnaireId)
-            .eq('user_id', voter.id)
-            .eq('option_type', optionType)
-            .eq('option_number', optionNumber);
-          
-          if (error) throw error;
-        } else {
-          const { error } = await supabase
-            .from('questionnaire_votes')
-            .update({ vote_type: voteType })
-            .eq('questionnaire_id', questionnaireId)
-            .eq('user_id', voter.id)
-            .eq('option_type', optionType)
-            .eq('option_number', optionNumber);
-          
-          if (error) throw error;
-        }
+        const { error } = await supabase
+          .from('questionnaire_votes')
+          .delete()
+          .eq('questionnaire_id', questionnaireId)
+          .eq('user_id', voter.id)
+          .eq('option_type', optionType)
+          .eq('option_number', optionNumber);
+        
+        if (error) throw error;
       } else {
         const { error } = await supabase
           .from('questionnaire_votes')
           .insert({
             questionnaire_id: questionnaireId,
             user_id: voter.id,
-            vote_type: voteType,
+            vote_type: 'upvote',
             option_type: optionType,
             option_number: optionNumber,
           });
@@ -139,12 +135,49 @@ export const QuestionnaireVoting = () => {
     },
   });
 
-  const handleVote = (questionnaireId: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number, voteType: 'upvote' | 'downvote') => {
+  const handleVote = (questionnaireId: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => {
     if (!userEmail) {
       toast.error('Por favor, insira seu email para votar');
       return;
     }
-    voteMutation.mutate({ questionnaireId, optionType, optionNumber, voteType });
+
+    const currentSelections = selections[questionnaireId]?.[optionType] || [];
+    const isSelected = currentSelections.includes(optionNumber);
+
+    if (isSelected) {
+      // Remove selection
+      setSelections(prev => ({
+        ...prev,
+        [questionnaireId]: {
+          ...prev[questionnaireId],
+          [optionType]: currentSelections.filter(num => num !== optionNumber)
+        }
+      }));
+      voteMutation.mutate({ questionnaireId, optionType, optionNumber });
+    } else {
+      // Add selection if less than 3 options are selected
+      if (currentSelections.length >= 3) {
+        toast.error('Você já selecionou 3 opções nesta seção. Remova uma seleção para escolher outra.');
+        return;
+      }
+
+      setSelections(prev => ({
+        ...prev,
+        [questionnaireId]: {
+          ...prev[questionnaireId],
+          [optionType]: [...currentSelections, optionNumber]
+        }
+      }));
+      voteMutation.mutate({ questionnaireId, optionType, optionNumber });
+    }
+  };
+
+  const isOptionSelected = (questionnaireId: string, optionType: string, optionNumber: number) => {
+    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.includes(optionNumber) || false;
+  };
+
+  const getSelectionCount = (questionnaireId: string, optionType: string) => {
+    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.length || 0;
   };
 
   if (!isEmailVerified) {
@@ -173,6 +206,7 @@ export const QuestionnaireVoting = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Sistema de Votação</h1>
           <p className="text-gray-500">Votando com o email: {userEmail}</p>
+          <p className="text-sm text-gray-500 mt-2">Selecione exatamente 3 opções em cada seção</p>
         </div>
 
         {isLoading ? (
@@ -185,8 +219,14 @@ export const QuestionnaireVoting = () => {
               <QuestionnaireCard
                 key={questionnaire.id}
                 questionnaire={questionnaire}
-                onVote={(optionType, optionNumber, voteType) => 
-                  handleVote(questionnaire.id, optionType, optionNumber, voteType)
+                onVote={(optionType, optionNumber) => 
+                  handleVote(questionnaire.id, optionType, optionNumber)
+                }
+                isOptionSelected={(optionType, optionNumber) =>
+                  isOptionSelected(questionnaire.id, optionType, optionNumber)
+                }
+                getSelectionCount={(optionType) =>
+                  getSelectionCount(questionnaire.id, optionType)
                 }
               />
             ))}

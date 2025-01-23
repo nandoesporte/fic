@@ -1,31 +1,23 @@
 import { Button } from "@/components/ui/button";
-import { ThumbsUp, ThumbsDown } from "lucide-react";
+import { CheckSquare } from "lucide-react";
 
 interface VoteButtonsProps {
-  upvotes: number;
-  downvotes: number;
-  onVote: (voteType: 'upvote' | 'downvote') => void;
+  isSelected: boolean;
+  onVote: () => void;
+  disabled?: boolean;
 }
 
-export const VoteButtons = ({ upvotes, downvotes, onVote }: VoteButtonsProps) => {
+export const VoteButtons = ({ isSelected, onVote, disabled }: VoteButtonsProps) => {
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => onVote('upvote')}
-      >
-        <ThumbsUp className="h-4 w-4 mr-1" />
-        {upvotes}
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => onVote('downvote')}
-      >
-        <ThumbsDown className="h-4 w-4 mr-1" />
-        {downvotes}
-      </Button>
-    </div>
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={onVote}
+      disabled={disabled}
+      className={isSelected ? "bg-primary/10" : ""}
+    >
+      <CheckSquare className={`h-4 w-4 mr-1 ${isSelected ? "text-primary" : "text-gray-400"}`} />
+      {isSelected ? "Selecionado" : "Selecionar"}
+    </Button>
   );
 };

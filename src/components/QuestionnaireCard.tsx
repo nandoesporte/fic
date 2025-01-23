@@ -1,112 +1,71 @@
 import { Card } from "@/components/ui/card";
-import { VoteButtons } from "./VoteButtons";
+import { VoteButtons } from "@/components/VoteButtons";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface QuestionnaireCardProps {
   questionnaire: any;
-  onVote: (optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number, voteType: 'upvote' | 'downvote') => void;
+  onVote: (optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => void;
+  isOptionSelected: (optionType: string, optionNumber: number) => boolean;
+  getSelectionCount: (optionType: string) => number;
 }
 
-export const QuestionnaireCard = ({ questionnaire, onVote }: QuestionnaireCardProps) => {
-  const splitText = (text: string): string[] => {
-    return text.split('\n').filter(line => line.trim() !== '');
-  };
+const MAX_SELECTIONS = 3;
 
-  const getVoteCounts = (optionType: string, optionNumber: number) => {
-    const votes = questionnaire.questionnaire_vote_counts?.find(
-      (v: any) => v.option_type === optionType && v.option_number === optionNumber
+export const QuestionnaireCard = ({ 
+  questionnaire, 
+  onVote,
+  isOptionSelected,
+  getSelectionCount
+}: QuestionnaireCardProps) => {
+  const renderSection = (title: string, content: string, type: 'strengths' | 'challenges' | 'opportunities') => {
+    const options = content.split('\n\n').filter(Boolean);
+    const selectionCount = getSelectionCount(type);
+
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="font-semibold text-lg">{title}</h3>
+          <span className="text-sm text-gray-500">
+            {selectionCount}/3 seleções
+          </span>
+        </div>
+        <div className="space-y-3">
+          {options.map((option, index) => (
+            <div key={index} className="flex items-start justify-between gap-4 p-3 bg-gray-50 rounded-lg">
+              <p className="flex-1 text-sm">{option}</p>
+              <VoteButtons
+                isSelected={isOptionSelected(type, index + 1)}
+                onVote={() => onVote(type, index + 1)}
+                disabled={selectionCount >= MAX_SELECTIONS && !isOptionSelected(type, index + 1)}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
     );
-    return {
-      upvotes: votes?.upvotes || 0,
-      downvotes: votes?.downvotes || 0,
-    };
-  };
-
-  const getBgColor = (title: string) => {
-    switch (title) {
-      case "Pontos Fortes":
-        return "bg-[#228B22]";
-      case "Desafios":
-        return "bg-[#FFD700]";
-      case "Oportunidades":
-        return "bg-[#000080]";
-      default:
-        return "";
-    }
-  };
-
-  const getTextColor = (title: string) => {
-    return title === "Desafios" ? "text-gray-900" : "text-white";
   };
 
   return (
     <Card className="p-6">
-      <div className="mb-4">
-        <h3 className="font-medium text-lg">
-          Dimensão: {questionnaire.dimension}
-        </h3>
-        {questionnaire.group && (
-          <div className="mt-2 inline-block">
-            <span className="bg-black text-white px-4 py-2 rounded-lg text-xl font-semibold">
-              Grupo: {questionnaire.group}
-            </span>
-          </div>
-        )}
-        <p className="text-sm text-gray-500 mt-2">
-          Enviado em: {new Date(questionnaire.created_at).toLocaleDateString('pt-BR')}
-        </p>
-      </div>
-
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div>
-          <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Pontos Fortes")} ${getTextColor("Pontos Fortes")}`}>
-            Pontos Fortes
-          </h4>
-          <div className="space-y-2 mt-2">
-            {splitText(questionnaire.strengths).map((strength, index) => (
-              <div key={index} className="flex justify-between items-center">
-                <p className="flex-1">{strength}</p>
-                <VoteButtons
-                  {...getVoteCounts('strengths', index + 1)}
-                  onVote={(voteType) => onVote('strengths', index + 1, voteType)}
-                />
-              </div>
-            ))}
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h2 className="text-xl font-semibold">{questionnaire.dimension}</h2>
+              <p className="text-sm text-gray-500">
+                Enviado {formatDistanceToNow(new Date(questionnaire.created_at), { 
+                  addSuffix: true,
+                  locale: ptBR 
+                })}
+              </p>
+            </div>
           </div>
         </div>
 
-        <div>
-          <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Desafios")} ${getTextColor("Desafios")}`}>
-            Desafios
-          </h4>
-          <div className="space-y-2 mt-2">
-            {splitText(questionnaire.challenges).map((challenge, index) => (
-              <div key={index} className="flex justify-between items-center">
-                <p className="flex-1">{challenge}</p>
-                <VoteButtons
-                  {...getVoteCounts('challenges', index + 1)}
-                  onVote={(voteType) => onVote('challenges', index + 1, voteType)}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <h4 className={`font-medium p-2 rounded-lg ${getBgColor("Oportunidades")} ${getTextColor("Oportunidades")}`}>
-            Oportunidades
-          </h4>
-          <div className="space-y-2 mt-2">
-            {splitText(questionnaire.opportunities).map((opportunity, index) => (
-              <div key={index} className="flex justify-between items-center">
-                <p className="flex-1">{opportunity}</p>
-                <VoteButtons
-                  {...getVoteCounts('opportunities', index + 1)}
-                  onVote={(voteType) => onVote('opportunities', index + 1, voteType)}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
+        {renderSection("Pontos Fortes", questionnaire.strengths, 'strengths')}
+        {renderSection("Desafios", questionnaire.challenges, 'challenges')}
+        {renderSection("Oportunidades", questionnaire.opportunities, 'opportunities')}
       </div>
     </Card>
   );
