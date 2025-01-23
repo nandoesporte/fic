@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Loader2 } from "lucide-react";
+import { Edit, Trash2, Loader2, Download, RefreshCw } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -18,6 +18,7 @@ import {
 export const QuestionnaireResponses = () => {
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<string | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<string>("todos");
+  const [selectedDimension, setSelectedDimension] = useState<string>("todos");
   const [editingLine, setEditingLine] = useState<{
     questionnaireId: string;
     type: 'strengths' | 'challenges' | 'opportunities';
@@ -212,16 +213,90 @@ export const QuestionnaireResponses = () => {
     return groups;
   };
 
-  const filterQuestionnairesByGroup = (questionnaires: any[]) => {
-    if (selectedGroup === "todos") return questionnaires;
-    return questionnaires.filter(q => (q.group || 'Sem grupo') === selectedGroup);
+  const getUniqueDimensions = () => {
+    if (!questionnaires) return [];
+    const dimensions = questionnaires.map(q => q.dimension).filter((value, index, self) => self.indexOf(value) === index);
+    return dimensions;
+  };
+
+  const filterQuestionnaires = (questionnaires: any[]) => {
+    if (!questionnaires) return [];
+    let filtered = questionnaires;
+    
+    if (selectedGroup !== "todos") {
+      filtered = filtered.filter(q => (q.group || 'Sem grupo') === selectedGroup);
+    }
+    
+    if (selectedDimension !== "todos") {
+      filtered = filtered.filter(q => q.dimension === selectedDimension);
+    }
+    
+    return filtered;
+  };
+
+  const handleExport = () => {
+    const filteredData = filterQuestionnaires(questionnaires || []);
+    const csvContent = filteredData.map(q => {
+      return {
+        Dimensao: q.dimension,
+        Grupo: q.group || 'Sem grupo',
+        'Pontos Fortes': q.strengths.replace(/\n\n/g, ' | '),
+        Desafios: q.challenges.replace(/\n\n/g, ' | '),
+        Oportunidades: q.opportunities.replace(/\n\n/g, ' | '),
+        'Data de Criação': new Date(q.created_at).toLocaleDateString('pt-BR')
+      };
+    });
+
+    const csvString = [
+      Object.keys(csvContent[0]).join(','),
+      ...csvContent.map(row => Object.values(row).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'questionarios.csv';
+    link.click();
+    toast.success('Dados exportados com sucesso!');
+  };
+
+  const handleClear = async () => {
+    if (window.confirm('Tem certeza que deseja limpar todos os questionários? Esta ação não pode ser desfeita.')) {
+      try {
+        const { error } = await supabase
+          .from('fic_questionnaires')
+          .delete()
+          .not('id', 'is', null); // Delete all records
+
+        if (error) throw error;
+        
+        queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
+        toast.success('Questionários limpos com sucesso!');
+      } catch (error) {
+        toast.error('Erro ao limpar questionários');
+      }
+    }
   };
 
   const uniqueGroups = getUniqueGroups();
+  const uniqueDimensions = getUniqueDimensions();
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end gap-4 mb-4">
+        <Select value={selectedDimension} onValueChange={setSelectedDimension}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Selecione uma dimensão" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todas as dimensões</SelectItem>
+            {uniqueDimensions.map((dimension) => (
+              <SelectItem key={dimension} value={dimension}>
+                {dimension}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select value={selectedGroup} onValueChange={setSelectedGroup}>
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Selecione um grupo" />
@@ -238,7 +313,7 @@ export const QuestionnaireResponses = () => {
       </div>
 
       <div className="space-y-6">
-        {filterQuestionnairesByGroup(questionnaires || []).map((questionnaire) => (
+        {filterQuestionnaires(questionnaires || []).map((questionnaire) => (
           <Card key={questionnaire.id} className="p-6">
             <div className="flex justify-between items-start">
               <div className="w-full">
@@ -324,6 +399,25 @@ export const QuestionnaireResponses = () => {
           Nenhum questionário encontrado.
         </p>
       )}
+
+      <div className="flex justify-end gap-4 mt-8">
+        <Button
+          variant="outline"
+          onClick={handleExport}
+          className="flex items-center gap-2"
+        >
+          <Download className="h-4 w-4" />
+          Exportar CSV
+        </Button>
+        <Button
+          variant="destructive"
+          onClick={handleClear}
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Limpar Tudo
+        </Button>
+      </div>
     </div>
   );
 };
