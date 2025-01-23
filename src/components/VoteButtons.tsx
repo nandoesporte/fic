@@ -14,7 +14,7 @@ export const VoteButtons = ({ isSelected, onVote, disabled }: VoteButtonsProps) 
       size="sm"
       onClick={onVote}
       disabled={disabled}
-      className={isSelected ? "bg-primary/10" : ""}
+      className={`${isSelected ? "bg-primary/10" : ""} transition-colors`}
     >
       <CheckSquare className={`h-4 w-4 mr-1 ${isSelected ? "text-primary" : "text-gray-400"}`} />
       {isSelected ? "Selecionado" : "Selecionar"}

@@ -73,65 +73,46 @@ export const QuestionnaireVoting = () => {
     toast.success('Email verificado com sucesso!');
   };
 
-  const voteMutation = useMutation({
-    mutationFn: async ({ questionnaireId, optionType, optionNumber }: { 
-      questionnaireId: string; 
-      optionType: 'strengths' | 'challenges' | 'opportunities';
-      optionNumber: number;
+  const submitVotesMutation = useMutation({
+    mutationFn: async ({ questionnaireId, votes }: { 
+      questionnaireId: string;
+      votes: {
+        optionType: string;
+        optionNumbers: number[];
+      }[];
     }) => {
-      const { data: voter, error: voterError } = await supabase
+      const { data: voter } = await supabase
         .from('registered_voters')
         .select('id')
         .eq('email', userEmail.toLowerCase())
-        .maybeSingle();
+        .single();
 
-      if (voterError || !voter) {
-        throw new Error('Email não encontrado');
-      }
+      if (!voter) throw new Error('Usuário não encontrado');
 
-      const { data: existingVote, error: fetchError } = await supabase
-        .from('questionnaire_votes')
-        .select('*')
-        .eq('questionnaire_id', questionnaireId)
-        .eq('user_id', voter.id)
-        .eq('option_type', optionType)
-        .eq('option_number', optionNumber)
-        .maybeSingle();
+      const votePromises = votes.flatMap(({ optionType, optionNumbers }) =>
+        optionNumbers.map(optionNumber =>
+          supabase
+            .from('questionnaire_votes')
+            .insert({
+              questionnaire_id: questionnaireId,
+              user_id: voter.id,
+              vote_type: 'upvote',
+              option_type: optionType,
+              option_number: optionNumber,
+            })
+        )
+      );
 
-      if (fetchError) {
-        throw fetchError;
-      }
-
-      if (existingVote) {
-        const { error } = await supabase
-          .from('questionnaire_votes')
-          .delete()
-          .eq('questionnaire_id', questionnaireId)
-          .eq('user_id', voter.id)
-          .eq('option_type', optionType)
-          .eq('option_number', optionNumber);
-        
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('questionnaire_votes')
-          .insert({
-            questionnaire_id: questionnaireId,
-            user_id: voter.id,
-            vote_type: 'upvote',
-            option_type: optionType,
-            option_number: optionNumber,
-          });
-        
-        if (error) throw error;
-      }
+      await Promise.all(votePromises);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
-      toast.success('Voto registrado com sucesso');
+      toast.success('Votos registrados com sucesso!');
+      // Limpar seleções após o sucesso
+      setSelections({});
     },
     onError: (error) => {
-      toast.error(error.message || 'Erro ao registrar voto');
+      toast.error('Erro ao registrar votos: ' + error.message);
     },
   });
 
@@ -153,7 +134,6 @@ export const QuestionnaireVoting = () => {
           [optionType]: currentSelections.filter(num => num !== optionNumber)
         }
       }));
-      voteMutation.mutate({ questionnaireId, optionType, optionNumber });
     } else {
       // Add selection if less than 3 options are selected
       if (currentSelections.length >= 3) {
@@ -168,8 +148,19 @@ export const QuestionnaireVoting = () => {
           [optionType]: [...currentSelections, optionNumber]
         }
       }));
-      voteMutation.mutate({ questionnaireId, optionType, optionNumber });
     }
+  };
+
+  const handleConfirmVotes = async (questionnaireId: string) => {
+    const questionnaireSelections = selections[questionnaireId];
+    if (!questionnaireSelections) return;
+
+    const votes = Object.entries(questionnaireSelections).map(([optionType, optionNumbers]) => ({
+      optionType,
+      optionNumbers,
+    }));
+
+    await submitVotesMutation.mutate({ questionnaireId, votes });
   };
 
   const isOptionSelected = (questionnaireId: string, optionType: string, optionNumber: number) => {
@@ -228,6 +219,7 @@ export const QuestionnaireVoting = () => {
                 getSelectionCount={(optionType) =>
                   getSelectionCount(questionnaire.id, optionType)
                 }
+                onConfirmVotes={() => handleConfirmVotes(questionnaire.id)}
               />
             ))}
           </div>
