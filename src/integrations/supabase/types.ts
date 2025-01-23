@@ -628,6 +628,19 @@ export type Database = {
           },
         ]
       }
+      questionnaire_voting_report: {
+        Row: {
+          challenges: string | null
+          dimension: string | null
+          group: string | null
+          opportunities: string | null
+          option_number: number | null
+          option_type: string | null
+          strengths: string | null
+          total_votes: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
