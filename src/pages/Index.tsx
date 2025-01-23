@@ -3,10 +3,14 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlusCircle, Users, BarChart2, TrendingUp, ClipboardList, Award, Heart, Sparkles } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { PlusCircle, Users, BarChart2, TrendingUp, ClipboardList, Award, Heart, Sparkles, Trash2 } from "lucide-react";
 import { FICForm } from "@/components/FICForm";
 import { QuestionnaireResponses } from "@/components/QuestionnaireResponses";
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const StatCard = ({ icon: Icon, label, value, description }: { icon: any; label: string; value: string; description?: string }) => (
   <Card className="p-6 hover:shadow-lg transition-shadow">
@@ -36,6 +40,139 @@ const AchievementCard = ({ title, description, icon: Icon }: { title: string; de
     </div>
   </Card>
 );
+
+const RegisteredVotersSection = () => {
+  const [newVoterEmail, setNewVoterEmail] = useState("");
+  const [newVoterName, setNewVoterName] = useState("");
+  const queryClient = useQueryClient();
+
+  const { data: voters, isLoading } = useQuery({
+    queryKey: ['registered-voters'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('registered_voters')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        toast.error('Erro ao carregar cooperados');
+        throw error;
+      }
+
+      return data;
+    },
+  });
+
+  const addVoterMutation = useMutation({
+    mutationFn: async ({ email, name }: { email: string; name: string }) => {
+      const { error } = await supabase
+        .from('registered_voters')
+        .insert([{ email, name }]);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['registered-voters'] });
+      setNewVoterEmail("");
+      setNewVoterName("");
+      toast.success('Cooperado adicionado com sucesso!');
+    },
+    onError: (error: any) => {
+      if (error.code === '23505') {
+        toast.error('Este email já está cadastrado');
+      } else {
+        toast.error('Erro ao adicionar cooperado');
+      }
+    },
+  });
+
+  const deleteVoterMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('registered_voters')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['registered-voters'] });
+      toast.success('Cooperado removido com sucesso!');
+    },
+    onError: () => {
+      toast.error('Erro ao remover cooperado');
+    },
+  });
+
+  const handleAddVoter = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newVoterEmail || !newVoterName) {
+      toast.error('Por favor, preencha todos os campos');
+      return;
+    }
+    addVoterMutation.mutate({ email: newVoterEmail, name: newVoterName });
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold mb-4">Adicionar Novo Cooperado</h3>
+        <form onSubmit={handleAddVoter} className="space-y-4">
+          <div>
+            <Input
+              type="text"
+              placeholder="Nome do Cooperado"
+              value={newVoterName}
+              onChange={(e) => setNewVoterName(e.target.value)}
+              className="mb-2"
+            />
+            <Input
+              type="email"
+              placeholder="Email do Cooperado"
+              value={newVoterEmail}
+              onChange={(e) => setNewVoterEmail(e.target.value)}
+            />
+          </div>
+          <Button type="submit" className="w-full">
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Adicionar Cooperado
+          </Button>
+        </form>
+      </Card>
+
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold mb-4">Lista de Cooperados</h3>
+        <div className="space-y-4">
+          {isLoading ? (
+            <p className="text-center text-gray-500">Carregando...</p>
+          ) : voters?.length === 0 ? (
+            <p className="text-center text-gray-500">Nenhum cooperado cadastrado</p>
+          ) : (
+            voters?.map((voter) => (
+              <div key={voter.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="font-medium">{voter.name}</p>
+                  <p className="text-sm text-gray-500">{voter.email}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    if (window.confirm('Tem certeza que deseja remover este cooperado?')) {
+                      deleteVoterMutation.mutate(voter.id);
+                    }
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+              </div>
+            ))
+          )}
+        </div>
+      </Card>
+    </div>
+  );
+};
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("questionarios");
@@ -106,6 +243,9 @@ const Index = () => {
               <TabsTrigger value="novo" className="data-[state=active]:bg-primary/10">
                 Novo Questionário
               </TabsTrigger>
+              <TabsTrigger value="cooperados" className="data-[state=active]:bg-primary/10">
+                Cooperados
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="questionarios">
@@ -146,6 +286,10 @@ const Index = () => {
                 </h2>
                 <FICForm />
               </Card>
+            </TabsContent>
+
+            <TabsContent value="cooperados">
+              <RegisteredVotersSection />
             </TabsContent>
           </Tabs>
         </main>
