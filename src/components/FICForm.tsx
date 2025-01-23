@@ -7,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { GroupSelect } from "./FICForm/GroupSelect";
 import { DimensionSelect } from "./FICForm/DimensionSelect";
-import { SatisfactionSelect } from "./FICForm/SatisfactionSelect";
 import { TextAreaSection } from "./FICForm/TextAreaSection";
 import { formSchema, type FICFormSchema } from "./FICForm/types";
 
@@ -37,7 +36,6 @@ export function FICForm() {
       opportunities1: "",
       opportunities2: "",
       opportunities3: "",
-      satisfaction: undefined,
     },
   });
 
@@ -52,7 +50,6 @@ export function FICForm() {
       const { error } = await supabase.from("fic_questionnaires").insert({
         dimension: values.dimension,
         group: values.group,
-        satisfaction: values.satisfaction,
         strengths: [values.strengths1, values.strengths2, values.strengths3].join('\n\n'),
         challenges: [values.challenges1, values.challenges2, values.challenges3].join('\n\n'),
         opportunities: [values.opportunities1, values.opportunities2, values.opportunities3].join('\n\n'),
@@ -77,7 +74,6 @@ export function FICForm() {
         <div className="space-y-6">
           <GroupSelect form={form} />
           <DimensionSelect form={form} />
-          <SatisfactionSelect form={form} />
 
           <TextAreaSection
             form={form}
