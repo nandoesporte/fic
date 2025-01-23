@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import QuestionnaireAnalytics from "./pages/QuestionnaireAnalytics";
 import QuestionnaireVoting from "./pages/QuestionnaireVoting";
+import ExportData from "./pages/ExportData";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -47,6 +48,14 @@ function App() {
                 }
               />
               <Route path="/voting" element={<QuestionnaireVoting />} />
+              <Route
+                path="/export"
+                element={
+                  <ProtectedRoute>
+                    <ExportData />
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </AuthProvider>
         </BrowserRouter>

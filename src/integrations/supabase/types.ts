@@ -143,6 +143,30 @@ export type Database = {
         }
         Relationships: []
       }
+      data_backups: {
+        Row: {
+          created_at: string | null
+          data: Json
+          filename: string
+          id: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          data: Json
+          filename: string
+          id?: string
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json
+          filename?: string
+          id?: string
+          type?: string
+        }
+        Relationships: []
+      }
       exercise_library: {
         Row: {
           created_at: string | null
