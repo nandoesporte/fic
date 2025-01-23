@@ -11,6 +11,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { DimensionManager } from "@/components/FICForm/DimensionManager";
 
 const StatCard = ({ icon: Icon, label, value, description }: { icon: any; label: string; value: string; description?: string }) => (
   <Card className="p-6 hover:shadow-lg transition-shadow">
@@ -284,7 +285,10 @@ const Index = () => {
                   <PlusCircle className="h-5 w-5 text-primary" />
                   Novo Questionário FIC
                 </h2>
-                <FICForm />
+                <div className="space-y-6">
+                  <DimensionManager />
+                  <FICForm />
+                </div>
               </Card>
             </TabsContent>
 

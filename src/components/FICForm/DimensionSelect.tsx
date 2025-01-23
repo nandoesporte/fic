@@ -15,20 +15,27 @@ import {
 } from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
 import { FICFormSchema } from "./types";
-
-const dimensions = [
-  { id: "bem-estar", label: "Bem-estar" },
-  { id: "desenvolvimento", label: "Desenvolvimento Humano" },
-  { id: "qualidade-vida", label: "Qualidade de Vida" },
-  { id: "relacoes", label: "Relações Interpessoais" },
-  { id: "impacto-social", label: "Impacto Social" },
-];
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DimensionSelectProps {
   form: UseFormReturn<FICFormSchema>;
 }
 
 export function DimensionSelect({ form }: DimensionSelectProps) {
+  const { data: dimensions } = useQuery({
+    queryKey: ['dimensions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('fic_dimensions')
+        .select('*')
+        .order('label');
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   return (
     <FormField
       control={form.control}
@@ -43,8 +50,8 @@ export function DimensionSelect({ form }: DimensionSelectProps) {
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              {dimensions.map((dimension) => (
-                <SelectItem key={dimension.id} value={dimension.id}>
+              {dimensions?.map((dimension) => (
+                <SelectItem key={dimension.id} value={dimension.identifier}>
                   {dimension.label}
                 </SelectItem>
               ))}

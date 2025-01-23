@@ -203,6 +203,30 @@ export type Database = {
         }
         Relationships: []
       }
+      fic_dimensions: {
+        Row: {
+          created_at: string | null
+          id: string
+          identifier: string
+          label: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          identifier: string
+          label: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          identifier?: string
+          label?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       fic_questionnaires: {
         Row: {
           challenges: string
