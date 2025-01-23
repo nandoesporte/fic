@@ -2,8 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -90,24 +88,34 @@ const QuestionnaireAnalytics = () => {
     return uniqueQuestionnaires.size;
   };
 
-  const chartConfig = {
-    total: {
-      color: "#3B82F6",
-    },
-  };
-
   const renderVoteList = (type: string) => {
     const data = processDataForChart(voteData, type);
+    const getBgColor = () => {
+      switch (type) {
+        case "strengths":
+          return "bg-[#2F855A] text-white";
+        case "challenges":
+          return "bg-[#FEF7CD] text-gray-900";
+        case "opportunities":
+          return "bg-[#221F26] text-white";
+        default:
+          return "bg-white text-gray-900";
+      }
+    };
+
     return (
       <div className="mb-4 space-y-2">
         {data.map((item, index) => (
-          <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+          <div 
+            key={index} 
+            className={`flex items-center justify-between p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow ${getBgColor()}`}
+          >
             <div className="flex-1">
-              <span className="text-sm font-medium text-gray-900">{item.text}</span>
+              <span className="text-sm font-medium">{item.text}</span>
             </div>
             <div className="flex items-center">
               <div className="w-12 text-right">
-                <span className="text-sm font-semibold text-gray-900">
+                <span className="text-sm font-semibold">
                   {item.total}
                 </span>
               </div>
@@ -163,13 +171,13 @@ const QuestionnaireAnalytics = () => {
 
               <Tabs defaultValue="strengths" className="space-y-4">
                 <TabsList className="bg-white p-1 rounded-lg">
-                  <TabsTrigger value="strengths" className="data-[state=active]:bg-blue-50">
+                  <TabsTrigger value="strengths" className="data-[state=active]:bg-[#2F855A] data-[state=active]:text-white">
                     Pontos Fortes
                   </TabsTrigger>
-                  <TabsTrigger value="challenges" className="data-[state=active]:bg-blue-50">
+                  <TabsTrigger value="challenges" className="data-[state=active]:bg-[#FEF7CD] data-[state=active]:text-gray-900">
                     Desafios
                   </TabsTrigger>
-                  <TabsTrigger value="opportunities" className="data-[state=active]:bg-blue-50">
+                  <TabsTrigger value="opportunities" className="data-[state=active]:bg-[#221F26] data-[state=active]:text-white">
                     Oportunidades
                   </TabsTrigger>
                 </TabsList>
@@ -182,41 +190,7 @@ const QuestionnaireAnalytics = () => {
                         {type === "challenges" && "Análise dos Desafios"}
                         {type === "opportunities" && "Análise das Oportunidades"}
                       </h2>
-                      
                       {renderVoteList(type)}
-
-                      <div className="h-[200px] mt-4">
-                        <ChartContainer config={chartConfig}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                              data={processDataForChart(voteData, type)}
-                              margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-                              barSize={16}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                              <XAxis dataKey="optionNumber" fontSize={12} />
-                              <YAxis fontSize={12} />
-                              <ChartTooltip
-                                content={({ active, payload }) => {
-                                  if (!active || !payload?.length) return null;
-                                  return (
-                                    <ChartTooltipContent
-                                      className="bg-white p-2 shadow-lg rounded-lg border"
-                                      payload={payload}
-                                    />
-                                  );
-                                }}
-                              />
-                              <Bar 
-                                dataKey="total" 
-                                name="Total" 
-                                fill={chartConfig.total.color}
-                                radius={[4, 4, 0, 0]}
-                              />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </ChartContainer>
-                      </div>
                     </Card>
                   </TabsContent>
                 ))}
