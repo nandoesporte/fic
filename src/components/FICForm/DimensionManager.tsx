@@ -126,13 +126,13 @@ export function DimensionManager() {
     addDimensionMutation.mutate(newDimension);
   };
 
-  const handleUpdateDimension = (e: React.FormEvent) => {
+  const handleUpdateDimension = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingDimension || !editingDimension.label.trim()) {
       toast.error('Digite o nome da dimensão');
       return;
     }
-    updateDimensionMutation.mutate(editingDimension);
+    await updateDimensionMutation.mutateAsync(editingDimension);
   };
 
   const handleDeleteDimension = async (id: string) => {
