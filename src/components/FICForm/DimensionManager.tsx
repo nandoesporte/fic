@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Plus, Edit, Trash2, Save, X, Palette } from "lucide-react";
+import { Plus, Edit, Trash2, Save, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -39,6 +39,18 @@ export function DimensionManager() {
   const addDimensionMutation = useMutation({
     mutationFn: async (label: string) => {
       const identifier = label.toLowerCase().replace(/\s+/g, '-');
+      
+      // Check if dimension with same label or identifier already exists
+      const { data: existingDimension } = await supabase
+        .from('fic_dimensions')
+        .select('id')
+        .or(`label.eq.${label},identifier.eq.${identifier}`)
+        .maybeSingle();
+
+      if (existingDimension) {
+        throw new Error('Já existe uma dimensão com este nome');
+      }
+
       const { error } = await supabase
         .from('fic_dimensions')
         .insert([{ label, identifier, background_color: '#F1F0FB' }]);
@@ -50,13 +62,25 @@ export function DimensionManager() {
       setNewDimension("");
       toast.success('Dimensão adicionada com sucesso');
     },
-    onError: () => {
-      toast.error('Erro ao adicionar dimensão');
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erro ao adicionar dimensão');
     },
   });
 
   const updateDimensionMutation = useMutation({
     mutationFn: async (dimension: Dimension) => {
+      // Check if another dimension with same label exists (excluding current one)
+      const { data: existingDimension } = await supabase
+        .from('fic_dimensions')
+        .select('id')
+        .eq('label', dimension.label)
+        .neq('id', dimension.id)
+        .maybeSingle();
+
+      if (existingDimension) {
+        throw new Error('Já existe uma dimensão com este nome');
+      }
+
       const { error } = await supabase
         .from('fic_dimensions')
         .update({ 
@@ -72,8 +96,8 @@ export function DimensionManager() {
       setEditingDimension(null);
       toast.success('Dimensão atualizada com sucesso');
     },
-    onError: () => {
-      toast.error('Erro ao atualizar dimensão');
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erro ao atualizar dimensão');
     },
   });
 
@@ -128,10 +152,15 @@ export function DimensionManager() {
           placeholder="Nova dimensão"
           value={newDimension}
           onChange={(e) => setNewDimension(e.target.value)}
+          disabled={addDimensionMutation.isPending}
         />
-        <Button type="submit" className="shrink-0">
+        <Button 
+          type="submit" 
+          className="shrink-0"
+          disabled={addDimensionMutation.isPending}
+        >
           <Plus className="h-4 w-4 mr-2" />
-          Adicionar
+          {addDimensionMutation.isPending ? 'Adicionando...' : 'Adicionar'}
         </Button>
       </form>
 
@@ -157,6 +186,7 @@ export function DimensionManager() {
                         label: e.target.value,
                       })
                     }
+                    disabled={updateDimensionMutation.isPending}
                   />
                   <Input
                     type="color"
@@ -168,8 +198,14 @@ export function DimensionManager() {
                       })
                     }
                     className="w-16 p-1 h-10"
+                    disabled={updateDimensionMutation.isPending}
                   />
-                  <Button type="submit" variant="ghost" size="icon">
+                  <Button 
+                    type="submit" 
+                    variant="ghost" 
+                    size="icon"
+                    disabled={updateDimensionMutation.isPending}
+                  >
                     <Save className="h-4 w-4" />
                   </Button>
                   <Button
@@ -177,6 +213,7 @@ export function DimensionManager() {
                     variant="ghost"
                     size="icon"
                     onClick={() => setEditingDimension(null)}
+                    disabled={updateDimensionMutation.isPending}
                   >
                     <X className="h-4 w-4" />
                   </Button>
