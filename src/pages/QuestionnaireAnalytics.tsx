@@ -3,8 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
 import { Users, Vote } from "lucide-react";
 
 type VoteData = {
@@ -16,12 +14,20 @@ type VoteData = {
   dimension?: string;
   satisfaction?: number;
   option_text?: string;
+  fic_questionnaires?: {
+    dimension: string;
+    satisfaction: number;
+    strengths: string;
+    challenges: string;
+    opportunities: string;
+  };
 };
 
 const QuestionnaireAnalytics = () => {
   const { data: voteData, isLoading } = useQuery({
     queryKey: ["questionnaire-votes"],
     queryFn: async () => {
+      console.log("Fetching vote data...");
       const { data: votes, error } = await supabase
         .from("questionnaire_vote_counts")
         .select(`
@@ -37,10 +43,14 @@ const QuestionnaireAnalytics = () => {
             challenges,
             opportunities
           )
-        `)
-        .filter('upvotes', 'gt', 0);
+        `);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching votes:", error);
+        throw error;
+      }
+
+      console.log("Raw vote data:", votes);
 
       const processedVotes = votes.map((vote) => {
         let optionText = "";
@@ -54,20 +64,27 @@ const QuestionnaireAnalytics = () => {
           const optionsList = options?.split('\n\n').filter(Boolean) || [];
           optionText = optionsList[vote.option_number - 1] || "";
         }
+
+        console.log(`Processing vote for ${vote.option_type}, option ${vote.option_number}:`, {
+          upvotes: vote.upvotes,
+          downvotes: vote.downvotes,
+          text: optionText
+        });
+
         return {
           ...vote,
           option_text: optionText,
         };
       });
 
-      return processedVotes as VoteData[];
+      return processedVotes.filter(vote => (vote.upvotes || 0) > 0);
     },
   });
 
   const processDataForChart = (data: VoteData[] | undefined, type: string) => {
     if (!data) return [];
     
-    return data
+    const filteredData = data
       .filter(item => item.option_type === type)
       .map(item => ({
         optionNumber: `Opção ${item.option_number}`,
@@ -76,6 +93,9 @@ const QuestionnaireAnalytics = () => {
         total: (item.upvotes || 0) - (item.downvotes || 0),
         text: item.option_text || "",
       }));
+
+    console.log(`Processed ${type} data:`, filteredData);
+    return filteredData;
   };
 
   const getTotalVotes = (data: VoteData[] | undefined) => {
