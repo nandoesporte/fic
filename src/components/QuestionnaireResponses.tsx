@@ -66,10 +66,24 @@ export const QuestionnaireResponses = () => {
   });
 
   const toggleStatusMutation = useMutation({
-    mutationFn: async ({ questionnaireId, status }: { questionnaireId: string; status: 'pending' | 'active' }) => {
+    mutationFn: async ({ questionnaireId, type, index, currentStatus }: { 
+      questionnaireId: string; 
+      type: 'strengths' | 'challenges' | 'opportunities';
+      index: number;
+      currentStatus: string;
+    }) => {
+      const questionnaire = questionnaires?.find(q => q.id === questionnaireId);
+      if (!questionnaire) return;
+
+      const lines = splitText(questionnaire[type]);
+      const statuses = lines.map((_, i) => i === index ? (currentStatus === 'pending' ? 'active' : 'pending') : 'pending');
+
       const { error } = await supabase
         .from('fic_questionnaires')
-        .update({ status })
+        .update({ 
+          [`${type}_statuses`]: statuses.join(','),
+          status: statuses.includes('active') ? 'active' : 'pending'
+        })
         .eq('id', questionnaireId);
 
       if (error) throw error;
@@ -105,15 +119,17 @@ export const QuestionnaireResponses = () => {
     });
   };
 
-  const handleToggleStatus = (questionnaireId: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'pending' ? 'active' : 'pending';
-    toggleStatusMutation.mutate({ questionnaireId, status: newStatus });
+  const handleToggleStatus = (questionnaireId: string, type: 'strengths' | 'challenges' | 'opportunities', index: number, currentStatus: string) => {
+    toggleStatusMutation.mutate({ questionnaireId, type, index, currentStatus });
   };
 
   const renderLine = (questionnaire: any, type: 'strengths' | 'challenges' | 'opportunities', line: string, index: number) => {
     const isEditing = editingLine?.questionnaireId === questionnaire.id && 
                      editingLine?.type === type && 
                      editingLine?.index === index;
+
+    const statuses = (questionnaire[`${type}_statuses`] || '').split(',');
+    const currentStatus = statuses[index] || 'pending';
 
     if (isEditing) {
       return (
@@ -155,9 +171,9 @@ export const QuestionnaireResponses = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleToggleStatus(questionnaire.id, questionnaire.status)}
+            onClick={() => handleToggleStatus(questionnaire.id, type, index, currentStatus)}
           >
-            {questionnaire.status === 'pending' ? (
+            {currentStatus === 'pending' ? (
               <Circle className="h-4 w-4" />
             ) : (
               <Check className="h-4 w-4" />
@@ -266,8 +282,6 @@ export const QuestionnaireResponses = () => {
     }
   };
 
-  const uniqueDimensions = getUniqueDimensions();
-
   return (
     <div className="space-y-4">
       <div className="flex justify-end gap-4 mb-4">
@@ -303,26 +317,6 @@ export const QuestionnaireResponses = () => {
                         </span>
                       </div>
                     )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleEdit(questionnaire.id)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleToggleStatus(questionnaire.id, questionnaire.status)}
-                    >
-                      {questionnaire.status === 'pending' ? (
-                        <Circle className="h-4 w-4" />
-                      ) : (
-                        <Check className="h-4 w-4" />
-                      )}
-                    </Button>
                   </div>
                 </div>
                 <p className="text-sm text-gray-500 mb-4">
