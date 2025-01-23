@@ -135,9 +135,9 @@ export function DimensionManager() {
     updateDimensionMutation.mutate(editingDimension);
   };
 
-  const handleDeleteDimension = (id: string) => {
+  const handleDeleteDimension = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir esta dimensão?')) {
-      deleteDimensionMutation.mutate(id);
+      await deleteDimensionMutation.mutateAsync(id);
     }
   };
 
