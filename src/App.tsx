@@ -1,65 +1,52 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/components/AuthProvider";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import QuestionnaireAnalytics from "./pages/QuestionnaireAnalytics";
-import QuestionnaireVoting from "./pages/QuestionnaireVoting";
-import ExportData from "./pages/ExportData";
+import { Toaster } from "@/components/ui/sonner";
+import Index from "@/pages/Index";
+import Login from "@/pages/Login";
+import QuestionnaireVoting from "@/pages/QuestionnaireVoting";
+import QuestionnaireAnalytics from "@/pages/QuestionnaireAnalytics";
+import ExportData from "@/pages/ExportData";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-// Create a client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      retry: 1,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <Index />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/analytics"
-                element={
-                  <ProtectedRoute>
-                    <QuestionnaireAnalytics />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/voting" element={<QuestionnaireVoting />} />
-              <Route
-                path="/export"
-                element={
-                  <ProtectedRoute>
-                    <ExportData />
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/voting"
+              element={
+                <ProtectedRoute>
+                  <QuestionnaireVoting />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute>
+                  <QuestionnaireAnalytics />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/export"
+              element={
+                <ProtectedRoute>
+                  <ExportData />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+          <Toaster />
+        </AuthProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }

@@ -1,45 +1,50 @@
-import { Home, ClipboardList, BarChart2, Users, Settings, LogOut } from "lucide-react";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
-
-const menuItems = [
-  { icon: Home, label: "Dashboard", href: "/" },
-  { icon: ClipboardList, label: "Questionários", href: "/questionarios" },
-  { icon: BarChart2, label: "Análise de Votos", href: "/analytics" },
-  { icon: Users, label: "Cooperados", href: "/cooperados" },
-  { icon: Settings, label: "Configurações", href: "/configuracoes" },
-];
+import { Link, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sidebar } from "@/components/ui/sidebar";
+import { FileText, BarChart2, Database } from "lucide-react";
 
 export function AppSidebar() {
+  const { pathname } = useLocation();
+
   return (
-    <Sidebar>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>FIC - Sistema de Felicidade</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.label}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.href} className="flex items-center gap-2">
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.label}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+    <Sidebar className="border-r bg-gray-100/40 w-[300px]">
+      <ScrollArea className="h-full">
+        <div className="space-y-4 py-4">
+          <div className="px-3 py-2">
+            <div className="space-y-1">
+              <Link to="/voting">
+                <Button
+                  variant={pathname === "/voting" ? "secondary" : "ghost"}
+                  className="w-full justify-start"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Questionários
+                </Button>
+              </Link>
+              <Link to="/analytics">
+                <Button
+                  variant={pathname === "/analytics" ? "secondary" : "ghost"}
+                  className="w-full justify-start"
+                >
+                  <BarChart2 className="mr-2 h-4 w-4" />
+                  Análise de Votos
+                </Button>
+              </Link>
+              <Link to="/export">
+                <Button
+                  variant={pathname === "/export" ? "secondary" : "ghost"}
+                  className="w-full justify-start"
+                >
+                  <Database className="mr-2 h-4 w-4" />
+                  Exportar Dados
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </ScrollArea>
     </Sidebar>
   );
 }
