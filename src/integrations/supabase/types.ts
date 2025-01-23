@@ -239,7 +239,7 @@ export type Database = {
           group_name: string | null
           id: string
           opportunities: string
-          satisfaction: number
+          satisfaction: number | null
           status: string | null
           strengths: string
           updated_at: string | null
@@ -253,7 +253,7 @@ export type Database = {
           group_name?: string | null
           id?: string
           opportunities: string
-          satisfaction: number
+          satisfaction?: number | null
           status?: string | null
           strengths: string
           updated_at?: string | null
@@ -267,7 +267,7 @@ export type Database = {
           group_name?: string | null
           id?: string
           opportunities?: string
-          satisfaction?: number
+          satisfaction?: number | null
           status?: string | null
           strengths?: string
           updated_at?: string | null

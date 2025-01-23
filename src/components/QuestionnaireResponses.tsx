@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Loader2, Download, RefreshCw } from "lucide-react";
+import { Edit, Loader2, Download, RefreshCw, CheckCircle2, Circle } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -65,29 +65,23 @@ export const QuestionnaireResponses = () => {
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
+  const toggleStatusMutation = useMutation({
+    mutationFn: async ({ questionnaireId, status }: { questionnaireId: string; status: 'pending' | 'active' }) => {
       const { error } = await supabase
         .from('fic_questionnaires')
-        .delete()
-        .eq('id', id);
+        .update({ status })
+        .eq('id', questionnaireId);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Questionário excluído com sucesso');
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
+      toast.success('Status atualizado com sucesso');
     },
     onError: () => {
-      toast.error('Erro ao excluir questionário');
+      toast.error('Erro ao atualizar status');
     },
   });
-
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este questionário?')) {
-      deleteMutation.mutate(id);
-    }
-  };
 
   const handleEdit = (id: string) => {
     setSelectedQuestionnaire(id);
@@ -111,15 +105,12 @@ export const QuestionnaireResponses = () => {
     });
   };
 
-  const handleLineDelete = (questionnaire: any, type: 'strengths' | 'challenges' | 'opportunities', indexToDelete: number) => {
-    if (window.confirm('Tem certeza que deseja excluir esta linha?')) {
-      const lines = splitText(questionnaire[type]).filter((_, index) => index !== indexToDelete);
-      updateLineMutation.mutate({
-        questionnaireId: questionnaire.id,
-        type,
-        lines,
-      });
-    }
+  const handleToggleStatus = (questionnaire: any) => {
+    const newStatus = questionnaire.status === 'pending' ? 'active' : 'pending';
+    toggleStatusMutation.mutate({
+      questionnaireId: questionnaire.id,
+      status: newStatus,
+    });
   };
 
   const renderLine = (questionnaire: any, type: 'strengths' | 'challenges' | 'opportunities', line: string, index: number) => {
@@ -147,7 +138,7 @@ export const QuestionnaireResponses = () => {
             size="sm"
             onClick={() => setEditingLine(null)}
           >
-            <Trash2 className="h-4 w-4" />
+            <Circle className="h-4 w-4" />
           </Button>
         </div>
       );
@@ -163,13 +154,6 @@ export const QuestionnaireResponses = () => {
             onClick={() => handleLineEdit(questionnaire.id, type, index, line)}
           >
             <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleLineDelete(questionnaire, type, index)}
-          >
-            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -202,7 +186,6 @@ export const QuestionnaireResponses = () => {
       filtered = filtered.filter(q => q.dimension === selectedDimension);
     }
     
-    // Sort by group in ascending order
     filtered.sort((a, b) => {
       const groupA = a.group || '';
       const groupB = b.group || '';
@@ -241,14 +224,12 @@ export const QuestionnaireResponses = () => {
   const handleClear = async () => {
     if (window.confirm('Tem certeza que deseja limpar todos os questionários? Esta ação não pode ser desfeita.')) {
       try {
-        // First fetch all questionnaires to create backup
         const { data: questionnaires, error: fetchError } = await supabase
           .from('fic_questionnaires')
           .select('*');
           
         if (fetchError) throw fetchError;
 
-        // Create backup if there are questionnaires
         if (questionnaires && questionnaires.length > 0) {
           const { error: backupError } = await supabase
             .from('data_backups')
@@ -261,7 +242,6 @@ export const QuestionnaireResponses = () => {
           if (backupError) throw backupError;
         }
 
-        // Then proceed with deletion
         const { error: deleteError } = await supabase
           .from('fic_questionnaires')
           .delete()
@@ -327,9 +307,13 @@ export const QuestionnaireResponses = () => {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => handleDelete(questionnaire.id)}
+                      onClick={() => handleToggleStatus(questionnaire)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      {questionnaire.status === 'pending' ? (
+                        <Circle className="h-4 w-4" />
+                      ) : (
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      )}
                     </Button>
                   </div>
                 </div>
