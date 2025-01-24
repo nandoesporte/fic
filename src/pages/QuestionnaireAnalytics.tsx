@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Vote } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { AppSidebar } from "@/components/AppSidebar";
+import { Users, Vote } from "lucide-react";
 
 type VoteData = {
   questionnaire_id: string;
@@ -11,169 +12,198 @@ type VoteData = {
   option_number: number;
   upvotes: number;
   downvotes: number;
-};
-
-type QuestionnaireData = {
-  dimension: string;
-  group: string;
-  strengths: string;
-  challenges: string;
-  opportunities: string;
+  dimension?: string;
+  satisfaction?: number;
+  option_text?: string;
 };
 
 const QuestionnaireAnalytics = () => {
-  const { data: voteData, isLoading: isLoadingVotes } = useQuery({
-    queryKey: ["vote-counts"],
+  const { data: voteData, isLoading } = useQuery({
+    queryKey: ["questionnaire-votes"],
     queryFn: async () => {
-      console.log("Fetching vote counts...");
-      const { data: voteCounts, error } = await supabase
+      console.log("Fetching vote data...");
+      const { data: votes, error } = await supabase
         .from("questionnaire_vote_counts")
-        .select("*")
-        .filter("upvotes", "gt", 0);
+        .select(`
+          questionnaire_id,
+          option_type,
+          option_number,
+          upvotes,
+          downvotes,
+          fic_questionnaires (
+            dimension,
+            satisfaction,
+            strengths,
+            challenges,
+            opportunities
+          )
+        `)
+        .filter('upvotes', 'gt', 0);
 
       if (error) {
-        console.error("Error fetching vote counts:", error);
+        console.error("Error fetching votes:", error);
         throw error;
       }
 
-      console.log("Vote counts data:", voteCounts);
-      return voteCounts as VoteData[];
+      console.log("Raw vote data:", votes);
+
+      const processedVotes = votes.map((vote) => {
+        let optionText = "";
+        if (vote.fic_questionnaires) {
+          const options = vote.option_type === "strengths" 
+            ? vote.fic_questionnaires.strengths
+            : vote.option_type === "challenges"
+              ? vote.fic_questionnaires.challenges
+              : vote.fic_questionnaires.opportunities;
+          
+          const optionsList = options?.split('\n\n').filter(Boolean) || [];
+          optionText = optionsList[vote.option_number - 1] || "";
+        }
+        return {
+          ...vote,
+          option_text: optionText,
+        };
+      });
+
+      console.log("Processed vote data:", processedVotes);
+      return processedVotes as VoteData[];
     },
   });
 
-  const { data: questionnaireData, isLoading: isLoadingQuestionnaires } = useQuery({
-    queryKey: ["questionnaires"],
-    queryFn: async () => {
-      console.log("Fetching questionnaires...");
-      const { data: questionnaires, error } = await supabase
-        .from("fic_questionnaires")
-        .select("*");
-
-      if (error) {
-        console.error("Error fetching questionnaires:", error);
-        throw error;
-      }
-
-      console.log("Questionnaires data:", questionnaires);
-      return questionnaires as QuestionnaireData[];
-    },
-  });
-
-  const getContentByType = (
-    questionnaireId: string,
-    type: "strengths" | "challenges" | "opportunities",
-    optionNumber: number
-  ) => {
-    const questionnaire = questionnaireData?.find(
-      (q) => q.dimension === questionnaireId
-    );
-    if (!questionnaire) return "";
-
-    const content = questionnaire[type];
-    if (!content) return "";
-
-    const options = content.split(",");
-    return options[optionNumber - 1] || "";
+  const processDataForChart = (data: VoteData[] | undefined, type: string) => {
+    if (!data) return [];
+    
+    return data
+      .filter(item => item.option_type === type)
+      .map(item => ({
+        optionNumber: `Opção ${item.option_number}`,
+        upvotes: item.upvotes || 0,
+        downvotes: item.downvotes || 0,
+        total: (item.upvotes || 0) - (item.downvotes || 0),
+        text: item.option_text || "",
+      }));
   };
 
-  const groupVotesByDimension = () => {
-    if (!voteData) return {};
-
-    const grouped: Record<
-      string,
-      Record<string, Record<number, { upvotes: number; downvotes: number }>>
-    > = {};
-
-    voteData.forEach((vote) => {
-      if (!grouped[vote.questionnaire_id]) {
-        grouped[vote.questionnaire_id] = {};
-      }
-      if (!grouped[vote.questionnaire_id][vote.option_type]) {
-        grouped[vote.questionnaire_id][vote.option_type] = {};
-      }
-      grouped[vote.questionnaire_id][vote.option_type][vote.option_number] = {
-        upvotes: vote.upvotes,
-        downvotes: vote.downvotes,
-      };
-    });
-
-    return grouped;
+  const getTotalVotes = (data: VoteData[] | undefined) => {
+    if (!data) return 0;
+    return data.reduce((acc, curr) => acc + (curr.upvotes || 0) + (curr.downvotes || 0), 0);
   };
 
-  const groupedVotes = groupVotesByDimension();
+  const getTotalParticipants = (data: VoteData[] | undefined) => {
+    if (!data) return 0;
+    const uniqueQuestionnaires = new Set(data.map(vote => vote.questionnaire_id));
+    return uniqueQuestionnaires.size;
+  };
 
-  if (isLoadingVotes || isLoadingQuestionnaires) {
+  const renderVoteList = (type: string) => {
+    const data = processDataForChart(voteData, type);
+    const getBgColor = () => {
+      switch (type) {
+        case "strengths":
+          return "bg-[#2F855A] text-white shadow-lg hover:shadow-xl transition-all duration-300";
+        case "challenges":
+          return "bg-[#FFD700] text-gray-900 shadow-lg hover:shadow-xl transition-all duration-300";
+        case "opportunities":
+          return "bg-[#000080] text-white shadow-lg hover:shadow-xl transition-all duration-300";
+        default:
+          return "bg-white text-gray-900";
+      }
+    };
+
     return (
-      <div className="container mx-auto p-8">
-        <Skeleton className="h-12 w-full mb-4" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-48" />
-          ))}
-        </div>
+      <div className="mb-4 space-y-3">
+        {data.map((item, index) => (
+          <div 
+            key={index} 
+            className={`flex items-center justify-between p-5 rounded-lg ${getBgColor()}`}
+          >
+            <div className="flex-1">
+              <span className="text-sm font-medium">{item.text}</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-16 text-right">
+                <span className="text-sm font-bold">
+                  {item.total >= 0 ? `+${item.total}` : item.total}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     );
-  }
+  };
 
   return (
-    <div className="container mx-auto p-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Análise de Votos</h1>
-        <p className="text-gray-500">
-          Visualize e analise os resultados das votações dos questionários FIC
-        </p>
-      </div>
+    <div className="min-h-screen flex w-full bg-gray-50">
+      <AppSidebar />
+      <main className="flex-1 p-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Análise de Votos</h1>
+          <p className="text-gray-500">Visualização detalhada dos votos por questionário</p>
+        </div>
 
-      {Object.entries(groupedVotes).map(([dimension, optionTypes]) => (
-        <Card key={dimension} className="mb-8 p-6">
-          <h2 className="text-2xl font-semibold mb-4">{dimension}</h2>
-          <Tabs defaultValue="strengths" className="w-full">
-            <TabsList>
-              <TabsTrigger value="strengths">Pontos Fortes</TabsTrigger>
-              <TabsTrigger value="challenges">Desafios</TabsTrigger>
-              <TabsTrigger value="opportunities">Oportunidades</TabsTrigger>
-            </TabsList>
-
-            {["strengths", "challenges", "opportunities"].map((type) => (
-              <TabsContent key={type} value={type}>
-                <div className="space-y-4">
-                  {optionTypes[type] &&
-                    Object.entries(optionTypes[type])
-                      .sort(([a], [b]) => Number(a) - Number(b))
-                      .map(([optionNumber, votes]) => (
-                        <div
-                          key={optionNumber}
-                          className="bg-gray-50 p-4 rounded-lg"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <p className="font-medium">
-                                {getContentByType(
-                                  dimension,
-                                  type as "strengths" | "challenges" | "opportunities",
-                                  Number(optionNumber)
-                                )}
-                              </p>
-                              <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                                <div className="flex items-center">
-                                  <Vote className="h-4 w-4 mr-1 text-green-500" />
-                                  <span>{votes.upvotes} votos positivos</span>
-                                </div>
-                                <div className="flex items-center">
-                                  <Vote className="h-4 w-4 mr-1 text-red-500 rotate-180" />
-                                  <span>{votes.downvotes} votos negativos</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-[150px] w-full" />
+            <Skeleton className="h-[150px] w-full" />
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <Card className="p-6 bg-white shadow-lg hover:shadow-xl transition-all duration-300">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-100 rounded-full">
+                    <Users className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Total de Participantes</p>
+                    <h3 className="text-2xl font-bold text-gray-900">{getTotalParticipants(voteData)}</h3>
+                  </div>
                 </div>
-              </TabsContent>
-            ))}
-          </Tabs>
-        </Card>
-      ))}
+              </Card>
+
+              <Card className="p-6 bg-white shadow-lg hover:shadow-xl transition-all duration-300">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-green-100 rounded-full">
+                    <Vote className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Total de Votos</p>
+                    <h3 className="text-2xl font-bold text-gray-900">{getTotalVotes(voteData)}</h3>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            <Tabs defaultValue="strengths" className="space-y-6">
+              <TabsList className="bg-white p-1.5 rounded-lg">
+                <TabsTrigger value="strengths" className="data-[state=active]:bg-[#2F855A] data-[state=active]:text-white px-6">
+                  Pontos Fortes
+                </TabsTrigger>
+                <TabsTrigger value="challenges" className="data-[state=active]:bg-[#FFD700] data-[state=active]:text-gray-900 px-6">
+                  Desafios
+                </TabsTrigger>
+                <TabsTrigger value="opportunities" className="data-[state=active]:bg-[#000080] data-[state=active]:text-white px-6">
+                  Oportunidades
+                </TabsTrigger>
+              </TabsList>
+
+              {["strengths", "challenges", "opportunities"].map((type) => (
+                <TabsContent key={type} value={type}>
+                  <Card className="p-6">
+                    <h2 className="text-xl font-semibold mb-6">
+                      {type === "strengths" && "Análise dos Pontos Fortes"}
+                      {type === "challenges" && "Análise dos Desafios"}
+                      {type === "opportunities" && "Análise das Oportunidades"}
+                    </h2>
+                    {renderVoteList(type)}
+                  </Card>
+                </TabsContent>
+              ))}
+            </Tabs>
+          </>
+        )}
+      </main>
     </div>
   );
 };
