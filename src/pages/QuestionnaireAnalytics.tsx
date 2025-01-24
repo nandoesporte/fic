@@ -89,7 +89,7 @@ const QuestionnaireAnalytics = () => {
         total: (item.upvotes || 0) - (item.downvotes || 0),
         text: item.option_text || "",
       }))
-      .sort((a, b) => b.total - a.total); // Sort by total votes
+      .sort((a, b) => b.total - a.total);
   };
 
   const getTotalVotes = (data: VoteData[] | undefined) => {
@@ -99,8 +99,9 @@ const QuestionnaireAnalytics = () => {
 
   const getTotalParticipants = (data: VoteData[] | undefined) => {
     if (!data) return 0;
-    const uniqueQuestionnaires = new Set(data.map(vote => vote.questionnaire_id));
-    return uniqueQuestionnaires.size;
+    const totalVotes = getTotalVotes(data);
+    // Cada participante deve ter 9 votos (3 em cada categoria)
+    return Math.floor(totalVotes / 9);
   };
 
   const renderVoteList = (type: string) => {
