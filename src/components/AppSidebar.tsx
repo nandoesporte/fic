@@ -2,14 +2,14 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sidebar, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Sidebar } from "@/components/ui/sidebar";
 import { FileText, BarChart2, Database, FormInput, LayoutDashboard } from "lucide-react";
 
 export function AppSidebar() {
   const { pathname } = useLocation();
 
   return (
-    <Sidebar className="border-r bg-gray-100/40 w-[300px]" collapsible="icon">
+    <Sidebar className="border-r bg-gray-100/40 w-[300px] overflow-hidden" collapsible="icon">
       <ScrollArea className="h-full">
         <div className="space-y-4 py-4">
           <div className="px-3 py-2">
