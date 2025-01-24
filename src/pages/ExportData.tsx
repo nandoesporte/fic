@@ -29,7 +29,7 @@ const ExportData = () => {
     },
   });
 
-  // Mutation to delete backup
+  // Mutation to delete backup with proper invalidation
   const deleteBackupMutation = useMutation({
     mutationFn: async (backupId: string) => {
       const { error } = await supabase
@@ -44,12 +44,17 @@ const ExportData = () => {
       }
     },
     onSuccess: () => {
+      // Immediately invalidate and refetch backups
       queryClient.invalidateQueries({ queryKey: ['data-backups'] });
       toast.success('Backup excluído com sucesso');
     },
+    onError: (error) => {
+      console.error('Error deleting backup:', error);
+      toast.error('Erro ao excluir backup');
+    }
   });
 
-  // Function to handle export and clear data
+  // Function to handle export and clear data with proper UI updates
   const handleExportAndClear = async (backupName: string) => {
     setIsExporting(true);
     try {
@@ -133,6 +138,7 @@ const ExportData = () => {
         throw clearVotesError;
       }
 
+      // Immediately invalidate and refetch backups after successful export
       await queryClient.invalidateQueries({ queryKey: ['data-backups'] });
       toast.success('Dados exportados e limpos com sucesso!');
     } catch (error) {
@@ -165,7 +171,7 @@ const ExportData = () => {
     return [headers.join(','), ...rows].join('\n');
   };
 
-  // Function to handle backup deletion
+  // Function to handle backup deletion with proper UI update
   const handleDeleteBackup = async (backupId: string) => {
     try {
       await deleteBackupMutation.mutateAsync(backupId);
