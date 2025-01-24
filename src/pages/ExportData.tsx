@@ -122,9 +122,13 @@ const ExportData = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleDeleteBackup = (backupId: string) => {
+  const handleDeleteBackup = async (backupId: string) => {
     if (window.confirm('Tem certeza que deseja excluir este backup?')) {
-      deleteBackupMutation.mutate(backupId);
+      await deleteBackupMutation.mutateAsync(backupId);
+      // After successful deletion, update the local state through React Query
+      queryClient.setQueryData(['data-backups'], (oldData: any) => {
+        return oldData?.filter((backup: any) => backup.id !== backupId);
+      });
     }
   };
 
