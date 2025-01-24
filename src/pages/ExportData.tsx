@@ -19,7 +19,10 @@ const ExportData = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching backups:', error);
+        throw error;
+      }
       return data;
     },
   });
@@ -31,10 +34,14 @@ const ExportData = () => {
         .delete()
         .eq('id', backupId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['data-backups'] });
+      toast.success('Backup excluído com sucesso');
     },
     onError: () => {
       toast.error('Erro ao excluir backup');
@@ -69,7 +76,10 @@ const ExportData = () => {
             data: questionnaires,
             type: 'questionnaires'
           });
-        if (backupError) throw backupError;
+        if (backupError) {
+          console.error('Backup error:', backupError);
+          throw backupError;
+        }
       }
 
       // Create backup of votes
@@ -81,7 +91,10 @@ const ExportData = () => {
             data: votes,
             type: 'votes'
           });
-        if (backupError) throw backupError;
+        if (backupError) {
+          console.error('Backup error:', backupError);
+          throw backupError;
+        }
       }
 
       // Clear questionnaires
@@ -123,7 +136,6 @@ const ExportData = () => {
   const handleDeleteBackup = async (backupId: string) => {
     try {
       await deleteBackupMutation.mutateAsync(backupId);
-      toast.success('Backup excluído com sucesso');
     } catch (error) {
       console.error('Error deleting backup:', error);
     }
