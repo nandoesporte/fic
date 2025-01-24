@@ -67,8 +67,7 @@ const QuestionnaireAnalytics = () => {
             opportunities
           )
         `)
-        .filter('upvotes', 'gt', 0)
-        .order('upvotes', { ascending: false });
+        .filter('upvotes', 'gt', 0);
 
       if (selectedDimension && selectedDimension !== "all") {
         query = query.eq('fic_questionnaires.dimension', selectedDimension);
