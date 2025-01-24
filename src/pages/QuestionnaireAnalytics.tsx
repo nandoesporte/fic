@@ -32,7 +32,7 @@ type VoteData = {
 };
 
 const QuestionnaireAnalytics = () => {
-  const [selectedDimension, setSelectedDimension] = React.useState<string>("");
+  const [selectedDimension, setSelectedDimension] = React.useState<string>("all");
 
   const { data: dimensions } = useQuery({
     queryKey: ["dimensions"],
@@ -70,7 +70,7 @@ const QuestionnaireAnalytics = () => {
         .filter('upvotes', 'gt', 0)
         .order('upvotes', { ascending: false });
 
-      if (selectedDimension) {
+      if (selectedDimension && selectedDimension !== "all") {
         query = query.eq('fic_questionnaires.dimension', selectedDimension);
       }
 
@@ -218,7 +218,7 @@ const QuestionnaireAnalytics = () => {
                       <SelectValue placeholder="Todas as dimensões" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todas as dimensões</SelectItem>
+                      <SelectItem value="all">Todas as dimensões</SelectItem>
                       {dimensions?.map((dim) => (
                         <SelectItem key={dim.identifier} value={dim.identifier}>
                           {dim.label}
