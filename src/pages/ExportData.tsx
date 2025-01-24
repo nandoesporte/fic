@@ -42,7 +42,7 @@ const ExportData = () => {
     },
   });
 
-  const handleExportAndClear = async () => {
+  const handleExportAndClear = async (backupName: string) => {
     if (!window.confirm('Tem certeza que deseja exportar e limpar os dados? Esta ação não pode ser desfeita.')) {
       return;
     }
@@ -66,7 +66,7 @@ const ExportData = () => {
         const { error: backupError } = await supabase
           .from('data_backups')
           .insert({
-            filename: `questionarios_${new Date().toISOString()}.json`,
+            filename: `${backupName}_questionarios_${new Date().toISOString()}.json`,
             data: questionnaires,
             type: 'questionnaires'
           });
@@ -78,7 +78,7 @@ const ExportData = () => {
         const { error: backupError } = await supabase
           .from('data_backups')
           .insert({
-            filename: `votos_${new Date().toISOString()}.json`,
+            filename: `${backupName}_votos_${new Date().toISOString()}.json`,
             data: votes,
             type: 'votes'
           });
