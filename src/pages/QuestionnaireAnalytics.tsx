@@ -67,7 +67,8 @@ const QuestionnaireAnalytics = () => {
             opportunities
           )
         `)
-        .filter('upvotes', 'gt', 0);
+        .filter('upvotes', 'gt', 0)
+        .order('upvotes', { ascending: false });
 
       if (selectedDimension && selectedDimension !== "all") {
         query = query.eq('fic_questionnaires.dimension', selectedDimension);
@@ -125,7 +126,13 @@ const QuestionnaireAnalytics = () => {
 
   const getTotalParticipants = (data: VoteData[] | undefined) => {
     if (!data) return 0;
-    const uniqueQuestionnaires = new Set(data.map(vote => vote.questionnaire_id));
+    const uniqueQuestionnaires = new Set(
+      data.map(vote => vote.questionnaire_id)
+        .filter(id => {
+          const vote = data.find(v => v.questionnaire_id === id);
+          return vote?.fic_questionnaires?.dimension === selectedDimension || selectedDimension === "all";
+        })
+    );
     return uniqueQuestionnaires.size;
   };
 
