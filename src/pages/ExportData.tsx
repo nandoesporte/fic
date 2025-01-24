@@ -11,6 +11,7 @@ const ExportData = () => {
   const queryClient = useQueryClient();
   const [isExporting, setIsExporting] = useState(false);
 
+  // Query to fetch backups
   const { data: backups, isLoading } = useQuery({
     queryKey: ['data-backups'],
     queryFn: async () => {
@@ -28,6 +29,7 @@ const ExportData = () => {
     },
   });
 
+  // Mutation to delete backup
   const deleteBackupMutation = useMutation({
     mutationFn: async (backupId: string) => {
       const { error } = await supabase
@@ -47,6 +49,7 @@ const ExportData = () => {
     },
   });
 
+  // Function to handle export and clear data
   const handleExportAndClear = async (backupName: string) => {
     setIsExporting(true);
     try {
@@ -72,17 +75,8 @@ const ExportData = () => {
         throw votesError;
       }
 
-      // Convert data to CSV format
-      const convertToCSV = (data: any[]) => {
-        if (!data || data.length === 0) return '';
-        const headers = Object.keys(data[0]);
-        const rows = data.map(obj => headers.map(header => JSON.stringify(obj[header])).join(','));
-        return [headers.join(','), ...rows].join('\n');
-      };
-
       // Create backup for questionnaires if they exist
       if (questionnaires && questionnaires.length > 0) {
-        const csvData = convertToCSV(questionnaires);
         const { error: backupError } = await supabase
           .from('data_backups')
           .insert({
@@ -100,7 +94,6 @@ const ExportData = () => {
 
       // Create backup for votes if they exist
       if (votes && votes.length > 0) {
-        const csvData = convertToCSV(votes);
         const { error: backupError } = await supabase
           .from('data_backups')
           .insert({
@@ -150,15 +143,8 @@ const ExportData = () => {
     }
   };
 
+  // Function to handle backup download
   const handleDownloadBackup = (backup: any) => {
-    // Convert the data to CSV
-    const convertToCSV = (data: any[]) => {
-      if (!data || data.length === 0) return '';
-      const headers = Object.keys(data[0]);
-      const rows = data.map(obj => headers.map(header => JSON.stringify(obj[header])).join(','));
-      return [headers.join(','), ...rows].join('\n');
-    };
-
     const csvData = convertToCSV(backup.data);
     const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -171,6 +157,15 @@ const ExportData = () => {
     URL.revokeObjectURL(url);
   };
 
+  // Function to convert data to CSV
+  const convertToCSV = (data: any[]) => {
+    if (!data || data.length === 0) return '';
+    const headers = Object.keys(data[0]);
+    const rows = data.map(obj => headers.map(header => JSON.stringify(obj[header])).join(','));
+    return [headers.join(','), ...rows].join('\n');
+  };
+
+  // Function to handle backup deletion
   const handleDeleteBackup = async (backupId: string) => {
     try {
       await deleteBackupMutation.mutateAsync(backupId);
