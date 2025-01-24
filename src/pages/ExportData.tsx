@@ -25,6 +25,24 @@ const ExportData = () => {
     },
   });
 
+  const deleteBackupMutation = useMutation({
+    mutationFn: async (backupId: string) => {
+      const { error } = await supabase
+        .from('data_backups')
+        .delete()
+        .eq('id', backupId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['data-backups'] });
+      toast.success('Backup excluído com sucesso');
+    },
+    onError: () => {
+      toast.error('Erro ao excluir backup');
+    },
+  });
+
   const handleExportAndClear = async () => {
     if (!window.confirm('Tem certeza que deseja exportar e limpar os dados? Esta ação não pode ser desfeita.')) {
       return;
@@ -104,6 +122,12 @@ const ExportData = () => {
     URL.revokeObjectURL(url);
   };
 
+  const handleDeleteBackup = (backupId: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este backup?')) {
+      deleteBackupMutation.mutate(backupId);
+    }
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gray-50">
@@ -158,14 +182,24 @@ const ExportData = () => {
                         {new Date(backup.created_at).toLocaleString('pt-BR')}
                       </p>
                     </div>
-                    <Button
-                      variant="outline"
-                      onClick={() => handleDownloadBackup(backup)}
-                      className="flex items-center gap-2"
-                    >
-                      <Download className="h-4 w-4" />
-                      Download
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => handleDownloadBackup(backup)}
+                        className="flex items-center gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Download
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleDeleteBackup(backup.id)}
+                        className="flex items-center gap-2"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Excluir
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
