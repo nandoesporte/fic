@@ -122,12 +122,7 @@ const ExportData = () => {
   };
 
   const handleDeleteBackup = async (backupId: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este backup?')) {
-      await deleteBackupMutation.mutateAsync(backupId);
-      queryClient.setQueryData(['data-backups'], (oldData: any) => {
-        return oldData?.filter((backup: any) => backup.id !== backupId);
-      });
-    }
+    await deleteBackupMutation.mutateAsync(backupId);
   };
 
   return (

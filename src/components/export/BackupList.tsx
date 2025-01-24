@@ -43,7 +43,11 @@ export const BackupList = ({ backups, isLoading, onDownload, onDelete }: BackupL
                 </Button>
                 <Button
                   variant="destructive"
-                  onClick={() => onDelete(backup.id)}
+                  onClick={() => {
+                    if (window.confirm('Tem certeza que deseja excluir este backup?')) {
+                      onDelete(backup.id);
+                    }
+                  }}
                   className="flex items-center justify-center gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
