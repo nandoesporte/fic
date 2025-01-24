@@ -54,10 +54,8 @@ export const QuestionnaireVoting = () => {
         throw questionnairesError;
       }
 
-      // Consolidate questionnaires by dimension and filter active options
       const consolidatedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: ConsolidatedQuestionnaire }, curr) => {
         if (!acc[curr.dimension]) {
-          // Filter strengths, challenges, and opportunities based on their status
           const strengths_array = curr.strengths.split('\n\n');
           const challenges_array = curr.challenges.split('\n\n');
           const opportunities_array = curr.opportunities.split('\n\n');
@@ -66,7 +64,6 @@ export const QuestionnaireVoting = () => {
           const challenges_statuses = (curr.challenges_statuses || 'pending,pending,pending').split(',');
           const opportunities_statuses = (curr.opportunities_statuses || 'pending,pending,pending').split(',');
           
-          // Only keep items that have 'active' status
           const filtered_strengths = strengths_array.filter((_, index) => strengths_statuses[index] === 'active');
           const filtered_challenges = challenges_array.filter((_, index) => challenges_statuses[index] === 'active');
           const filtered_opportunities = opportunities_array.filter((_, index) => opportunities_statuses[index] === 'active');
@@ -83,7 +80,6 @@ export const QuestionnaireVoting = () => {
             opportunities_statuses: curr.opportunities_statuses,
           };
         } else {
-          // For subsequent entries, append only active items
           const strengths_array = curr.strengths.split('\n\n');
           const challenges_array = curr.challenges.split('\n\n');
           const opportunities_array = curr.opportunities.split('\n\n');
@@ -114,40 +110,31 @@ export const QuestionnaireVoting = () => {
     enabled: isEmailVerified,
   });
 
-  const verifyEmail = async () => {
-    if (!userEmail) {
-      toast.error('Por favor, insira seu email');
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from('registered_voters')
+  const checkExistingVote = async (dimension: string) => {
+    const { data: existingVote } = await supabase
+      .from('dimension_votes')
       .select('id')
       .eq('email', userEmail.toLowerCase())
+      .eq('dimension', dimension)
       .maybeSingle();
 
-    if (error) {
-      toast.error('Erro ao verificar email');
-      return;
-    }
-
-    if (!data) {
-      toast.error('Email não encontrado no sistema');
-      return;
-    }
-
-    setIsEmailVerified(true);
-    toast.success('Email verificado com sucesso!');
+    return existingVote !== null;
   };
 
   const submitVotesMutation = useMutation({
-    mutationFn: async ({ questionnaireId, votes }: { 
+    mutationFn: async ({ questionnaireId, votes, dimension }: { 
       questionnaireId: string;
       votes: {
         optionType: string;
         optionNumbers: number[];
       }[];
+      dimension: string;
     }) => {
+      const hasVoted = await checkExistingVote(dimension);
+      if (hasVoted) {
+        throw new Error('Você já votou nesta dimensão');
+      }
+
       const { data: voter } = await supabase
         .from('registered_voters')
         .select('id')
@@ -155,6 +142,15 @@ export const QuestionnaireVoting = () => {
         .single();
 
       if (!voter) throw new Error('Usuário não encontrado');
+
+      const { error: dimensionVoteError } = await supabase
+        .from('dimension_votes')
+        .insert({
+          email: userEmail.toLowerCase(),
+          dimension: dimension
+        });
+
+      if (dimensionVoteError) throw dimensionVoteError;
 
       const votePromises = votes.flatMap(({ optionType, optionNumbers }) =>
         optionNumbers.map(optionNumber =>
@@ -217,6 +213,9 @@ export const QuestionnaireVoting = () => {
   };
 
   const handleConfirmVotes = async (questionnaireId: string) => {
+    const questionnaire = questionnaires?.find(q => q.id === questionnaireId);
+    if (!questionnaire) return;
+
     const questionnaireSelections = selections[questionnaireId];
     if (!questionnaireSelections) return;
 
@@ -225,7 +224,11 @@ export const QuestionnaireVoting = () => {
       optionNumbers,
     }));
 
-    await submitVotesMutation.mutate({ questionnaireId, votes });
+    await submitVotesMutation.mutate({ 
+      questionnaireId, 
+      votes,
+      dimension: questionnaire.dimension 
+    });
   };
 
   const isOptionSelected = (questionnaireId: string, optionType: string, optionNumber: number) => {

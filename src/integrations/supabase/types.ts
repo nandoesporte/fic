@@ -167,6 +167,27 @@ export type Database = {
         }
         Relationships: []
       }
+      dimension_votes: {
+        Row: {
+          created_at: string
+          dimension: string
+          email: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          dimension: string
+          email: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          dimension?: string
+          email?: string
+          id?: string
+        }
+        Relationships: []
+      }
       exercise_library: {
         Row: {
           created_at: string | null
