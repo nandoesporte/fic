@@ -35,7 +35,6 @@ const ExportData = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['data-backups'] });
-      toast.success('Backup excluído com sucesso');
     },
     onError: () => {
       toast.error('Erro ao excluir backup');
