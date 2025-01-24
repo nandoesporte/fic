@@ -134,26 +134,26 @@ const ExportData = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gray-50">
+      <div className="flex min-h-screen w-full bg-gray-50">
         <AppSidebar />
-        <main className="flex-1 p-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Exportar Dados</h1>
-            <p className="text-gray-500">Gerencie backups e limpe os dados do sistema</p>
+        <main className="flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full">
+          <div className="mb-6 md:mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Exportar Dados</h1>
+            <p className="text-gray-500 mt-1">Gerencie backups e limpe os dados do sistema</p>
           </div>
 
-          <Card className="p-6 mb-8">
-            <div className="flex items-center justify-between mb-6">
+          <Card className="p-4 md:p-6 mb-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
               <div>
-                <h2 className="text-xl font-semibold">Exportar e Limpar Dados</h2>
-                <p className="text-gray-500">
+                <h2 className="text-lg md:text-xl font-semibold">Exportar e Limpar Dados</h2>
+                <p className="text-gray-500 text-sm md:text-base mt-1">
                   Esta ação irá criar um backup dos dados atuais e limpar as tabelas
                 </p>
               </div>
               <Button
                 onClick={handleExportAndClear}
                 disabled={isExporting}
-                className="bg-primary hover:bg-primary/90"
+                className="bg-primary hover:bg-primary/90 w-full md:w-auto"
               >
                 {isExporting ? (
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -165,18 +165,18 @@ const ExportData = () => {
             </div>
           </Card>
 
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-6">Backups Disponíveis</h2>
+          <Card className="p-4 md:p-6">
+            <h2 className="text-lg md:text-xl font-semibold mb-4 md:mb-6">Backups Disponíveis</h2>
             {isLoading ? (
               <p className="text-center text-gray-500">Carregando backups...</p>
             ) : backups?.length === 0 ? (
               <p className="text-center text-gray-500">Nenhum backup encontrado</p>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 md:space-y-4">
                 {backups?.map((backup) => (
                   <div
                     key={backup.id}
-                    className="flex items-center justify-between p-4 bg-white rounded-lg border"
+                    className="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 bg-white rounded-lg border gap-3 md:gap-4"
                   >
                     <div>
                       <h3 className="font-medium">
@@ -186,11 +186,11 @@ const ExportData = () => {
                         {new Date(backup.created_at).toLocaleString('pt-BR')}
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                       <Button
                         variant="outline"
                         onClick={() => handleDownloadBackup(backup)}
-                        className="flex items-center gap-2"
+                        className="flex items-center justify-center gap-2"
                       >
                         <Download className="h-4 w-4" />
                         Download
@@ -198,7 +198,7 @@ const ExportData = () => {
                       <Button
                         variant="destructive"
                         onClick={() => handleDeleteBackup(backup.id)}
-                        className="flex items-center gap-2"
+                        className="flex items-center justify-center gap-2"
                       >
                         <Trash2 className="h-4 w-4" />
                         Excluir
