@@ -121,7 +121,12 @@ const ExportData = () => {
   };
 
   const handleDeleteBackup = async (backupId: string) => {
-    await deleteBackupMutation.mutateAsync(backupId);
+    try {
+      await deleteBackupMutation.mutateAsync(backupId);
+      toast.success('Backup excluído com sucesso');
+    } catch (error) {
+      console.error('Error deleting backup:', error);
+    }
   };
 
   return (

@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Download, Trash2 } from "lucide-react";
-import { toast } from "sonner";
 
 interface BackupListProps {
   backups: any[];
@@ -12,14 +11,8 @@ interface BackupListProps {
 
 export const BackupList = ({ backups, isLoading, onDownload, onDelete }: BackupListProps) => {
   const handleDelete = async (backupId: string) => {
-    try {
-      if (window.confirm('Tem certeza que deseja excluir este backup?')) {
-        await onDelete(backupId);
-        toast.success('Backup excluído com sucesso');
-      }
-    } catch (error) {
-      console.error('Error deleting backup:', error);
-      toast.error('Erro ao excluir backup');
+    if (window.confirm('Tem certeza que deseja excluir este backup?')) {
+      await onDelete(backupId);
     }
   };
 
