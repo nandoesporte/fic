@@ -84,9 +84,7 @@ const QuestionnaireAnalytics = () => {
       .filter(item => item.option_type === type)
       .map(item => ({
         optionNumber: `Opção ${item.option_number}`,
-        upvotes: item.upvotes || 0,
-        downvotes: item.downvotes || 0,
-        total: (item.upvotes || 0) - (item.downvotes || 0),
+        total: (item.upvotes || 0),
         text: item.option_text || "",
       }))
       .sort((a, b) => b.total - a.total);
@@ -94,7 +92,7 @@ const QuestionnaireAnalytics = () => {
 
   const getTotalVotes = (data: VoteData[] | undefined) => {
     if (!data) return 0;
-    return data.reduce((acc, curr) => acc + (curr.upvotes || 0) + (curr.downvotes || 0), 0);
+    return data.reduce((acc, curr) => acc + (curr.upvotes || 0), 0);
   };
 
   const getTotalParticipants = (data: VoteData[] | undefined) => {
@@ -131,11 +129,7 @@ const QuestionnaireAnalytics = () => {
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <span className="text-xs opacity-75">Votos positivos</span>
-                <p className="font-bold">{item.upvotes}</p>
-              </div>
-              <div className="text-right">
-                <span className="text-xs opacity-75">Total</span>
+                <span className="text-xs opacity-75">Total de votos</span>
                 <p className="font-bold">{item.total}</p>
               </div>
             </div>
