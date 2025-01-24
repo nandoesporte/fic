@@ -178,6 +178,18 @@ export const QuestionnaireVoting = () => {
 
       if (dimensionVoteError) throw dimensionVoteError;
 
+      // First, delete any existing votes for this user and questionnaire
+      const { error: deleteError } = await supabase
+        .from('questionnaire_votes')
+        .delete()
+        .match({
+          questionnaire_id: questionnaireId,
+          user_id: voter.id
+        });
+
+      if (deleteError) throw deleteError;
+
+      // Then insert the new votes
       const votePromises = votes.flatMap(({ optionType, optionNumbers }) =>
         optionNumbers.map(optionNumber =>
           supabase
