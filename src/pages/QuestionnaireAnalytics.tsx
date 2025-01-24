@@ -8,72 +8,57 @@ import { Users, Vote } from "lucide-react";
 import { StatCard } from "@/components/analytics/StatCard";
 import { DimensionFilter } from "@/components/analytics/DimensionFilter";
 import { VoteList } from "@/components/analytics/VoteList";
+import { toast } from "sonner";
 
 type VoteData = {
   questionnaire_id: string;
   option_type: string;
   option_number: number;
-  upvotes: number;
-  downvotes: number;
+  total_votes: number;
   dimension?: string;
   satisfaction?: number;
   option_text?: string;
-  fic_questionnaires?: {
-    dimension: string;
-    satisfaction: number;
-    strengths: string;
-    challenges: string;
-    opportunities: string;
-  };
+  strengths?: string;
+  challenges?: string;
+  opportunities?: string;
 };
 
 const QuestionnaireAnalytics = () => {
   const [selectedDimension, setSelectedDimension] = React.useState<string>("all");
 
   const { data: voteData, isLoading } = useQuery({
-    queryKey: ["questionnaire-votes", selectedDimension],
+    queryKey: ["questionnaire-voting-report", selectedDimension],
     queryFn: async () => {
       let query = supabase
-        .from("questionnaire_vote_counts")
-        .select(`
-          questionnaire_id,
-          option_type,
-          option_number,
-          upvotes,
-          downvotes,
-          fic_questionnaires (
-            dimension,
-            satisfaction,
-            strengths,
-            challenges,
-            opportunities
-          )
-        `)
-        .filter('upvotes', 'gt', 0);
+        .from("questionnaire_voting_report")
+        .select(`*`)
+        .gt('total_votes', 0);
 
       if (selectedDimension && selectedDimension !== "all") {
-        query = query.eq('fic_questionnaires.dimension', selectedDimension);
+        query = query.eq('dimension', selectedDimension);
       }
 
       const { data: votes, error } = await query;
 
       if (error) {
         console.error("Error fetching votes:", error);
+        toast.error("Erro ao carregar os votos");
         throw error;
       }
 
       const processedVotes = votes?.map((vote) => {
         let optionText = "";
-        if (vote.fic_questionnaires) {
-          const options = vote.option_type === "strengths" 
-            ? vote.fic_questionnaires.strengths
-            : vote.option_type === "challenges"
-              ? vote.fic_questionnaires.challenges
-              : vote.fic_questionnaires.opportunities;
-          
-          const optionsList = options?.split('\n\n').filter(Boolean) || [];
-          optionText = optionsList[vote.option_number - 1] || "";
+        if (vote.option_type === "strengths" && vote.strengths) {
+          const options = vote.strengths.split('\n\n');
+          optionText = options[vote.option_number - 1] || "";
+        } else if (vote.option_type === "challenges" && vote.challenges) {
+          const options = vote.challenges.split('\n\n');
+          optionText = options[vote.option_number - 1] || "";
+        } else if (vote.option_type === "opportunities" && vote.opportunities) {
+          const options = vote.opportunities.split('\n\n');
+          optionText = options[vote.option_number - 1] || "";
         }
+        
         return {
           ...vote,
           option_text: optionText,
@@ -91,26 +76,25 @@ const QuestionnaireAnalytics = () => {
       .filter(item => item.option_type === type)
       .map(item => ({
         text: item.option_text || "",
-        total: item.upvotes || 0,
+        total: item.total_votes || 0,
       }))
       .sort((a, b) => b.total - a.total);
   };
 
   const getTotalVotes = (data: VoteData[] | undefined) => {
     if (!data) return 0;
-    return data.reduce((acc, curr) => acc + (curr.upvotes || 0), 0);
+    return data.reduce((acc, curr) => acc + (curr.total_votes || 0), 0);
   };
 
   const getTotalParticipants = (data: VoteData[] | undefined) => {
     if (!data) return 0;
-    const uniqueQuestionnaires = new Set(
-      data.map(vote => vote.questionnaire_id)
-        .filter(id => {
-          const vote = data.find(v => v.questionnaire_id === id);
-          return vote?.fic_questionnaires?.dimension === selectedDimension || selectedDimension === "all";
+    const uniqueGroups = new Set(
+      data.map(vote => vote.dimension)
+        .filter(dimension => {
+          return dimension === selectedDimension || selectedDimension === "all";
         })
     );
-    return uniqueQuestionnaires.size;
+    return uniqueGroups.size;
   };
 
   return (
