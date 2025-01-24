@@ -110,6 +110,32 @@ export const QuestionnaireVoting = () => {
     enabled: isEmailVerified,
   });
 
+  const verifyEmail = async () => {
+    if (!userEmail) {
+      toast.error('Por favor, insira seu email');
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('registered_voters')
+      .select('id')
+      .eq('email', userEmail.toLowerCase())
+      .maybeSingle();
+
+    if (error) {
+      toast.error('Erro ao verificar email');
+      return;
+    }
+
+    if (!data) {
+      toast.error('Email não encontrado no sistema');
+      return;
+    }
+
+    setIsEmailVerified(true);
+    toast.success('Email verificado com sucesso!');
+  };
+
   const checkExistingVote = async (dimension: string) => {
     const { data: existingVote } = await supabase
       .from('dimension_votes')
