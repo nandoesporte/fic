@@ -3,7 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Vote } from "lucide-react";
+import { Users, Vote, Filter } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type VoteData = {
   questionnaire_id: string;
@@ -24,11 +31,26 @@ type VoteData = {
 };
 
 const QuestionnaireAnalytics = () => {
+  const [selectedDimension, setSelectedDimension] = React.useState<string>("");
+
+  const { data: dimensions } = useQuery({
+    queryKey: ["dimensions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("fic_dimensions")
+        .select("*")
+        .order("label");
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: voteData, isLoading } = useQuery({
-    queryKey: ["questionnaire-votes"],
+    queryKey: ["questionnaire-votes", selectedDimension],
     queryFn: async () => {
       console.log("Fetching vote data...");
-      const { data: votes, error } = await supabase
+      let query = supabase
         .from("questionnaire_vote_counts")
         .select(`
           questionnaire_id,
@@ -47,6 +69,12 @@ const QuestionnaireAnalytics = () => {
         .filter('upvotes', 'gt', 0)
         .order('upvotes', { ascending: false });
 
+      if (selectedDimension) {
+        query = query.eq('fic_questionnaires.dimension', selectedDimension);
+      }
+
+      const { data: votes, error } = await query;
+
       if (error) {
         console.error("Error fetching votes:", error);
         throw error;
@@ -54,7 +82,7 @@ const QuestionnaireAnalytics = () => {
 
       console.log("Raw vote data:", votes);
 
-      const processedVotes = votes.map((vote) => {
+      const processedVotes = votes?.map((vote) => {
         let optionText = "";
         if (vote.fic_questionnaires) {
           const options = vote.option_type === "strengths" 
@@ -70,7 +98,7 @@ const QuestionnaireAnalytics = () => {
           ...vote,
           option_text: optionText,
         };
-      });
+      }) || [];
 
       console.log("Processed vote data:", processedVotes);
       return processedVotes;
@@ -98,7 +126,6 @@ const QuestionnaireAnalytics = () => {
   const getTotalParticipants = (data: VoteData[] | undefined) => {
     if (!data) return 0;
     const totalVotes = getTotalVotes(data);
-    // Cada participante deve ter 9 votos (3 em cada categoria)
     return Math.floor(totalVotes / 9);
   };
 
@@ -153,7 +180,7 @@ const QuestionnaireAnalytics = () => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card className="p-6 bg-white shadow-lg hover:shadow-xl transition-all duration-300">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-blue-100 rounded-full">
@@ -174,6 +201,30 @@ const QuestionnaireAnalytics = () => {
                 <div>
                   <p className="text-sm font-medium text-gray-500">Total de Votos</p>
                   <h3 className="text-2xl font-bold text-gray-900">{getTotalVotes(voteData)}</h3>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6 bg-white shadow-lg hover:shadow-xl transition-all duration-300">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-purple-100 rounded-full">
+                  <Filter className="w-6 h-6 text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-500 mb-2">Filtrar por Dimensão</p>
+                  <Select value={selectedDimension} onValueChange={setSelectedDimension}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas as dimensões" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Todas as dimensões</SelectItem>
+                      {dimensions?.map((dim) => (
+                        <SelectItem key={dim.identifier} value={dim.identifier}>
+                          {dim.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </Card>
