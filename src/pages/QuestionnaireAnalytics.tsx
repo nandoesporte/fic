@@ -11,16 +11,15 @@ import { VoteList } from "@/components/analytics/VoteList";
 import { toast } from "sonner";
 
 type VoteData = {
-  questionnaire_id: string;
-  option_type: string;
-  option_number: number;
-  total_votes: number;
-  dimension?: string;
-  satisfaction?: number;
+  dimension: string | null;
+  group: string | null;
+  option_type: string | null;
+  option_number: number | null;
+  total_votes: number | null;
+  strengths: string | null;
+  challenges: string | null;
+  opportunities: string | null;
   option_text?: string;
-  strengths?: string;
-  challenges?: string;
-  opportunities?: string;
 };
 
 const QuestionnaireAnalytics = () => {
