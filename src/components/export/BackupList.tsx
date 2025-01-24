@@ -12,7 +12,11 @@ interface BackupListProps {
 export const BackupList = ({ backups, isLoading, onDownload, onDelete }: BackupListProps) => {
   const handleDelete = async (backupId: string) => {
     if (window.confirm('Tem certeza que deseja excluir este backup?')) {
-      await onDelete(backupId);
+      try {
+        await onDelete(backupId);
+      } catch (error) {
+        console.error('Error in handleDelete:', error);
+      }
     }
   };
 

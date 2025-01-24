@@ -43,7 +43,8 @@ const ExportData = () => {
       queryClient.invalidateQueries({ queryKey: ['data-backups'] });
       toast.success('Backup excluído com sucesso');
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Delete mutation error:', error);
       toast.error('Erro ao excluir backup');
     },
   });
@@ -67,7 +68,7 @@ const ExportData = () => {
         .select('*');
       if (votesError) throw votesError;
 
-      // Create backup of questionnaires
+      // Create backup of questionnaires if there are any
       if (questionnaires && questionnaires.length > 0) {
         const { error: backupError } = await supabase
           .from('data_backups')
@@ -77,12 +78,12 @@ const ExportData = () => {
             type: 'questionnaires'
           });
         if (backupError) {
-          console.error('Backup error:', backupError);
+          console.error('Backup error (questionnaires):', backupError);
           throw backupError;
         }
       }
 
-      // Create backup of votes
+      // Create backup of votes if there are any
       if (votes && votes.length > 0) {
         const { error: backupError } = await supabase
           .from('data_backups')
@@ -92,7 +93,7 @@ const ExportData = () => {
             type: 'votes'
           });
         if (backupError) {
-          console.error('Backup error:', backupError);
+          console.error('Backup error (votes):', backupError);
           throw backupError;
         }
       }
@@ -111,10 +112,10 @@ const ExportData = () => {
         .not('id', 'is', null);
       if (clearVotesError) throw clearVotesError;
 
-      queryClient.invalidateQueries({ queryKey: ['data-backups'] });
+      await queryClient.invalidateQueries({ queryKey: ['data-backups'] });
       toast.success('Dados exportados e limpos com sucesso!');
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Export error:', error);
       toast.error('Erro ao exportar e limpar dados');
     } finally {
       setIsExporting(false);
