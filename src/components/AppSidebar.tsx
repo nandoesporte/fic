@@ -9,11 +9,11 @@ export function AppSidebar() {
   const { pathname } = useLocation();
 
   return (
-    <Sidebar className="border-r bg-sidebar-background w-[300px] overflow-hidden" collapsible="icon">
+    <Sidebar className="border-r border-border bg-sidebar-background w-[300px] overflow-hidden" collapsible="icon">
       <ScrollArea className="h-full">
-        <div className="space-y-4 py-4">
-          <div className="px-3 py-2">
-            <div className="space-y-1">
+        <div className="space-y-4 py-6">
+          <div className="px-4">
+            <div className="space-y-2">
               <Link to="/">
                 <Button
                   variant={pathname === "/" ? "secondary" : "ghost"}

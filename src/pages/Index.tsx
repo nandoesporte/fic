@@ -184,119 +184,116 @@ const Index = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gradient-to-b from-gray-50 to-white">
-        <AppSidebar />
-        <main className="flex-1 p-8">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 flex items-center gap-2">
-                Dashboard FIC
-                <Sparkles className="h-6 w-6 text-yellow-400" />
-              </h1>
-              <p className="text-gray-500 mt-2">
-                Bem-vindo ao Sistema de Felicidade Interna do Cooperativismo
-              </p>
-            </div>
-            <Button 
-              className="bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all" 
-              onClick={handleNewQuestionnaire}
-            >
-              <PlusCircle className="h-5 w-5 mr-2" />
+      <div className="space-y-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 flex items-center gap-2">
+              Dashboard FIC
+              <Sparkles className="h-6 w-6 text-yellow-400" />
+            </h1>
+            <p className="text-gray-500 mt-2">
+              Bem-vindo ao Sistema de Felicidade Interna do Cooperativismo
+            </p>
+          </div>
+          <Button 
+            className="bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all" 
+            onClick={handleNewQuestionnaire}
+          >
+            <PlusCircle className="h-5 w-5 mr-2" />
+            Novo Questionário
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard 
+            icon={Heart} 
+            label="Índice FIC" 
+            value="78%" 
+            description="Crescimento de 5% este mês"
+          />
+          <StatCard 
+            icon={Users} 
+            label="Total de Cooperados" 
+            value="1,234"
+            description="32 novos esta semana" 
+          />
+          <StatCard 
+            icon={BarChart2} 
+            label="Taxa de Participação" 
+            value="89%"
+            description="Acima da meta mensal" 
+          />
+          <StatCard 
+            icon={TrendingUp} 
+            label="Crescimento Mensal" 
+            value="+12%"
+            description="Comparado ao mês anterior" 
+          />
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="bg-white shadow-sm p-1">
+            <TabsTrigger value="questionarios" className="data-[state=active]:bg-primary/10">
+              Questionários
+            </TabsTrigger>
+            <TabsTrigger value="conquistas" className="data-[state=active]:bg-primary/10">
+              Conquistas
+            </TabsTrigger>
+            <TabsTrigger value="novo" className="data-[state=active]:bg-primary/10">
               Novo Questionário
-            </Button>
-          </div>
+            </TabsTrigger>
+            <TabsTrigger value="cooperados" className="data-[state=active]:bg-primary/10">
+              Cooperados
+            </TabsTrigger>
+          </TabsList>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <StatCard 
-              icon={Heart} 
-              label="Índice FIC" 
-              value="78%" 
-              description="Crescimento de 5% este mês"
-            />
-            <StatCard 
-              icon={Users} 
-              label="Total de Cooperados" 
-              value="1,234"
-              description="32 novos esta semana" 
-            />
-            <StatCard 
-              icon={BarChart2} 
-              label="Taxa de Participação" 
-              value="89%"
-              description="Acima da meta mensal" 
-            />
-            <StatCard 
-              icon={TrendingUp} 
-              label="Crescimento Mensal" 
-              value="+12%"
-              description="Comparado ao mês anterior" 
-            />
-          </div>
+          <TabsContent value="questionarios">
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                <ClipboardList className="h-5 w-5 text-primary" />
+                Respostas dos Questionários
+              </h2>
+              <QuestionnaireResponses />
+            </Card>
+          </TabsContent>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="bg-white shadow-sm">
-              <TabsTrigger value="questionarios" className="data-[state=active]:bg-primary/10">
-                Questionários
-              </TabsTrigger>
-              <TabsTrigger value="conquistas" className="data-[state=active]:bg-primary/10">
-                Conquistas
-              </TabsTrigger>
-              <TabsTrigger value="novo" className="data-[state=active]:bg-primary/10">
-                Novo Questionário
-              </TabsTrigger>
-              <TabsTrigger value="cooperados" className="data-[state=active]:bg-primary/10">
-                Cooperados
-              </TabsTrigger>
-            </TabsList>
+          <TabsContent value="conquistas" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <AchievementCard 
+                icon={Award}
+                title="Participação 100%"
+                description="Todos os cooperados responderam o último questionário do mês, demonstrando alto engajamento."
+              />
+              <AchievementCard 
+                icon={TrendingUp}
+                title="Crescimento Constante"
+                description="3 meses consecutivos de melhoria no índice FIC, refletindo o comprometimento da equipe."
+              />
+              <AchievementCard 
+                icon={Heart}
+                title="Bem-estar em Alta"
+                description="Índice de satisfação acima de 80%, indicando um ambiente de trabalho positivo."
+              />
+            </div>
+          </TabsContent>
 
-            <TabsContent value="questionarios">
-              <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                  <ClipboardList className="h-5 w-5 text-primary" />
-                  Respostas dos Questionários
-                </h2>
-                <QuestionnaireResponses />
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="conquistas" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <AchievementCard 
-                  icon={Award}
-                  title="Participação 100%"
-                  description="Todos os cooperados responderam o último questionário do mês, demonstrando alto engajamento."
-                />
-                <AchievementCard 
-                  icon={TrendingUp}
-                  title="Crescimento Constante"
-                  description="3 meses consecutivos de melhoria no índice FIC, refletindo o comprometimento da equipe."
-                />
-                <AchievementCard 
-                  icon={Heart}
-                  title="Bem-estar em Alta"
-                  description="Índice de satisfação acima de 80%, indicando um ambiente de trabalho positivo."
-                />
+          <TabsContent value="novo" className="space-y-4">
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                <PlusCircle className="h-5 w-5 text-primary" />
+                Novo Questionário FIC
+              </h2>
+              <div className="space-y-6">
+                <DimensionManager />
+                <FICForm />
               </div>
-            </TabsContent>
+            </Card>
+          </TabsContent>
 
-            <TabsContent value="novo" className="space-y-4">
-              <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                  <PlusCircle className="h-5 w-5 text-primary" />
-                  Novo Questionário FIC
-                </h2>
-                <div className="space-y-6">
-                  <DimensionManager />
-                  <FICForm />
-                </div>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="cooperados">
-              <RegisteredVotersSection />
-            </TabsContent>
-          </Tabs>
-        </main>
+          <TabsContent value="cooperados">
+            <RegisteredVotersSection />
+          </TabsContent>
+        </Tabs>
       </div>
     </SidebarProvider>
   );

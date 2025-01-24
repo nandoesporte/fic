@@ -23,35 +23,37 @@ function App() {
             <div className="min-h-screen flex w-full bg-background">
               <AppSidebar />
               <div className="flex-1 overflow-auto">
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/formulario" element={<QuestionnaireForm />} />
-                  <Route
-                    path="/voting"
-                    element={
-                      <ProtectedRoute>
-                        <QuestionnaireVoting />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/analytics"
-                    element={
-                      <ProtectedRoute>
-                        <QuestionnaireAnalytics />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/export"
-                    element={
-                      <ProtectedRoute>
-                        <ExportData />
-                      </ProtectedRoute>
-                    }
-                  />
-                </Routes>
+                <div className="container mx-auto py-6 px-4">
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/formulario" element={<QuestionnaireForm />} />
+                    <Route
+                      path="/voting"
+                      element={
+                        <ProtectedRoute>
+                          <QuestionnaireVoting />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/analytics"
+                      element={
+                        <ProtectedRoute>
+                          <QuestionnaireAnalytics />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/export"
+                      element={
+                        <ProtectedRoute>
+                          <ExportData />
+                        </ProtectedRoute>
+                      }
+                    />
+                  </Routes>
+                </div>
               </div>
             </div>
             <Toaster />
