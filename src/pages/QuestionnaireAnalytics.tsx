@@ -50,7 +50,6 @@ const QuestionnaireAnalytics = () => {
   const { data: voteData, isLoading } = useQuery({
     queryKey: ["questionnaire-votes", selectedDimension],
     queryFn: async () => {
-      console.log("Fetching vote data...");
       let query = supabase
         .from("questionnaire_vote_counts")
         .select(`
@@ -67,8 +66,7 @@ const QuestionnaireAnalytics = () => {
             opportunities
           )
         `)
-        .filter('upvotes', 'gt', 0)
-        .order('upvotes', { ascending: false });
+        .filter('upvotes', 'gt', 0);
 
       if (selectedDimension && selectedDimension !== "all") {
         query = query.eq('fic_questionnaires.dimension', selectedDimension);
@@ -80,8 +78,6 @@ const QuestionnaireAnalytics = () => {
         console.error("Error fetching votes:", error);
         throw error;
       }
-
-      console.log("Raw vote data:", votes);
 
       const processedVotes = votes?.map((vote) => {
         let optionText = "";
@@ -101,7 +97,6 @@ const QuestionnaireAnalytics = () => {
         };
       }) || [];
 
-      console.log("Processed vote data:", processedVotes);
       return processedVotes;
     },
   });
@@ -113,7 +108,7 @@ const QuestionnaireAnalytics = () => {
       .filter(item => item.option_type === type)
       .map(item => ({
         optionNumber: `Opção ${item.option_number}`,
-        total: (item.upvotes || 0),
+        total: item.upvotes || 0,
         text: item.option_text || "",
       }))
       .sort((a, b) => b.total - a.total);
@@ -153,22 +148,28 @@ const QuestionnaireAnalytics = () => {
 
     return (
       <div className="mb-4 space-y-3">
-        {data.map((item, index) => (
-          <div 
-            key={index} 
-            className={`flex items-center justify-between p-5 rounded-lg ${getBgColor()}`}
-          >
-            <div className="flex-1">
-              <span className="text-sm font-medium">{item.text}</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <span className="text-xs opacity-75">Total de votos</span>
-                <p className="font-bold">{item.total}</p>
+        {data.length === 0 ? (
+          <div className={`p-5 rounded-lg ${getBgColor()}`}>
+            <p className="text-center">Nenhum voto registrado ainda</p>
+          </div>
+        ) : (
+          data.map((item, index) => (
+            <div 
+              key={index} 
+              className={`flex items-center justify-between p-5 rounded-lg ${getBgColor()}`}
+            >
+              <div className="flex-1">
+                <span className="text-sm font-medium">{item.text}</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <span className="text-xs opacity-75">Total de votos</span>
+                  <p className="font-bold">{item.total}</p>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     );
   };
