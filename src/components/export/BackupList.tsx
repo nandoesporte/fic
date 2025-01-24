@@ -1,26 +1,10 @@
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Download, Trash2, FileText, Database, Loader2 } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { useState } from "react";
-import { toast } from "sonner";
+import { BackupListHeader } from "./BackupListHeader";
+import { BackupListEmpty } from "./BackupListEmpty";
+import { BackupListLoading } from "./BackupListLoading";
+import { BackupListTable } from "./BackupListTable";
+import { DeleteBackupDialog } from "./DeleteBackupDialog";
 
 interface BackupListProps {
   backups: any[];
@@ -39,133 +23,30 @@ export const BackupList = ({ backups, isLoading, onDownload, onDelete }: BackupL
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = async () => {
-    if (!selectedBackupId) return;
-    
-    setIsDeleting(true);
-    try {
-      await onDelete(selectedBackupId);
-      toast.success('Backup excluído com sucesso');
-      setDeleteDialogOpen(false);
-      setSelectedBackupId(null);
-    } catch (error) {
-      console.error('Error deleting backup:', error);
-      toast.error('Erro ao excluir backup');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const getBackupTypeLabel = (type: string) => {
-    return type === 'questionnaires' ? 'Questionários' : 'Votos';
-  };
-
   return (
     <Card className="p-4 md:p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="space-y-1">
-          <h2 className="text-lg md:text-xl font-semibold">Backups Disponíveis</h2>
-          <p className="text-sm text-muted-foreground">
-            Lista de backups salvos no sistema
-          </p>
-        </div>
-        <Database className="h-8 w-8 text-muted-foreground/50" />
-      </div>
+      <BackupListHeader />
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Carregando backups...</span>
-          </div>
-        </div>
+        <BackupListLoading />
       ) : backups?.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <FileText className="h-12 w-12 text-muted-foreground/50 mb-4" />
-          <p className="text-muted-foreground">Nenhum backup encontrado</p>
-          <p className="text-sm text-muted-foreground/75">
-            Os backups aparecerão aqui quando você exportar dados
-          </p>
-        </div>
+        <BackupListEmpty />
       ) : (
-        <div className="relative overflow-x-auto rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Nome</TableHead>
-                <TableHead>Data de Criação</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {backups.map((backup) => (
-                <TableRow key={backup.id}>
-                  <TableCell className="font-medium">
-                    {getBackupTypeLabel(backup.type)}
-                  </TableCell>
-                  <TableCell>{backup.filename.split('_')[0]}</TableCell>
-                  <TableCell>
-                    {new Date(backup.created_at).toLocaleString('pt-BR')}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onDownload(backup)}
-                      >
-                        <Download className="h-4 w-4" />
-                        <span className="sr-only">Download</span>
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteClick(backup.id)}
-                        disabled={isDeleting && selectedBackupId === backup.id}
-                      >
-                        {isDeleting && selectedBackupId === backup.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                        <span className="sr-only">Excluir</span>
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <BackupListTable
+          backups={backups}
+          onDownload={onDownload}
+          onDeleteClick={handleDeleteClick}
+          isDeleting={isDeleting}
+          selectedBackupId={selectedBackupId}
+        />
       )}
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este backup? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleConfirmDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Excluindo...
-                </>
-              ) : (
-                'Confirmar'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteBackupDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onDelete={onDelete}
+        backupId={selectedBackupId}
+      />
     </Card>
   );
 };
