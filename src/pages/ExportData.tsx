@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Download, Database, Trash2, RefreshCw } from "lucide-react";
+import { ExportCard } from "@/components/export/ExportCard";
+import { BackupList } from "@/components/export/BackupList";
 
 const ExportData = () => {
   const queryClient = useQueryClient();
@@ -125,7 +124,6 @@ const ExportData = () => {
   const handleDeleteBackup = async (backupId: string) => {
     if (window.confirm('Tem certeza que deseja excluir este backup?')) {
       await deleteBackupMutation.mutateAsync(backupId);
-      // After successful deletion, update the local state through React Query
       queryClient.setQueryData(['data-backups'], (oldData: any) => {
         return oldData?.filter((backup: any) => backup.id !== backupId);
       });
@@ -142,73 +140,17 @@ const ExportData = () => {
             <p className="text-gray-500 mt-1">Gerencie backups e limpe os dados do sistema</p>
           </div>
 
-          <Card className="p-4 md:p-6 mb-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
-              <div>
-                <h2 className="text-lg md:text-xl font-semibold">Exportar e Limpar Dados</h2>
-                <p className="text-gray-500 text-sm md:text-base mt-1">
-                  Esta ação irá criar um backup dos dados atuais e limpar as tabelas
-                </p>
-              </div>
-              <Button
-                onClick={handleExportAndClear}
-                disabled={isExporting}
-                className="bg-primary hover:bg-primary/90 w-full md:w-auto"
-              >
-                {isExporting ? (
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Database className="h-4 w-4 mr-2" />
-                )}
-                Exportar e Limpar
-              </Button>
-            </div>
-          </Card>
+          <ExportCard 
+            isExporting={isExporting} 
+            onExport={handleExportAndClear} 
+          />
 
-          <Card className="p-4 md:p-6">
-            <h2 className="text-lg md:text-xl font-semibold mb-4 md:mb-6">Backups Disponíveis</h2>
-            {isLoading ? (
-              <p className="text-center text-gray-500">Carregando backups...</p>
-            ) : backups?.length === 0 ? (
-              <p className="text-center text-gray-500">Nenhum backup encontrado</p>
-            ) : (
-              <div className="space-y-3 md:space-y-4">
-                {backups?.map((backup) => (
-                  <div
-                    key={backup.id}
-                    className="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 bg-white rounded-lg border gap-3 md:gap-4"
-                  >
-                    <div>
-                      <h3 className="font-medium">
-                        {backup.type === 'questionnaires' ? 'Questionários' : 'Votos'}
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        {new Date(backup.created_at).toLocaleString('pt-BR')}
-                      </p>
-                    </div>
-                    <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-                      <Button
-                        variant="outline"
-                        onClick={() => handleDownloadBackup(backup)}
-                        className="flex items-center justify-center gap-2"
-                      >
-                        <Download className="h-4 w-4" />
-                        Download
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        onClick={() => handleDeleteBackup(backup.id)}
-                        className="flex items-center justify-center gap-2"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Excluir
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
+          <BackupList
+            backups={backups || []}
+            isLoading={isLoading}
+            onDownload={handleDownloadBackup}
+            onDelete={handleDeleteBackup}
+          />
         </main>
       </div>
     </SidebarProvider>
