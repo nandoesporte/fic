@@ -21,6 +21,7 @@ const ExportData = () => {
 
       if (error) {
         console.error('Error fetching backups:', error);
+        toast.error('Erro ao carregar backups');
         throw error;
       }
       return data;
@@ -36,6 +37,7 @@ const ExportData = () => {
 
       if (error) {
         console.error('Delete error:', error);
+        toast.error('Erro ao excluir backup');
         throw error;
       }
     },
@@ -43,32 +45,34 @@ const ExportData = () => {
       queryClient.invalidateQueries({ queryKey: ['data-backups'] });
       toast.success('Backup excluído com sucesso');
     },
-    onError: (error) => {
-      console.error('Delete mutation error:', error);
-      toast.error('Erro ao excluir backup');
-    },
   });
 
   const handleExportAndClear = async (backupName: string) => {
-    if (!window.confirm('Tem certeza que deseja exportar e limpar os dados? Esta ação não pode ser desfeita.')) {
-      return;
-    }
-
     setIsExporting(true);
     try {
-      // Fetch all questionnaires
+      // Fetch questionnaires
       const { data: questionnaires, error: questionnairesError } = await supabase
         .from('fic_questionnaires')
         .select('*');
-      if (questionnairesError) throw questionnairesError;
+      
+      if (questionnairesError) {
+        console.error('Error fetching questionnaires:', questionnairesError);
+        toast.error('Erro ao buscar questionários');
+        throw questionnairesError;
+      }
 
-      // Fetch all votes
+      // Fetch votes
       const { data: votes, error: votesError } = await supabase
         .from('questionnaire_votes')
         .select('*');
-      if (votesError) throw votesError;
+      
+      if (votesError) {
+        console.error('Error fetching votes:', votesError);
+        toast.error('Erro ao buscar votos');
+        throw votesError;
+      }
 
-      // Create backup of questionnaires if there are any
+      // Create backup for questionnaires if they exist
       if (questionnaires && questionnaires.length > 0) {
         const { error: backupError } = await supabase
           .from('data_backups')
@@ -77,13 +81,15 @@ const ExportData = () => {
             data: questionnaires,
             type: 'questionnaires'
           });
+
         if (backupError) {
-          console.error('Backup error (questionnaires):', backupError);
+          console.error('Error creating questionnaires backup:', backupError);
+          toast.error('Erro ao criar backup de questionários');
           throw backupError;
         }
       }
 
-      // Create backup of votes if there are any
+      // Create backup for votes if they exist
       if (votes && votes.length > 0) {
         const { error: backupError } = await supabase
           .from('data_backups')
@@ -92,8 +98,10 @@ const ExportData = () => {
             data: votes,
             type: 'votes'
           });
+
         if (backupError) {
-          console.error('Backup error (votes):', backupError);
+          console.error('Error creating votes backup:', backupError);
+          toast.error('Erro ao criar backup de votos');
           throw backupError;
         }
       }
@@ -103,19 +111,29 @@ const ExportData = () => {
         .from('fic_questionnaires')
         .delete()
         .not('id', 'is', null);
-      if (clearQuestionnaireError) throw clearQuestionnaireError;
+      
+      if (clearQuestionnaireError) {
+        console.error('Error clearing questionnaires:', clearQuestionnaireError);
+        toast.error('Erro ao limpar questionários');
+        throw clearQuestionnaireError;
+      }
 
       // Clear votes
       const { error: clearVotesError } = await supabase
         .from('questionnaire_votes')
         .delete()
         .not('id', 'is', null);
-      if (clearVotesError) throw clearVotesError;
+      
+      if (clearVotesError) {
+        console.error('Error clearing votes:', clearVotesError);
+        toast.error('Erro ao limpar votos');
+        throw clearVotesError;
+      }
 
       await queryClient.invalidateQueries({ queryKey: ['data-backups'] });
       toast.success('Dados exportados e limpos com sucesso!');
     } catch (error) {
-      console.error('Export error:', error);
+      console.error('Export and clear error:', error);
       toast.error('Erro ao exportar e limpar dados');
     } finally {
       setIsExporting(false);
