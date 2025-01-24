@@ -72,12 +72,21 @@ const ExportData = () => {
         throw votesError;
       }
 
+      // Convert data to CSV format
+      const convertToCSV = (data: any[]) => {
+        if (!data || data.length === 0) return '';
+        const headers = Object.keys(data[0]);
+        const rows = data.map(obj => headers.map(header => JSON.stringify(obj[header])).join(','));
+        return [headers.join(','), ...rows].join('\n');
+      };
+
       // Create backup for questionnaires if they exist
       if (questionnaires && questionnaires.length > 0) {
+        const csvData = convertToCSV(questionnaires);
         const { error: backupError } = await supabase
           .from('data_backups')
           .insert({
-            filename: `${backupName}_questionarios_${new Date().toISOString()}.json`,
+            filename: `${backupName}_questionarios_${new Date().toISOString()}.csv`,
             data: questionnaires,
             type: 'questionnaires'
           });
@@ -91,10 +100,11 @@ const ExportData = () => {
 
       // Create backup for votes if they exist
       if (votes && votes.length > 0) {
+        const csvData = convertToCSV(votes);
         const { error: backupError } = await supabase
           .from('data_backups')
           .insert({
-            filename: `${backupName}_votos_${new Date().toISOString()}.json`,
+            filename: `${backupName}_votos_${new Date().toISOString()}.csv`,
             data: votes,
             type: 'votes'
           });
@@ -141,7 +151,16 @@ const ExportData = () => {
   };
 
   const handleDownloadBackup = (backup: any) => {
-    const blob = new Blob([JSON.stringify(backup.data, null, 2)], { type: 'application/json' });
+    // Convert the data to CSV
+    const convertToCSV = (data: any[]) => {
+      if (!data || data.length === 0) return '';
+      const headers = Object.keys(data[0]);
+      const rows = data.map(obj => headers.map(header => JSON.stringify(obj[header])).join(','));
+      return [headers.join(','), ...rows].join('\n');
+    };
+
+    const csvData = convertToCSV(backup.data);
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

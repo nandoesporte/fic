@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Database, RefreshCw } from "lucide-react";
+import { DatabaseBackup, AlertCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ExportCardProps {
   isExporting: boolean;
@@ -20,11 +30,17 @@ interface ExportCardProps {
 
 export const ExportCard = ({ isExporting, onExport }: ExportCardProps) => {
   const [open, setOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [backupName, setBackupName] = useState("");
 
   const handleExport = () => {
-    onExport(backupName);
     setOpen(false);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmExport = () => {
+    onExport(backupName);
+    setConfirmOpen(false);
     setBackupName("");
   };
 
@@ -43,11 +59,16 @@ export const ExportCard = ({ isExporting, onExport }: ExportCardProps) => {
           className="w-full md:w-auto"
         >
           {isExporting ? (
-            <RefreshCw className="h-4 w-4 animate-spin" />
+            <>
+              <DatabaseBackup className="h-4 w-4 animate-spin mr-2" />
+              Exportando...
+            </>
           ) : (
-            <Database className="h-4 w-4" />
+            <>
+              <DatabaseBackup className="h-4 w-4 mr-2" />
+              Exportar e Limpar
+            </>
           )}
-          Exportar e Limpar
         </Button>
       </div>
 
@@ -74,11 +95,34 @@ export const ExportCard = ({ isExporting, onExport }: ExportCardProps) => {
               Cancelar
             </Button>
             <Button onClick={handleExport} disabled={!backupName.trim()}>
-              Confirmar
+              Continuar
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exportação</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <div className="flex items-start gap-2 text-yellow-600">
+                <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+                <span>
+                  Esta ação irá criar um backup dos dados atuais e em seguida limpar todas as tabelas.
+                  Esta operação não pode ser desfeita.
+                </span>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmExport}>
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

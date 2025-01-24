@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Download, Trash2, FileText } from "lucide-react";
+import { Download, Trash2, FileText, Database } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -57,24 +57,37 @@ export const BackupList = ({ backups, isLoading, onDownload, onDelete }: BackupL
   return (
     <Card className="p-4 md:p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg md:text-xl font-semibold">Backups Disponíveis</h2>
+        <div className="space-y-1">
+          <h2 className="text-lg md:text-xl font-semibold">Backups Disponíveis</h2>
+          <p className="text-sm text-muted-foreground">
+            Lista de backups salvos no sistema
+          </p>
+        </div>
+        <Database className="h-8 w-8 text-muted-foreground/50" />
       </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
-          <p className="text-muted-foreground">Carregando backups...</p>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Database className="h-4 w-4 animate-spin" />
+            <span>Carregando backups...</span>
+          </div>
         </div>
       ) : backups?.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8 text-center">
           <FileText className="h-12 w-12 text-muted-foreground/50 mb-4" />
           <p className="text-muted-foreground">Nenhum backup encontrado</p>
+          <p className="text-sm text-muted-foreground/75">
+            Os backups aparecerão aqui quando você exportar dados
+          </p>
         </div>
       ) : (
-        <div className="relative overflow-x-auto">
+        <div className="relative overflow-x-auto rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Tipo</TableHead>
+                <TableHead>Nome</TableHead>
                 <TableHead>Data de Criação</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -85,6 +98,7 @@ export const BackupList = ({ backups, isLoading, onDownload, onDelete }: BackupL
                   <TableCell className="font-medium">
                     {getBackupTypeLabel(backup.type)}
                   </TableCell>
+                  <TableCell>{backup.filename.split('_')[0]}</TableCell>
                   <TableCell>
                     {new Date(backup.created_at).toLocaleString('pt-BR')}
                   </TableCell>
