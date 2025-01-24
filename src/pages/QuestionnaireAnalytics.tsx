@@ -251,18 +251,26 @@ const QuestionnaireAnalytics = () => {
               </TabsTrigger>
             </TabsList>
 
-            {["strengths", "challenges", "opportunities"].map((type) => (
-              <TabsContent key={type} value={type}>
-                <Card className="p-6">
-                  <h2 className="text-xl font-semibold mb-6">
-                    {type === "strengths" && "Análise dos Pontos Fortes"}
-                    {type === "challenges" && "Análise dos Desafios"}
-                    {type === "opportunities" && "Análise das Oportunidades"}
-                  </h2>
-                  {renderVoteList(type)}
-                </Card>
-              </TabsContent>
-            ))}
+            <TabsContent value="strengths">
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-6">Análise dos Pontos Fortes</h2>
+                {renderVoteList("strengths")}
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="challenges">
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-6">Análise dos Desafios</h2>
+                {renderVoteList("challenges")}
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="opportunities">
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-6">Análise das Oportunidades</h2>
+                {renderVoteList("opportunities")}
+              </Card>
+            </TabsContent>
           </Tabs>
         </>
       )}
