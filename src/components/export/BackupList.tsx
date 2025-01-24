@@ -46,13 +46,13 @@ export const BackupList = ({ backups, isLoading, onDownload, onDelete }: BackupL
     try {
       await onDelete(selectedBackupId);
       toast.success('Backup excluído com sucesso');
+      setDeleteDialogOpen(false);
+      setSelectedBackupId(null);
     } catch (error) {
       console.error('Error deleting backup:', error);
       toast.error('Erro ao excluir backup');
     } finally {
       setIsDeleting(false);
-      setDeleteDialogOpen(false);
-      setSelectedBackupId(null);
     }
   };
 

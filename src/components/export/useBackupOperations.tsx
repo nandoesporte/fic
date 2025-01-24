@@ -31,13 +31,11 @@ export const useBackupOperations = () => {
 
       if (error) {
         console.error('Delete error:', error);
-        toast.error('Erro ao excluir backup');
         throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['data-backups'] });
-      toast.success('Backup excluído com sucesso');
     },
     onError: (error) => {
       console.error('Error deleting backup:', error);
@@ -49,7 +47,7 @@ export const useBackupOperations = () => {
     try {
       await deleteBackupMutation.mutateAsync(backupId);
     } catch (error) {
-      console.error('Error deleting backup:', error);
+      console.error('Error in handleDeleteBackup:', error);
     }
   };
 
