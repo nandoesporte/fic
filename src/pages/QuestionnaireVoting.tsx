@@ -165,7 +165,7 @@ export const QuestionnaireVoting = () => {
         .from('registered_voters')
         .select('id')
         .eq('email', userEmail.toLowerCase())
-        .single();
+        .maybeSingle();
 
       if (!voter) throw new Error('Usuário não encontrado');
 
@@ -178,7 +178,7 @@ export const QuestionnaireVoting = () => {
 
       if (dimensionVoteError) throw dimensionVoteError;
 
-      // First, delete any existing votes for this user and questionnaire
+      // Delete existing votes
       const { error: deleteError } = await supabase
         .from('questionnaire_votes')
         .delete()
@@ -189,10 +189,10 @@ export const QuestionnaireVoting = () => {
 
       if (deleteError) throw deleteError;
 
-      // Then insert the new votes
-      const votePromises = votes.flatMap(({ optionType, optionNumbers }) =>
-        optionNumbers.map(optionNumber =>
-          supabase
+      // Insert new votes
+      for (const { optionType, optionNumbers } of votes) {
+        for (const optionNumber of optionNumbers) {
+          const { error: insertError } = await supabase
             .from('questionnaire_votes')
             .insert({
               questionnaire_id: questionnaireId,
@@ -200,11 +200,11 @@ export const QuestionnaireVoting = () => {
               vote_type: 'upvote',
               option_type: optionType,
               option_number: optionNumber,
-            })
-        )
-      );
+            });
 
-      await Promise.all(votePromises);
+          if (insertError) throw insertError;
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
@@ -212,8 +212,9 @@ export const QuestionnaireVoting = () => {
       toast.success('Votos registrados com sucesso!');
       setSelections({});
     },
-    onError: (error) => {
-      toast.error('Erro ao registrar votos: ' + error.message);
+    onError: (error: Error) => {
+      console.error('Vote submission error:', error);
+      toast.error(`Erro ao registrar votos: ${error.message}`);
     },
   });
 

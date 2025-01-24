@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Download, Trash2, FileText, Database } from "lucide-react";
+import { Download, Trash2, FileText, Database, Loader2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface BackupListProps {
   backups: any[];
@@ -31,6 +32,7 @@ interface BackupListProps {
 export const BackupList = ({ backups, isLoading, onDownload, onDelete }: BackupListProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedBackupId, setSelectedBackupId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDeleteClick = (backupId: string) => {
     setSelectedBackupId(backupId);
@@ -38,15 +40,19 @@ export const BackupList = ({ backups, isLoading, onDownload, onDelete }: BackupL
   };
 
   const handleConfirmDelete = async () => {
-    if (selectedBackupId) {
-      try {
-        await onDelete(selectedBackupId);
-      } catch (error) {
-        console.error('Error in handleDelete:', error);
-      } finally {
-        setDeleteDialogOpen(false);
-        setSelectedBackupId(null);
-      }
+    if (!selectedBackupId) return;
+    
+    setIsDeleting(true);
+    try {
+      await onDelete(selectedBackupId);
+      toast.success('Backup excluído com sucesso');
+    } catch (error) {
+      console.error('Error deleting backup:', error);
+      toast.error('Erro ao excluir backup');
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setSelectedBackupId(null);
     }
   };
 
@@ -69,7 +75,7 @@ export const BackupList = ({ backups, isLoading, onDownload, onDelete }: BackupL
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <div className="flex items-center gap-2 text-muted-foreground">
-            <Database className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" />
             <span>Carregando backups...</span>
           </div>
         </div>
@@ -116,8 +122,13 @@ export const BackupList = ({ backups, isLoading, onDownload, onDelete }: BackupL
                         variant="destructive"
                         size="sm"
                         onClick={() => handleDeleteClick(backup.id)}
+                        disabled={isDeleting && selectedBackupId === backup.id}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        {isDeleting && selectedBackupId === backup.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
                         <span className="sr-only">Excluir</span>
                       </Button>
                     </div>
@@ -138,9 +149,19 @@ export const BackupList = ({ backups, isLoading, onDownload, onDelete }: BackupL
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete}>
-              Confirmar
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Excluindo...
+                </>
+              ) : (
+                'Confirmar'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
