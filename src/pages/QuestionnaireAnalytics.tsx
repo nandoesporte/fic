@@ -126,8 +126,8 @@ const QuestionnaireAnalytics = () => {
 
   const getTotalParticipants = (data: VoteData[] | undefined) => {
     if (!data) return 0;
-    const totalVotes = getTotalVotes(data);
-    return Math.floor(totalVotes / 9);
+    const uniqueQuestionnaires = new Set(data.map(vote => vote.questionnaire_id));
+    return uniqueQuestionnaires.size;
   };
 
   const renderVoteList = (type: string) => {
