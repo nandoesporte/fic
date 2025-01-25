@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Loader2, Download, RefreshCw, Check, Circle, LayoutList, LayoutCards } from "lucide-react";
+import { Edit, Loader2, Download, RefreshCw, Check, Circle, LayoutList, LayoutGrid } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -443,7 +443,7 @@ export const QuestionnaireResponses = () => {
             onClick={() => setViewMode('cards')}
             className={viewMode === 'cards' ? 'bg-primary/10' : ''}
           >
-            <LayoutCards className="h-4 w-4 mr-2" />
+            <LayoutGrid className="h-4 w-4 mr-2" />
             Cards
           </Button>
           <Button
