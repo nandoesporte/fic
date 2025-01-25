@@ -74,5 +74,7 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
       console.log("Processed vote data:", processedVotes);
       return processedVotes;
     },
+    staleTime: 0,
+    gcTime: 0,
   });
 };

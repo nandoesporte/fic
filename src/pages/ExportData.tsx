@@ -98,21 +98,14 @@ const ExportData = () => {
         if (backupError) throw backupError;
       }
 
-      // Clear questionnaires
-      const { error: clearQuestionnaireError } = await supabase
-        .from('fic_questionnaires')
-        .delete()
-        .not('id', 'is', null);
-      if (clearQuestionnaireError) throw clearQuestionnaireError;
+      // Call the clean_questionnaire_votes function
+      const { error: cleanError } = await supabase.rpc('clean_questionnaire_votes');
+      if (cleanError) throw cleanError;
 
-      // Clear votes
-      const { error: clearVotesError } = await supabase
-        .from('questionnaire_votes')
-        .delete()
-        .not('id', 'is', null);
-      if (clearVotesError) throw clearVotesError;
-
+      // Invalidate queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['questionnaire-votes'] });
       queryClient.invalidateQueries({ queryKey: ['data-backups'] });
+      
       toast.success('Dados exportados e limpos com sucesso!');
       setBackupName("");
       setIsDialogOpen(false);
