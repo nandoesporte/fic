@@ -172,6 +172,60 @@ export const QuestionnaireResponses = () => {
     toggleStatusMutation.mutate({ questionnaireId, type, index, currentStatus });
   };
 
+  const renderLine = (questionnaire: any, type: 'strengths' | 'challenges' | 'opportunities', line: string, index: number) => {
+    const isEditing = editingLine?.questionnaireId === questionnaire.id && 
+                     editingLine?.type === type && 
+                     editingLine?.index === index;
+    
+    const statuses = questionnaire[`${type}_statuses`]?.split(',') || [];
+    const status = statuses[index] || 'pending';
+
+    return (
+      <div className="flex items-start justify-between gap-4 p-3 bg-white/90 rounded-lg">
+        {isEditing ? (
+          <div className="flex-1 flex gap-2">
+            <Input
+              value={editingLine.value}
+              onChange={(e) => setEditingLine({ ...editingLine, value: e.target.value })}
+              className="flex-1"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleLineSave(questionnaire)}
+            >
+              Save
+            </Button>
+          </div>
+        ) : (
+          <>
+            <p className="flex-1">{line}</p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleLineEdit(questionnaire.id, type, index, line)}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleToggleStatus(questionnaire.id, type, index, status)}
+              >
+                {status === 'active' ? (
+                  <Check className="h-4 w-4 text-primary" />
+                ) : (
+                  <Circle className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
   const renderTableView = () => {
     const filteredData = filterQuestionnaires(questionnaires || []);
     
