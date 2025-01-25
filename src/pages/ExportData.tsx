@@ -2,7 +2,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DatabaseBackup, Download, Trash2 } from "lucide-react";
+import { DatabaseBackup, Download, FileText } from "lucide-react";
 import { StatCard } from "@/components/analytics/StatCard";
 import { useExportOperations } from "@/components/export/useExportOperations";
 import { useBackupOperations } from "@/components/export/useBackupOperations";
@@ -24,7 +24,7 @@ const ExportData = () => {
       <div className="flex h-screen bg-background">
         <AppSidebar />
         <main className="flex-1 overflow-auto">
-          <div className="h-full p-8">
+          <div className="h-full px-4 py-8">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900">Exportar Dados</h1>
               <p className="text-gray-500">Gerencie backups e limpe os dados do sistema</p>
@@ -44,7 +44,7 @@ const ExportData = () => {
                 iconClassName="bg-blue-100 text-blue-600"
               />
               <StatCard
-                icon={Trash2}
+                icon={FileText}
                 title="Backups de Votos"
                 value={totalVotes}
                 iconClassName="bg-red-100 text-red-600"
@@ -64,15 +64,12 @@ const ExportData = () => {
               </TabsList>
 
               <TabsContent value="backups">
-                <Card className="p-6">
-                  <h2 className="text-xl font-semibold mb-6">Histórico de Backups</h2>
-                  <BackupList
-                    backups={backups || []}
-                    isLoading={isLoading}
-                    onDownload={handleDownloadBackup}
-                    onDelete={handleDeleteBackup}
-                  />
-                </Card>
+                <BackupList
+                  backups={backups || []}
+                  isLoading={isLoading}
+                  onDownload={handleDownloadBackup}
+                  onDelete={handleDeleteBackup}
+                />
               </TabsContent>
             </Tabs>
           </div>

@@ -146,23 +146,35 @@ export type Database = {
       data_backups: {
         Row: {
           created_at: string | null
+          created_by: string | null
           data: Json
+          description: string | null
           filename: string
           id: string
+          size_bytes: number | null
+          status: string | null
           type: string
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           data: Json
+          description?: string | null
           filename: string
           id?: string
+          size_bytes?: number | null
+          status?: string | null
           type: string
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           data?: Json
+          description?: string | null
           filename?: string
           id?: string
+          size_bytes?: number | null
+          status?: string | null
           type?: string
         }
         Relationships: []

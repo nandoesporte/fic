@@ -24,7 +24,7 @@ export const BackupList = ({ backups, isLoading, onDownload, onDelete }: BackupL
   };
 
   return (
-    <Card className="p-4 md:p-6">
+    <Card className="p-6">
       <BackupListHeader />
 
       {isLoading ? (
