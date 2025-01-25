@@ -9,7 +9,7 @@ export function AppSidebar() {
   const { pathname } = useLocation();
 
   return (
-    <Sidebar className="border-r border-border bg-sidebar-background w-[285px] md:w-[285px] sm:w-full overflow-hidden" collapsible="icon">
+    <Sidebar className="border-r border-border bg-sidebar-background w-[275px] md:w-[275px] sm:w-full overflow-hidden" collapsible="icon">
       <ScrollArea className="h-full">
         <div className="space-y-4 py-6">
           <div className="px-4 sm:px-6">
