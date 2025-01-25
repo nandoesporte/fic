@@ -50,15 +50,15 @@ const QuestionnaireAnalytics = () => {
   const { data: voteData, isLoading } = useQuery({
     queryKey: ["questionnaire-votes", selectedDimension],
     queryFn: async () => {
-      console.log("Fetching vote data...");
+      console.log("Fetching vote data for dimension:", selectedDimension);
+      
       let query = supabase
-        .from("questionnaire_vote_counts")
+        .from("questionnaire_votes")
         .select(`
           questionnaire_id,
           option_type,
           option_number,
-          upvotes,
-          downvotes,
+          vote_type,
           fic_questionnaires (
             dimension,
             satisfaction,
@@ -81,23 +81,41 @@ const QuestionnaireAnalytics = () => {
 
       console.log("Raw vote data:", votes);
 
-      const processedVotes = votes?.map((vote) => {
-        let optionText = "";
-        if (vote.fic_questionnaires) {
+      // Processar os votos para agrupar por questionário e opção
+      const processedVotes = votes?.reduce((acc: any[], vote) => {
+        const key = `${vote.questionnaire_id}-${vote.option_type}-${vote.option_number}`;
+        const existingVote = acc.find(v => 
+          v.questionnaire_id === vote.questionnaire_id && 
+          v.option_type === vote.option_type && 
+          v.option_number === vote.option_number
+        );
+
+        if (existingVote) {
+          existingVote.upvotes = (existingVote.upvotes || 0) + (vote.vote_type === 'upvote' ? 1 : 0);
+          existingVote.downvotes = (existingVote.downvotes || 0) + (vote.vote_type === 'downvote' ? 1 : 0);
+        } else {
           const options = vote.option_type === "strengths" 
-            ? vote.fic_questionnaires.strengths
+            ? vote.fic_questionnaires?.strengths
             : vote.option_type === "challenges"
-              ? vote.fic_questionnaires.challenges
-              : vote.fic_questionnaires.opportunities;
+              ? vote.fic_questionnaires?.challenges
+              : vote.fic_questionnaires?.opportunities;
           
           const optionsList = options?.split('\n\n').filter(Boolean) || [];
-          optionText = optionsList[vote.option_number - 1] || "";
+          const optionText = optionsList[vote.option_number - 1] || "";
+
+          acc.push({
+            questionnaire_id: vote.questionnaire_id,
+            option_type: vote.option_type,
+            option_number: vote.option_number,
+            upvotes: vote.vote_type === 'upvote' ? 1 : 0,
+            downvotes: vote.vote_type === 'downvote' ? 1 : 0,
+            dimension: vote.fic_questionnaires?.dimension,
+            option_text: optionText,
+          });
         }
-        return {
-          ...vote,
-          option_text: optionText,
-        };
-      }) || [];
+
+        return acc;
+      }, []);
 
       console.log("Processed vote data:", processedVotes);
       return processedVotes;
@@ -125,7 +143,7 @@ const QuestionnaireAnalytics = () => {
   const getTotalParticipants = (data: VoteData[] | undefined) => {
     if (!data) return 0;
     const totalVotes = getTotalVotes(data);
-    return Math.floor(totalVotes / 9);
+    return Math.ceil(totalVotes / 9); // Cada participante vota em 9 opções (3 por seção)
   };
 
   const renderVoteList = (type: string) => {
