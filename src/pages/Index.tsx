@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { DimensionManager } from "@/components/FICForm/DimensionManager";
 
 const StatCard = ({ icon: Icon, label, value, description }: { icon: any; label: string; value: string; description?: string }) => (
-  <Card className="p-6 hover:shadow-lg transition-shadow border border-gray-100">
+  <Card className="p-6 hover:shadow-lg transition-shadow">
     <div className="flex items-center gap-5">
       <div className="rounded-full bg-primary/10 p-4">
         <Icon className="h-6 w-6 text-primary" />
@@ -29,7 +29,7 @@ const StatCard = ({ icon: Icon, label, value, description }: { icon: any; label:
 );
 
 const AchievementCard = ({ title, description, icon: Icon }: { title: string; description: string; icon: any }) => (
-  <Card className="p-6 hover:shadow-lg transition-shadow border border-gray-100">
+  <Card className="p-6 hover:shadow-lg transition-shadow">
     <div className="flex items-start gap-5">
       <div className="rounded-full bg-accent/10 p-4">
         <Icon className="h-5 w-5 text-accent" />
@@ -184,8 +184,8 @@ const Index = () => {
 
   return (
     <SidebarProvider>
-      <div className="space-y-10">
-        <div className="flex justify-between items-center bg-white p-8 rounded-lg border border-gray-100 shadow-sm">
+      <div className="space-y-8">
+        <div className="flex justify-between items-center bg-white rounded-lg shadow-sm p-8">
           <div>
             <h1 className="text-4xl font-bold text-gray-900 flex items-center gap-3">
               Dashboard FIC
@@ -204,7 +204,7 @@ const Index = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard 
             icon={Heart} 
             label="Índice FIC" 
@@ -231,8 +231,8 @@ const Index = () => {
           />
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="bg-white shadow-sm p-1.5 border border-gray-100 rounded-lg">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="bg-white shadow-sm p-1.5 rounded-lg">
             <TabsTrigger value="questionarios" className="data-[state=active]:bg-primary/10 px-6">
               Questionários
             </TabsTrigger>
@@ -248,8 +248,8 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="questionarios">
-            <Card className="p-8 border border-gray-100">
-              <h2 className="text-xl font-semibold mb-8 flex items-center gap-3">
+            <Card className="p-8">
+              <h2 className="text-xl font-semibold mb-6 flex items-center gap-3">
                 <ClipboardList className="h-6 w-6 text-primary" />
                 Respostas dos Questionários
               </h2>
@@ -258,7 +258,7 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="conquistas" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <AchievementCard 
                 icon={Award}
                 title="Participação 100%"
@@ -278,8 +278,8 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="novo" className="space-y-6">
-            <Card className="p-8 border border-gray-100">
-              <h2 className="text-xl font-semibold mb-8 flex items-center gap-3">
+            <Card className="p-8">
+              <h2 className="text-xl font-semibold mb-6 flex items-center gap-3">
                 <PlusCircle className="h-6 w-6 text-primary" />
                 Novo Questionário FIC
               </h2>
