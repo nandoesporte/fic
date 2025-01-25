@@ -169,6 +169,18 @@ export const QuestionnaireVoting = () => {
 
       if (!voter) throw new Error('Usuário não encontrado');
 
+      // First, delete any existing votes for this user and questionnaire
+      const { error: deleteError } = await supabase
+        .from('questionnaire_votes')
+        .delete()
+        .eq('questionnaire_id', questionnaireId)
+        .eq('user_id', voter.id);
+
+      if (deleteError) throw deleteError;
+
+      // Wait a brief moment to ensure deletion is processed
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       const { error: dimensionVoteError } = await supabase
         .from('dimension_votes')
         .insert({
@@ -178,6 +190,7 @@ export const QuestionnaireVoting = () => {
 
       if (dimensionVoteError) throw dimensionVoteError;
 
+      // Now insert the new votes
       const votePromises = votes.flatMap(({ optionType, optionNumbers }) =>
         optionNumbers.map(optionNumber =>
           supabase
@@ -201,6 +214,7 @@ export const QuestionnaireVoting = () => {
       setSelections({});
     },
     onError: (error) => {
+      console.error('Error submitting votes:', error);
       toast.error('Erro ao registrar votos: ' + error.message);
     },
   });
