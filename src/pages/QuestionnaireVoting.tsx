@@ -202,7 +202,10 @@ export const QuestionnaireVoting = () => {
               option_number: optionNumber,
             });
 
-          if (insertError) throw insertError;
+          if (insertError) {
+            console.error('Vote insertion error:', insertError);
+            throw insertError;
+          }
         }
       }
     },
@@ -253,10 +256,16 @@ export const QuestionnaireVoting = () => {
 
   const handleConfirmVotes = async (questionnaireId: string) => {
     const questionnaire = questionnaires?.find(q => q.id === questionnaireId);
-    if (!questionnaire) return;
+    if (!questionnaire) {
+      toast.error('Questionário não encontrado');
+      return;
+    }
 
     const questionnaireSelections = selections[questionnaireId];
-    if (!questionnaireSelections) return;
+    if (!questionnaireSelections) {
+      toast.error('Nenhuma seleção encontrada');
+      return;
+    }
 
     const votes = Object.entries(questionnaireSelections).map(([optionType, optionNumbers]) => ({
       optionType,
