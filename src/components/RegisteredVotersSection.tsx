@@ -1,84 +1,76 @@
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Users, Search } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
+import { Search, Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 export const RegisteredVotersSection = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { data: voters = [], isLoading } = useQuery({
+  const { data: voters, isLoading } = useQuery({
     queryKey: ["registered-voters", searchTerm],
     queryFn: async () => {
-      const query = supabase
+      let query = supabase
         .from("registered_voters")
         .select("*")
         .order("created_at", { ascending: false });
 
       if (searchTerm) {
-        query.ilike("email", `%${searchTerm}%`);
+        query = query.or(`email.ilike.%${searchTerm}%,name.ilike.%${searchTerm}%`);
       }
 
       const { data, error } = await query;
-      
       if (error) throw error;
-      return data || [];
+      return data;
     },
   });
 
-  const filteredVoters = voters.filter(
-    (voter) =>
-      voter.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (voter.name && voter.name.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
-
   return (
     <Card className="p-8">
-      <h2 className="text-xl font-semibold mb-6 flex items-center gap-3">
-        <Users className="h-6 w-6 text-primary" />
-        Cooperados Registrados
-      </h2>
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-primary/10 rounded-full">
+            <Users className="w-6 h-6 text-primary" />
+          </div>
+          <h2 className="text-xl font-semibold">Cooperados Registrados</h2>
+        </div>
 
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-        <Input
-          type="text"
-          placeholder="Buscar por email ou nome..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <Input
+            placeholder="Buscar por nome ou email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        <div className="space-y-4">
+          {isLoading ? (
+            <p className="text-center text-gray-500">Carregando cooperados...</p>
+          ) : voters?.length === 0 ? (
+            <p className="text-center text-gray-500">Nenhum cooperado encontrado</p>
+          ) : (
+            <div className="grid gap-4">
+              {voters?.map((voter) => (
+                <Card key={voter.id} className="p-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-medium">{voter.name || "Nome não informado"}</p>
+                      <p className="text-sm text-gray-500">{voter.email}</p>
+                    </div>
+                    <p className="text-sm text-gray-500">
+                      Registrado em {format(new Date(voter.created_at), "dd/MM/yyyy")}
+                    </p>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-
-      <CardContent className="p-0 space-y-4">
-        {isLoading ? (
-          <div className="text-center text-gray-500">Carregando...</div>
-        ) : filteredVoters.length === 0 ? (
-          <div className="text-center text-gray-500">
-            Nenhum cooperado encontrado
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredVoters.map((voter) => (
-              <div
-                key={voter.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <div>
-                  <h3 className="font-medium text-gray-900">
-                    {voter.name || "Nome não registrado"}
-                  </h3>
-                  <p className="text-sm text-gray-500">{voter.email}</p>
-                </div>
-                <span className="text-xs text-gray-400">
-                  {new Date(voter.created_at).toLocaleDateString("pt-BR")}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
     </Card>
   );
 };
