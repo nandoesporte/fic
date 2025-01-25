@@ -95,7 +95,7 @@ export const QuestionnaireVoting = () => {
           const filtered_opportunities = opportunities_array.filter((_, index) => opportunities_statuses[index] === 'active');
 
           acc[curr.dimension] = {
-            id: curr.dimension,
+            id: curr.id, // Keep the original questionnaire ID
             dimension: curr.dimension,
             strengths: filtered_strengths.join('\n\n'),
             challenges: filtered_challenges.join('\n\n'),
@@ -105,28 +105,6 @@ export const QuestionnaireVoting = () => {
             challenges_statuses: curr.challenges_statuses,
             opportunities_statuses: curr.opportunities_statuses,
           };
-        } else {
-          const strengths_array = curr.strengths.split('\n\n');
-          const challenges_array = curr.challenges.split('\n\n');
-          const opportunities_array = curr.opportunities.split('\n\n');
-          
-          const strengths_statuses = (curr.strengths_statuses || 'pending,pending,pending').split(',');
-          const challenges_statuses = (curr.challenges_statuses || 'pending,pending,pending').split(',');
-          const opportunities_statuses = (curr.opportunities_statuses || 'pending,pending,pending').split(',');
-          
-          const filtered_strengths = strengths_array.filter((_, index) => strengths_statuses[index] === 'active');
-          const filtered_challenges = challenges_array.filter((_, index) => challenges_statuses[index] === 'active');
-          const filtered_opportunities = opportunities_array.filter((_, index) => opportunities_statuses[index] === 'active');
-
-          if (filtered_strengths.length > 0) {
-            acc[curr.dimension].strengths += '\n\n' + filtered_strengths.join('\n\n');
-          }
-          if (filtered_challenges.length > 0) {
-            acc[curr.dimension].challenges += '\n\n' + filtered_challenges.join('\n\n');
-          }
-          if (filtered_opportunities.length > 0) {
-            acc[curr.dimension].opportunities += '\n\n' + filtered_opportunities.join('\n\n');
-          }
         }
         return acc;
       }, {});
@@ -136,31 +114,24 @@ export const QuestionnaireVoting = () => {
     enabled: isEmailVerified,
   });
 
-  const checkExistingVote = async (dimension: string) => {
-    const { data: existingVote } = await supabase
-      .from('dimension_votes')
+  const checkExistingVote = async (questionnaireId: string, userId: string) => {
+    const { data: existingVotes } = await supabase
+      .from('questionnaire_votes')
       .select('id')
-      .eq('email', userEmail.toLowerCase())
-      .eq('dimension', dimension)
-      .maybeSingle();
+      .eq('questionnaire_id', questionnaireId)
+      .eq('user_id', userId);
 
-    return existingVote !== null;
+    return existingVotes && existingVotes.length > 0;
   };
 
   const submitVotesMutation = useMutation({
-    mutationFn: async ({ questionnaireId, votes, dimension }: { 
+    mutationFn: async ({ questionnaireId, votes }: { 
       questionnaireId: string;
       votes: {
         optionType: string;
         optionNumbers: number[];
       }[];
-      dimension: string;
     }) => {
-      const hasVoted = await checkExistingVote(dimension);
-      if (hasVoted) {
-        throw new Error('Você já votou nesta dimensão');
-      }
-
       const { data: voter } = await supabase
         .from('registered_voters')
         .select('id')
@@ -169,16 +140,12 @@ export const QuestionnaireVoting = () => {
 
       if (!voter) throw new Error('Usuário não encontrado');
 
-      const { error: dimensionVoteError } = await supabase
-        .from('dimension_votes')
-        .insert({
-          email: userEmail.toLowerCase(),
-          dimension: dimension
-        });
+      const hasVoted = await checkExistingVote(questionnaireId, voter.id);
+      if (hasVoted) {
+        throw new Error('Você já votou neste questionário');
+      }
 
-      if (dimensionVoteError) throw dimensionVoteError;
-
-      // First, delete any existing votes for this user and questionnaire
+      // Delete any existing votes for this user and questionnaire
       const { error: deleteError } = await supabase
         .from('questionnaire_votes')
         .delete()
@@ -251,9 +218,6 @@ export const QuestionnaireVoting = () => {
   };
 
   const handleConfirmVotes = async (questionnaireId: string) => {
-    const questionnaire = questionnaires?.find(q => q.id === questionnaireId);
-    if (!questionnaire) return;
-
     const questionnaireSelections = selections[questionnaireId];
     if (!questionnaireSelections) return;
 
@@ -263,9 +227,8 @@ export const QuestionnaireVoting = () => {
     }));
 
     await submitVotesMutation.mutate({ 
-      questionnaireId, 
+      questionnaireId,
       votes,
-      dimension: questionnaire.dimension 
     });
   };
 
