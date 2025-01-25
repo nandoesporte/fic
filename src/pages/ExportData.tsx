@@ -1,78 +1,176 @@
+import { useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DatabaseBackup, Download, FileText } from "lucide-react";
-import { StatCard } from "@/components/analytics/StatCard";
-import { useExportOperations } from "@/components/export/useExportOperations";
-import { useBackupOperations } from "@/components/export/useBackupOperations";
-import { useDownloadBackup } from "@/components/export/useDownloadBackup";
-import { ExportCard } from "@/components/export/ExportCard";
-import { BackupList } from "@/components/export/BackupList";
+import { Button } from "@/components/ui/button";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Download, Database, Trash2, RefreshCw } from "lucide-react";
 
 const ExportData = () => {
-  const { backups, isLoading, handleDeleteBackup } = useBackupOperations();
-  const { isExporting, handleExportAndClear } = useExportOperations();
-  const { handleDownloadBackup } = useDownloadBackup();
+  const queryClient = useQueryClient();
+  const [isExporting, setIsExporting] = useState(false);
 
-  const totalBackups = backups?.length || 0;
-  const totalQuestionnaires = backups?.filter(b => b.type === 'questionnaires').length || 0;
-  const totalVotes = backups?.filter(b => b.type === 'votes').length || 0;
+  const { data: backups, isLoading } = useQuery({
+    queryKey: ['data-backups'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('data_backups')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const handleExportAndClear = async () => {
+    if (!window.confirm('Tem certeza que deseja exportar e limpar os dados? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      // Fetch all questionnaires
+      const { data: questionnaires, error: questionnairesError } = await supabase
+        .from('fic_questionnaires')
+        .select('*');
+      if (questionnairesError) throw questionnairesError;
+
+      // Fetch all votes
+      const { data: votes, error: votesError } = await supabase
+        .from('questionnaire_votes')
+        .select('*');
+      if (votesError) throw votesError;
+
+      // Create backup of questionnaires
+      if (questionnaires && questionnaires.length > 0) {
+        const { error: backupError } = await supabase
+          .from('data_backups')
+          .insert({
+            filename: `questionarios_${new Date().toISOString()}.json`,
+            data: questionnaires,
+            type: 'questionnaires'
+          });
+        if (backupError) throw backupError;
+      }
+
+      // Create backup of votes
+      if (votes && votes.length > 0) {
+        const { error: backupError } = await supabase
+          .from('data_backups')
+          .insert({
+            filename: `votos_${new Date().toISOString()}.json`,
+            data: votes,
+            type: 'votes'
+          });
+        if (backupError) throw backupError;
+      }
+
+      // Clear questionnaires
+      const { error: clearQuestionnaireError } = await supabase
+        .from('fic_questionnaires')
+        .delete()
+        .not('id', 'is', null);
+      if (clearQuestionnaireError) throw clearQuestionnaireError;
+
+      // Clear votes
+      const { error: clearVotesError } = await supabase
+        .from('questionnaire_votes')
+        .delete()
+        .not('id', 'is', null);
+      if (clearVotesError) throw clearVotesError;
+
+      queryClient.invalidateQueries({ queryKey: ['data-backups'] });
+      toast.success('Dados exportados e limpos com sucesso!');
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Erro ao exportar e limpar dados');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleDownloadBackup = (backup: any) => {
+    const blob = new Blob([JSON.stringify(backup.data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = backup.filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen bg-background">
+      <div className="min-h-screen flex w-full bg-gray-50">
         <AppSidebar />
-        <main className="flex-1 overflow-auto">
-          <div className="h-full px-4 py-8">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">Exportar Dados</h1>
-              <p className="text-gray-500">Gerencie backups e limpe os dados do sistema</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <StatCard
-                icon={DatabaseBackup}
-                title="Total de Backups"
-                value={totalBackups}
-                iconClassName="bg-purple-100 text-purple-600"
-              />
-              <StatCard
-                icon={Download}
-                title="Backups de Questionários"
-                value={totalQuestionnaires}
-                iconClassName="bg-blue-100 text-blue-600"
-              />
-              <StatCard
-                icon={FileText}
-                title="Backups de Votos"
-                value={totalVotes}
-                iconClassName="bg-red-100 text-red-600"
-              />
-            </div>
-
-            <ExportCard 
-              isExporting={isExporting} 
-              onExport={handleExportAndClear} 
-            />
-
-            <Tabs defaultValue="backups" className="space-y-6">
-              <TabsList className="bg-white p-1.5 rounded-lg">
-                <TabsTrigger value="backups" className="data-[state=active]:bg-primary data-[state=active]:text-white px-6">
-                  Lista de Backups
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="backups">
-                <BackupList
-                  backups={backups || []}
-                  isLoading={isLoading}
-                  onDownload={handleDownloadBackup}
-                  onDelete={handleDeleteBackup}
-                />
-              </TabsContent>
-            </Tabs>
+        <main className="flex-1 p-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Exportar Dados</h1>
+            <p className="text-gray-500">Gerencie backups e limpe os dados do sistema</p>
           </div>
+
+          <Card className="p-6 mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-semibold">Exportar e Limpar Dados</h2>
+                <p className="text-gray-500">
+                  Esta ação irá criar um backup dos dados atuais e limpar as tabelas
+                </p>
+              </div>
+              <Button
+                onClick={handleExportAndClear}
+                disabled={isExporting}
+                className="bg-primary hover:bg-primary/90"
+              >
+                {isExporting ? (
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Database className="h-4 w-4 mr-2" />
+                )}
+                Exportar e Limpar
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-6">Backups Disponíveis</h2>
+            {isLoading ? (
+              <p className="text-center text-gray-500">Carregando backups...</p>
+            ) : backups?.length === 0 ? (
+              <p className="text-center text-gray-500">Nenhum backup encontrado</p>
+            ) : (
+              <div className="space-y-4">
+                {backups?.map((backup) => (
+                  <div
+                    key={backup.id}
+                    className="flex items-center justify-between p-4 bg-white rounded-lg border"
+                  >
+                    <div>
+                      <h3 className="font-medium">
+                        {backup.type === 'questionnaires' ? 'Questionários' : 'Votos'}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {new Date(backup.created_at).toLocaleString('pt-BR')}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleDownloadBackup(backup)}
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
         </main>
       </div>
     </SidebarProvider>
