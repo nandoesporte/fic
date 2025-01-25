@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Save, Database, FileText } from "lucide-react";
+import { Save, Database } from "lucide-react";
 import { BackupList } from "@/components/export/BackupList";
 import { BackupCreationDialog } from "@/components/export/BackupCreationDialog";
 
@@ -127,16 +127,20 @@ const ExportData = () => {
         toast.success(`Análise da dimensão ${dimension} concluída!`);
         
         // Save the analysis report
-        await supabase
+        const { error: reportError } = await supabase
           .from('fic_reports')
-          .insert({
+          .insert([{  // Now we're passing an array with a single object
             title: `Análise de Votos - ${dimension}`,
             description: response.data.analysis,
             dimension: dimension,
-            start_date: new Date(),
-            end_date: new Date(),
+            start_date: new Date().toISOString(),
+            end_date: new Date().toISOString(),
             metrics: { totalVotes: (votes as any[]).length }
-          });
+          }]);
+
+        if (reportError) {
+          throw new Error(`Error saving report for dimension ${dimension}: ${reportError.message}`);
+        }
       }
 
       toast.success('Análise completa! Os relatórios foram salvos.');
