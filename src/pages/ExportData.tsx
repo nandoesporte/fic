@@ -14,25 +14,27 @@ const ExportData = () => {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-gray-50">
+      <div className="flex h-screen bg-background">
         <AppSidebar />
-        <main className="flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full">
-          <ExportDataHeader 
-            title="Exportar Dados"
-            description="Gerencie backups e limpe os dados do sistema"
-          />
+        <main className="flex-1 overflow-auto">
+          <div className="h-full p-6">
+            <ExportDataHeader 
+              title="Exportar Dados"
+              description="Gerencie backups e limpe os dados do sistema"
+            />
 
-          <ExportCard 
-            isExporting={isExporting} 
-            onExport={handleExportAndClear} 
-          />
+            <ExportCard 
+              isExporting={isExporting} 
+              onExport={handleExportAndClear} 
+            />
 
-          <BackupList
-            backups={backups || []}
-            isLoading={isLoading}
-            onDownload={handleDownloadBackup}
-            onDelete={handleDeleteBackup}
-          />
+            <BackupList
+              backups={backups || []}
+              isLoading={isLoading}
+              onDownload={handleDownloadBackup}
+              onDelete={handleDeleteBackup}
+            />
+          </div>
         </main>
       </div>
     </SidebarProvider>

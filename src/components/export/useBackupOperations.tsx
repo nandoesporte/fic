@@ -36,6 +36,7 @@ export const useBackupOperations = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['data-backups'] });
+      toast.success('Backup excluído com sucesso');
     },
     onError: (error) => {
       console.error('Error deleting backup:', error);
