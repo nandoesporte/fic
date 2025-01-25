@@ -1,18 +1,11 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Edit, Loader2, Download, RefreshCw, Check, Circle, LayoutList, LayoutGrid } from "lucide-react";
+import { Loader2, ClipboardList } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ViewControls } from "./questionnaire/ViewControls";
+import { QuestionnaireSection } from "./questionnaire/QuestionnaireSection";
 
 export const QuestionnaireResponses = () => {
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<string | null>(null);
@@ -164,152 +157,6 @@ export const QuestionnaireResponses = () => {
     toggleStatusMutation.mutate({ questionnaireId, type, index, currentStatus });
   };
 
-  const renderLine = (questionnaire: any, type: 'strengths' | 'challenges' | 'opportunities', line: string, index: number) => {
-    const isEditing = editingLine?.questionnaireId === questionnaire.id && 
-                     editingLine?.type === type && 
-                     editingLine?.index === index;
-
-    const statuses = (questionnaire[`${type}_statuses`] || 'pending,pending,pending').split(',');
-    const currentStatus = statuses[index] || 'pending';
-
-    if (isEditing) {
-      return (
-        <div className="flex items-center gap-2">
-          <Input
-            value={editingLine.value}
-            onChange={(e) => setEditingLine({ ...editingLine, value: e.target.value })}
-            className="flex-1"
-          />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleLineSave(questionnaire)}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setEditingLine(null)}
-          >
-            <Circle className="h-4 w-4" />
-          </Button>
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex justify-between items-center">
-        <p className="flex-1">{line}</p>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleLineEdit(questionnaire.id, type, index, line)}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleToggleStatus(questionnaire.id, type, index, currentStatus)}
-            className={currentStatus === 'active' ? 'bg-primary/10' : ''}
-          >
-            {currentStatus === 'pending' ? (
-              <Circle className="h-4 w-4" />
-            ) : (
-              <Check className="h-4 w-4 text-primary" />
-            )}
-          </Button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderListView = () => {
-    const filteredQuestionnaires = filterQuestionnaires(questionnaires || []);
-    
-    const sections = [
-      { title: 'Pontos Fortes', type: 'strengths', bgColor: 'bg-[#228B22]' },
-      { title: 'Desafios', type: 'challenges', bgColor: 'bg-[#FFD700]' },
-      { title: 'Oportunidades', type: 'opportunities', bgColor: 'bg-[#000080]' }
-    ];
-
-    return (
-      <div className="space-y-8">
-        {sections.map(section => (
-          <Card key={section.type} className="p-6">
-            <h3 className={`font-medium p-2 rounded-lg ${section.bgColor} ${section.type === 'challenges' ? 'text-gray-900' : 'text-white'} mb-4`}>
-              {section.title}
-            </h3>
-            <div className="space-y-4">
-              {filteredQuestionnaires.map(questionnaire => {
-                const lines = splitText(questionnaire[section.type]);
-                return lines.map((line, index) => (
-                  <div key={`${questionnaire.id}-${index}`} className="border-b pb-2">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="font-medium">Grupo:</span>
-                      <span className="bg-black text-white px-2 py-1 rounded">
-                        {questionnaire.group || 'Sem grupo'}
-                      </span>
-                      <span className="ml-4 text-gray-500">
-                        Dimensão: {questionnaire.dimension}
-                      </span>
-                    </div>
-                    {renderLine(questionnaire, section.type as any, line, index)}
-                  </div>
-                ));
-              })}
-            </div>
-          </Card>
-        ))}
-      </div>
-    );
-  };
-
-  const renderCardView = () => {
-    const filteredQuestionnaires = filterQuestionnaires(questionnaires || []);
-    const sections = [
-      { title: 'Pontos Fortes', type: 'strengths', bgColor: 'bg-[#228B22]' },
-      { title: 'Desafios', type: 'challenges', bgColor: 'bg-[#FFD700]' },
-      { title: 'Oportunidades', type: 'opportunities', bgColor: 'bg-[#000080]' }
-    ];
-
-    return (
-      <div className="space-y-8">
-        {sections.map(section => (
-          <Card key={section.type} className="p-6">
-            <h3 className={`font-medium p-2 rounded-lg ${section.bgColor} ${section.type === 'challenges' ? 'text-gray-900' : 'text-white'} mb-4`}>
-              {section.title}
-            </h3>
-            <div className="space-y-6">
-              {filteredQuestionnaires.map((questionnaire) => (
-                <div key={questionnaire.id} className="border-b pb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="font-medium">Grupo:</span>
-                    <span className="bg-black text-white px-2 py-1 rounded">
-                      {questionnaire.group || 'Sem grupo'}
-                    </span>
-                    <span className="ml-4 text-gray-500">
-                      Dimensão: {questionnaire.dimension}
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {splitText(questionnaire[section.type]).map((line, index) => (
-                      <div key={index}>
-                        {renderLine(questionnaire, section.type as any, line, index)}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        ))}
-      </div>
-    );
-  };
-
   const splitText = (text: string): string[] => {
     return text.split('\n').filter(line => line.trim() !== '');
   };
@@ -337,69 +184,6 @@ export const QuestionnaireResponses = () => {
     return filtered;
   };
 
-  const handleExport = () => {
-    const filteredData = filterQuestionnaires(questionnaires || []);
-    const csvContent = filteredData.map(q => {
-      return {
-        Dimensao: q.dimension,
-        Grupo: q.group || 'Sem grupo',
-        'Pontos Fortes': q.strengths.replace(/\n\n/g, ' | '),
-        Desafios: q.challenges.replace(/\n\n/g, ' | '),
-        Oportunidades: q.opportunities.replace(/\n\n/g, ' | '),
-        'Data de Criação': new Date(q.created_at).toLocaleDateString('pt-BR')
-      };
-    });
-
-    const csvString = [
-      Object.keys(csvContent[0]).join(','),
-      ...csvContent.map(row => Object.values(row).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'questionarios.csv';
-    link.click();
-    toast.success('Dados exportados com sucesso!');
-  };
-
-  const handleClear = async () => {
-    if (window.confirm('Tem certeza que deseja limpar todos os questionários? Esta ação não pode ser desfeita.')) {
-      try {
-        const { data: questionnaires, error: fetchError } = await supabase
-          .from('fic_questionnaires')
-          .select('*');
-          
-        if (fetchError) throw fetchError;
-
-        if (questionnaires && questionnaires.length > 0) {
-          const { error: backupError } = await supabase
-            .from('data_backups')
-            .insert({
-              filename: `questionarios_${new Date().toISOString()}.json`,
-              data: questionnaires,
-              type: 'questionnaires'
-            });
-            
-          if (backupError) throw backupError;
-        }
-
-        const { error: deleteError } = await supabase
-          .from('fic_questionnaires')
-          .delete()
-          .not('id', 'is', null);
-
-        if (deleteError) throw deleteError;
-        
-        queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
-        toast.success('Questionários limpos com sucesso e backup criado!');
-      } catch (error) {
-        console.error('Error:', error);
-        toast.error('Erro ao limpar questionários');
-      }
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -408,70 +192,47 @@ export const QuestionnaireResponses = () => {
     );
   }
 
+  const sections = [
+    { title: 'Pontos Fortes', type: 'strengths' as const, bgColor: 'bg-[#228B22]' },
+    { title: 'Desafios', type: 'challenges' as const, bgColor: 'bg-[#FFD700]' },
+    { title: 'Oportunidades', type: 'opportunities' as const, bgColor: 'bg-[#000080]' }
+  ];
+
+  const filteredQuestionnaires = filterQuestionnaires(questionnaires || []);
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center gap-4 mb-4">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setViewMode('cards')}
-            className={viewMode === 'cards' ? 'bg-primary/10' : ''}
-          >
-            <LayoutGrid className="h-4 w-4 mr-2" />
-            Cards
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setViewMode('list')}
-            className={viewMode === 'list' ? 'bg-primary/10' : ''}
-          >
-            <LayoutList className="h-4 w-4 mr-2" />
-            Lista
-          </Button>
-        </div>
-        <Select value={selectedDimension} onValueChange={setSelectedDimension}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Selecione uma dimensão" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todas as dimensões</SelectItem>
-            {getUniqueDimensions().map((dimension) => (
-              <SelectItem key={dimension} value={dimension}>
-                {dimension}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <ViewControls
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        selectedDimension={selectedDimension}
+        setSelectedDimension={setSelectedDimension}
+        dimensions={getUniqueDimensions()}
+      />
 
-      {viewMode === 'cards' ? renderCardView() : renderListView()}
+      <div className="space-y-8">
+        {sections.map(section => (
+          <Card key={section.type} className="p-6">
+            <QuestionnaireSection
+              title={section.title}
+              bgColor={section.bgColor}
+              questionnaires={filteredQuestionnaires}
+              type={section.type}
+              editingLine={editingLine}
+              onLineEdit={handleLineEdit}
+              onLineSave={handleLineSave}
+              onToggleStatus={handleToggleStatus}
+              setEditingLine={setEditingLine}
+            />
+          </Card>
+        ))}
+      </div>
 
       {(!questionnaires || questionnaires.length === 0) && (
         <p className="text-center text-gray-500 py-4">
           Nenhum questionário encontrado.
         </p>
       )}
-
-      <div className="flex justify-end gap-4 mt-8">
-        <Button
-          variant="outline"
-          onClick={handleExport}
-          className="flex items-center gap-2"
-        >
-          <Download className="h-4 w-4" />
-          Exportar CSV
-        </Button>
-        <Button
-          variant="destructive"
-          onClick={handleClear}
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Limpar Tudo
-        </Button>
-      </div>
     </div>
   );
 };
