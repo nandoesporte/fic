@@ -13,11 +13,11 @@ export const useDownloadBackup = () => {
     if (!data || data.length === 0) return '';
     
     // Get all possible headers from all objects
-    const headers = Array.from(new Set(
-      data.reduce((acc: string[], obj) => {
-        return [...acc, ...Object.keys(obj)];
-      }, [])
-    ));
+    const headers = Array.from(
+      new Set(
+        data.flatMap(obj => Object.keys(obj))
+      )
+    );
 
     // Create CSV rows with all possible columns
     const rows = data.map(obj => 
