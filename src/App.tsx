@@ -9,12 +9,12 @@ import QuestionnaireVoting from "@/pages/QuestionnaireVoting";
 import QuestionnaireAnalytics from "@/pages/QuestionnaireAnalytics";
 import QuestionnaireForm from "@/pages/QuestionnaireForm";
 import ExportData from "@/pages/ExportData";
+import AIReport from "@/pages/AIReport";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { AppSidebar } from "@/components/AppSidebar";
 
 const queryClient = new QueryClient();
 
-// Component to conditionally render the layout
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const showSidebar = !['/voting', '/formulario'].includes(location.pathname);
@@ -63,6 +63,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <ExportData />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/ai-report"
+                  element={
+                    <ProtectedRoute>
+                      <AIReport />
                     </ProtectedRoute>
                   }
                 />
