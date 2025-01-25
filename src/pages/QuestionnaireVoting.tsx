@@ -122,7 +122,6 @@ export const QuestionnaireVoting = () => {
     }) => {
       let userProfileId: string;
 
-      // First get the user's profile ID
       const { data: existingProfile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
@@ -130,10 +129,9 @@ export const QuestionnaireVoting = () => {
         .maybeSingle();
 
       if (!existingProfile) {
-        // Create auth user first
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: userEmail.toLowerCase(),
-          password: crypto.randomUUID(), // Generate a random password
+          password: crypto.randomUUID(),
         });
 
         if (authError) {
@@ -155,7 +153,6 @@ export const QuestionnaireVoting = () => {
         throw new Error('Você já votou neste questionário');
       }
 
-      // Delete any existing votes for this user and questionnaire
       const { error: deleteError } = await supabase
         .from('questionnaire_votes')
         .delete()
@@ -164,9 +161,11 @@ export const QuestionnaireVoting = () => {
           user_id: userProfileId
         });
 
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        console.error('Error deleting existing votes:', deleteError);
+        throw new Error('Erro ao limpar votos existentes');
+      }
 
-      // Then insert the new votes
       for (const { optionType, optionNumbers } of votes) {
         for (const optionNumber of optionNumbers) {
           const { error: insertError } = await supabase
@@ -181,6 +180,9 @@ export const QuestionnaireVoting = () => {
 
           if (insertError) {
             console.error('Error inserting vote:', insertError);
+            if (insertError.code === '23505') {
+              throw new Error('Você já votou nesta opção');
+            }
             throw insertError;
           }
         }
@@ -193,6 +195,7 @@ export const QuestionnaireVoting = () => {
       setSelections({});
     },
     onError: (error) => {
+      console.error('Vote submission error:', error);
       toast.error('Erro ao registrar votos: ' + error.message);
     },
   });
