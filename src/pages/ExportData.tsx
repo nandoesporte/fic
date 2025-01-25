@@ -56,10 +56,28 @@ const ExportData = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      const { data: questionnaires, error: questionnairesError } = await supabase
+        .from('fic_questionnaires')
+        .select('*');
+      if (questionnairesError) throw questionnairesError;
+
       const { data: votes, error: votesError } = await supabase
         .from('questionnaire_votes')
         .select('*');
       if (votesError) throw votesError;
+
+      if (questionnaires && questionnaires.length > 0) {
+        const { error: backupError } = await supabase
+          .from('data_backups')
+          .insert({
+            filename: `${backupName}_questionarios.json`,
+            data: questionnaires,
+            type: 'questionnaires',
+            created_by: user.id,
+            description: backupName
+          });
+        if (backupError) throw backupError;
+      }
 
       if (votes && votes.length > 0) {
         const { error: backupError } = await supabase
@@ -74,6 +92,12 @@ const ExportData = () => {
         if (backupError) throw backupError;
       }
 
+      const { error: clearQuestionnaireError } = await supabase
+        .from('fic_questionnaires')
+        .delete()
+        .not('id', 'is', null);
+      if (clearQuestionnaireError) throw clearQuestionnaireError;
+
       const { error: clearVotesError } = await supabase
         .from('questionnaire_votes')
         .delete()
@@ -81,12 +105,12 @@ const ExportData = () => {
       if (clearVotesError) throw clearVotesError;
 
       queryClient.invalidateQueries({ queryKey: ['data-backups'] });
-      toast.success('Votos exportados e limpos com sucesso!');
+      toast.success('Dados exportados e limpos com sucesso!');
       setBackupName("");
       setIsDialogOpen(false);
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Erro ao exportar e limpar votos');
+      toast.error('Erro ao exportar e limpar dados');
     } finally {
       setIsExporting(false);
     }
@@ -122,10 +146,10 @@ const ExportData = () => {
           <div>
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Database className="h-5 w-5 text-primary" />
-              Exportar e Limpar Votos
+              Exportar e Limpar Dados
             </h2>
             <p className="text-gray-500 mt-1">
-              Esta ação irá criar um backup dos votos atuais e limpar a tabela de votos
+              Esta ação irá criar um backup dos dados atuais e limpar as tabelas
             </p>
           </div>
           <Button 
