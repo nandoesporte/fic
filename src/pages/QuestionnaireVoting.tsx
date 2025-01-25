@@ -187,7 +187,7 @@ export const QuestionnaireVoting = () => {
           user_id: voter.id
         });
 
-      if (deleteError && deleteError.code !== '23505') throw deleteError;
+      if (deleteError) throw deleteError;
 
       // Then insert the new votes
       for (const { optionType, optionNumbers } of votes) {
@@ -202,7 +202,7 @@ export const QuestionnaireVoting = () => {
               option_number: optionNumber,
             });
 
-          if (insertError && insertError.code !== '23505') throw insertError;
+          if (insertError) throw insertError;
         }
       }
     },
