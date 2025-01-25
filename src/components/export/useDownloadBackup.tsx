@@ -1,7 +1,15 @@
 import { toast } from "sonner";
 
+interface BackupData {
+  id: string;
+  filename: string;
+  data: Record<string, any>[];
+  type: string;
+  created_at: string;
+}
+
 export const useDownloadBackup = () => {
-  const convertToCSV = (data: any[]): string => {
+  const convertToCSV = (data: Record<string, any>[]): string => {
     if (!data || data.length === 0) return '';
     
     // Get all possible headers from all objects
@@ -26,7 +34,7 @@ export const useDownloadBackup = () => {
     return [headers.join(','), ...rows].join('\n');
   };
 
-  const handleDownloadBackup = (backup: any) => {
+  const handleDownloadBackup = (backup: BackupData) => {
     try {
       if (!backup?.data || !Array.isArray(backup.data)) {
         toast.error('Formato de backup inválido');
