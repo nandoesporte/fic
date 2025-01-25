@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Loader2, Users, Vote } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { useQuestionnaireVotes } from "@/hooks/useQuestionnaireVotes";
 
 const QuestionnaireAnalytics = () => {
   const [selectedDimension, setSelectedDimension] = useState<string>("all");
+  const queryClient = useQueryClient();
 
   const { data: dimensions } = useQuery({
     queryKey: ["dimensions"],
