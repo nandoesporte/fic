@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Loader2, Download, RefreshCw, Check, Circle, Table2 } from "lucide-react";
+import { Edit, Loader2, Download, RefreshCw, Check, Circle } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -13,19 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 export const QuestionnaireResponses = () => {
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<string | null>(null);
   const [selectedDimension, setSelectedDimension] = useState<string>("todos");
-  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [editingLine, setEditingLine] = useState<{
     questionnaireId: string;
     type: 'strengths' | 'challenges' | 'opportunities';
@@ -176,157 +167,59 @@ export const QuestionnaireResponses = () => {
     const isEditing = editingLine?.questionnaireId === questionnaire.id && 
                      editingLine?.type === type && 
                      editingLine?.index === index;
-    
-    const statuses = questionnaire[`${type}_statuses`]?.split(',') || [];
-    const status = statuses[index] || 'pending';
+
+    const statuses = (questionnaire[`${type}_statuses`] || 'pending,pending,pending').split(',');
+    const currentStatus = statuses[index] || 'pending';
+
+    if (isEditing) {
+      return (
+        <div className="flex items-center gap-2">
+          <Input
+            value={editingLine.value}
+            onChange={(e) => setEditingLine({ ...editingLine, value: e.target.value })}
+            className="flex-1"
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleLineSave(questionnaire)}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setEditingLine(null)}
+          >
+            <Circle className="h-4 w-4" />
+          </Button>
+        </div>
+      );
+    }
 
     return (
-      <div className="flex items-start justify-between gap-4 p-3 bg-white/90 rounded-lg">
-        {isEditing ? (
-          <div className="flex-1 flex gap-2">
-            <Input
-              value={editingLine.value}
-              onChange={(e) => setEditingLine({ ...editingLine, value: e.target.value })}
-              className="flex-1"
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleLineSave(questionnaire)}
-            >
-              Save
-            </Button>
-          </div>
-        ) : (
-          <>
-            <p className="flex-1">{line}</p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleLineEdit(questionnaire.id, type, index, line)}
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleToggleStatus(questionnaire.id, type, index, status)}
-              >
-                {status === 'active' ? (
-                  <Check className="h-4 w-4 text-primary" />
-                ) : (
-                  <Circle className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </>
-        )}
-      </div>
-    );
-  };
-
-  const renderTableView = () => {
-    const filteredData = filterQuestionnaires(questionnaires || []);
-    
-    return (
-      <div className="space-y-8">
-        <div className="space-y-6">
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Pontos Fortes</h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Grupo</TableHead>
-                  <TableHead>Dimensão</TableHead>
-                  <TableHead>Resposta</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredData.map((q) => 
-                  splitText(q.strengths).map((strength, index) => (
-                    <TableRow key={`${q.id}-strength-${index}`}>
-                      <TableCell className="font-medium">{q.group || 'Sem grupo'}</TableCell>
-                      <TableCell>{q.dimension}</TableCell>
-                      <TableCell>{strength}</TableCell>
-                      <TableCell>
-                        {(q.strengths_statuses?.split(',')[index] || 'pending') === 'active' ? (
-                          <Check className="h-4 w-4 text-primary" />
-                        ) : (
-                          <Circle className="h-4 w-4" />
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </Card>
-
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Desafios</h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Grupo</TableHead>
-                  <TableHead>Dimensão</TableHead>
-                  <TableHead>Resposta</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredData.map((q) => 
-                  splitText(q.challenges).map((challenge, index) => (
-                    <TableRow key={`${q.id}-challenge-${index}`}>
-                      <TableCell className="font-medium">{q.group || 'Sem grupo'}</TableCell>
-                      <TableCell>{q.dimension}</TableCell>
-                      <TableCell>{challenge}</TableCell>
-                      <TableCell>
-                        {(q.challenges_statuses?.split(',')[index] || 'pending') === 'active' ? (
-                          <Check className="h-4 w-4 text-primary" />
-                        ) : (
-                          <Circle className="h-4 w-4" />
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </Card>
-
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Oportunidades</h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Grupo</TableHead>
-                  <TableHead>Dimensão</TableHead>
-                  <TableHead>Resposta</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredData.map((q) => 
-                  splitText(q.opportunities).map((opportunity, index) => (
-                    <TableRow key={`${q.id}-opportunity-${index}`}>
-                      <TableCell className="font-medium">{q.group || 'Sem grupo'}</TableCell>
-                      <TableCell>{q.dimension}</TableCell>
-                      <TableCell>{opportunity}</TableCell>
-                      <TableCell>
-                        {(q.opportunities_statuses?.split(',')[index] || 'pending') === 'active' ? (
-                          <Check className="h-4 w-4 text-primary" />
-                        ) : (
-                          <Circle className="h-4 w-4" />
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </Card>
+      <div className="flex justify-between items-center">
+        <p className="flex-1">{line}</p>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleLineEdit(questionnaire.id, type, index, line)}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleToggleStatus(questionnaire.id, type, index, currentStatus)}
+            className={currentStatus === 'active' ? 'bg-primary/10' : ''}
+          >
+            {currentStatus === 'pending' ? (
+              <Circle className="h-4 w-4" />
+            ) : (
+              <Check className="h-4 w-4 text-primary" />
+            )}
+          </Button>
         </div>
       </div>
     );
@@ -432,7 +325,7 @@ export const QuestionnaireResponses = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center gap-4 mb-4">
+      <div className="flex justify-end gap-4 mb-4">
         <Select value={selectedDimension} onValueChange={setSelectedDimension}>
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Selecione uma dimensão" />
@@ -446,93 +339,78 @@ export const QuestionnaireResponses = () => {
             ))}
           </SelectContent>
         </Select>
-
-        <Button
-          variant="outline"
-          onClick={() => setViewMode(viewMode === "cards" ? "table" : "cards")}
-          className="flex items-center gap-2"
-        >
-          <Table2 className="h-4 w-4" />
-          {viewMode === "cards" ? "Visualizar em Tabela" : "Visualizar em Cards"}
-        </Button>
       </div>
 
-      {viewMode === "table" ? (
-        renderTableView()
-      ) : (
-        <>
-          <div className="space-y-6">
-            {filterQuestionnaires(questionnaires || []).map((questionnaire) => (
-              <Card key={questionnaire.id} className="p-6">
-                <div className="flex justify-between items-start">
-                  <div className="w-full">
-                    <div className="flex justify-between items-center mb-2">
-                      <div>
-                        <h3 className="font-medium text-lg">
-                          Dimensão: {questionnaire.dimension}
-                        </h3>
-                        {questionnaire.group && (
-                          <div className="mt-2 inline-block">
-                            <span className="bg-black text-white px-4 py-2 rounded-lg text-xl font-semibold">
-                              Grupo: {questionnaire.group}
-                            </span>
-                          </div>
-                        )}
+      <div className="space-y-6">
+        {filterQuestionnaires(questionnaires || []).map((questionnaire) => (
+          <Card key={questionnaire.id} className="p-6">
+            <div className="flex justify-between items-start">
+              <div className="w-full">
+                <div className="flex justify-between items-center mb-2">
+                  <div>
+                    <h3 className="font-medium text-lg">
+                      Dimensão: {questionnaire.dimension}
+                    </h3>
+                    {questionnaire.group && (
+                      <div className="mt-2 inline-block">
+                        <span className="bg-black text-white px-4 py-2 rounded-lg text-xl font-semibold">
+                          Grupo: {questionnaire.group}
+                        </span>
                       </div>
+                    )}
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500 mb-4">
+                  Enviado em: {new Date(questionnaire.created_at).toLocaleDateString('pt-BR')}
+                </p>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className={`font-medium p-2 rounded-lg bg-[#228B22] text-white`}>
+                      Pontos Fortes
+                    </h4>
+                    <div className="space-y-2 mt-2">
+                      {splitText(questionnaire.strengths).map((strength, index) => (
+                        <div key={index}>
+                          {renderLine(questionnaire, 'strengths', strength, index)}
+                        </div>
+                      ))}
                     </div>
-                    <p className="text-sm text-gray-500 mb-4">
-                      Enviado em: {new Date(questionnaire.created_at).toLocaleDateString('pt-BR')}
-                    </p>
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className={`font-medium p-2 rounded-lg bg-[#228B22] text-white`}>
-                          Pontos Fortes
-                        </h4>
-                        <div className="space-y-2 mt-2">
-                          {splitText(questionnaire.strengths).map((strength, index) => (
-                            <div key={index}>
-                              {renderLine(questionnaire, 'strengths', strength, index)}
-                            </div>
-                          ))}
+                  </div>
+                  <div>
+                    <h4 className={`font-medium p-2 rounded-lg bg-[#FFD700] text-gray-900`}>
+                      Desafios
+                    </h4>
+                    <div className="space-y-2 mt-2">
+                      {splitText(questionnaire.challenges).map((challenge, index) => (
+                        <div key={index}>
+                          {renderLine(questionnaire, 'challenges', challenge, index)}
                         </div>
-                      </div>
-                      <div>
-                        <h4 className={`font-medium p-2 rounded-lg bg-[#FFD700] text-gray-900`}>
-                          Desafios
-                        </h4>
-                        <div className="space-y-2 mt-2">
-                          {splitText(questionnaire.challenges).map((challenge, index) => (
-                            <div key={index}>
-                              {renderLine(questionnaire, 'challenges', challenge, index)}
-                            </div>
-                          ))}
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className={`font-medium p-2 rounded-lg bg-[#000080] text-white`}>
+                      Oportunidades
+                    </h4>
+                    <div className="space-y-2 mt-2">
+                      {splitText(questionnaire.opportunities).map((opportunity, index) => (
+                        <div key={index}>
+                          {renderLine(questionnaire, 'opportunities', opportunity, index)}
                         </div>
-                      </div>
-                      <div>
-                        <h4 className={`font-medium p-2 rounded-lg bg-[#000080] text-white`}>
-                          Oportunidades
-                        </h4>
-                        <div className="space-y-2 mt-2">
-                          {splitText(questionnaire.opportunities).map((opportunity, index) => (
-                            <div key={index}>
-                              {renderLine(questionnaire, 'opportunities', opportunity, index)}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   </div>
                 </div>
-              </Card>
-            ))}
-          </div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
 
-          {(!questionnaires || questionnaires.length === 0) && (
-            <p className="text-center text-gray-500 py-4">
-              Nenhum questionário encontrado.
-            </p>
-          )}
-        </>
+      {(!questionnaires || questionnaires.length === 0) && (
+        <p className="text-center text-gray-500 py-4">
+          Nenhum questionário encontrado.
+        </p>
       )}
 
       <div className="flex justify-end gap-4 mt-8">
