@@ -75,6 +75,6 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
       return processedVotes;
     },
     staleTime: 0, // This ensures we always fetch fresh data
-    cacheTime: 0, // This ensures the cache is cleared immediately
+    gcTime: 0, // This ensures the cache is cleared immediately (renamed from cacheTime)
   });
 };
