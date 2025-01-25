@@ -267,73 +267,48 @@ export const QuestionnaireResponses = () => {
     );
   };
 
-  const renderCardView = () => (
-    <div className="space-y-6">
-      {filterQuestionnaires(questionnaires || []).map((questionnaire) => (
-        <Card key={questionnaire.id} className="p-6">
-          <div className="flex justify-between items-start">
-            <div className="w-full">
-              <div className="flex justify-between items-center mb-2">
-                <div>
-                  <h3 className="font-medium text-lg">
-                    Dimensão: {questionnaire.dimension}
-                  </h3>
-                  {questionnaire.group && (
-                    <div className="mt-2 inline-block">
-                      <span className="bg-black text-white px-4 py-2 rounded-lg text-xl font-semibold">
-                        Grupo: {questionnaire.group}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <p className="text-sm text-gray-500 mb-4">
-                Enviado em: {new Date(questionnaire.created_at).toLocaleDateString('pt-BR')}
-              </p>
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-medium p-2 rounded-lg bg-[#228B22] text-white">
-                    Pontos Fortes
-                  </h4>
-                  <div className="space-y-2 mt-2">
-                    {splitText(questionnaire.strengths).map((strength, index) => (
+  const renderCardView = () => {
+    const filteredQuestionnaires = filterQuestionnaires(questionnaires || []);
+    const sections = [
+      { title: 'Pontos Fortes', type: 'strengths', bgColor: 'bg-[#228B22]' },
+      { title: 'Desafios', type: 'challenges', bgColor: 'bg-[#FFD700]' },
+      { title: 'Oportunidades', type: 'opportunities', bgColor: 'bg-[#000080]' }
+    ];
+
+    return (
+      <div className="space-y-8">
+        {sections.map(section => (
+          <Card key={section.type} className="p-6">
+            <h3 className={`font-medium p-2 rounded-lg ${section.bgColor} ${section.type === 'challenges' ? 'text-gray-900' : 'text-white'} mb-4`}>
+              {section.title}
+            </h3>
+            <div className="space-y-6">
+              {filteredQuestionnaires.map((questionnaire) => (
+                <div key={questionnaire.id} className="border-b pb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="font-medium">Grupo:</span>
+                    <span className="bg-black text-white px-2 py-1 rounded">
+                      {questionnaire.group || 'Sem grupo'}
+                    </span>
+                    <span className="ml-4 text-gray-500">
+                      Dimensão: {questionnaire.dimension}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {splitText(questionnaire[section.type]).map((line, index) => (
                       <div key={index}>
-                        {renderLine(questionnaire, 'strengths', strength, index)}
+                        {renderLine(questionnaire, section.type as any, line, index)}
                       </div>
                     ))}
                   </div>
                 </div>
-                <div>
-                  <h4 className="font-medium p-2 rounded-lg bg-[#FFD700] text-gray-900">
-                    Desafios
-                  </h4>
-                  <div className="space-y-2 mt-2">
-                    {splitText(questionnaire.challenges).map((challenge, index) => (
-                      <div key={index}>
-                        {renderLine(questionnaire, 'challenges', challenge, index)}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-medium p-2 rounded-lg bg-[#000080] text-white">
-                    Oportunidades
-                  </h4>
-                  <div className="space-y-2 mt-2">
-                    {splitText(questionnaire.opportunities).map((opportunity, index) => (
-                      <div key={index}>
-                        {renderLine(questionnaire, 'opportunities', opportunity, index)}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
-          </div>
-        </Card>
-      ))}
-    </div>
-  );
+          </Card>
+        ))}
+      </div>
+    );
+  };
 
   const splitText = (text: string): string[] => {
     return text.split('\n').filter(line => line.trim() !== '');
