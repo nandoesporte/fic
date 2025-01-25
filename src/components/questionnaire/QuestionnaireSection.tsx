@@ -102,7 +102,7 @@ export const QuestionnaireSection = ({
           <div key={questionnaire.id} className="border-b pb-4">
             <div className="flex items-center gap-2 mb-2">
               <span className="font-medium">Grupo:</span>
-              <span className="bg-black text-white px-2 py-1 rounded">
+              <span className="bg-[#0D9488] text-white px-2 py-1 rounded">
                 {questionnaire.group || 'Sem grupo'}
               </span>
               <span className="ml-4 text-gray-500">
