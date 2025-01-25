@@ -139,20 +139,13 @@ export const QuestionnaireVoting = () => {
           throw new Error('Erro ao criar usuário');
         }
 
-        if (!authData.user) {
-          throw new Error('Erro ao criar usuário');
-        }
-
-        userProfileId = authData.user.id;
+        userProfileId = authData.user?.id;
+        if (!userProfileId) throw new Error('Erro ao criar usuário');
       } else {
         userProfileId = existingProfile.id;
       }
 
-      const hasVoted = await checkExistingVote(questionnaireId, userProfileId);
-      if (hasVoted) {
-        throw new Error('Você já votou neste questionário');
-      }
-
+      // First, delete all existing votes for this questionnaire and user
       const { error: deleteError } = await supabase
         .from('questionnaire_votes')
         .delete()
@@ -166,26 +159,41 @@ export const QuestionnaireVoting = () => {
         throw new Error('Erro ao limpar votos existentes');
       }
 
-      for (const { optionType, optionNumbers } of votes) {
-        for (const optionNumber of optionNumbers) {
-          const { error: insertError } = await supabase
-            .from('questionnaire_votes')
-            .insert({
-              questionnaire_id: questionnaireId,
-              user_id: userProfileId,
-              vote_type: 'upvote',
-              option_type: optionType,
-              option_number: optionNumber,
-            });
+      // Then insert all new votes in a transaction-like manner
+      try {
+        for (const { optionType, optionNumbers } of votes) {
+          for (const optionNumber of optionNumbers) {
+            const { error: insertError } = await supabase
+              .from('questionnaire_votes')
+              .insert({
+                questionnaire_id: questionnaireId,
+                user_id: userProfileId,
+                vote_type: 'upvote',
+                option_type: optionType,
+                option_number: optionNumber,
+              });
 
-          if (insertError) {
-            console.error('Error inserting vote:', insertError);
-            if (insertError.code === '23505') {
-              throw new Error('Você já votou nesta opção');
+            if (insertError) {
+              console.error('Error inserting vote:', insertError);
+              // If we get a unique constraint violation, it means another vote was inserted
+              // between our delete and insert operations
+              if (insertError.code === '23505') {
+                throw new Error('Erro: outro voto foi registrado simultaneamente. Por favor, tente novamente.');
+              }
+              throw insertError;
             }
-            throw insertError;
           }
         }
+      } catch (error) {
+        // If any insert fails, we should try to clean up any votes that were inserted
+        await supabase
+          .from('questionnaire_votes')
+          .delete()
+          .match({
+            questionnaire_id: questionnaireId,
+            user_id: userProfileId
+          });
+        throw error;
       }
     },
     onSuccess: () => {
