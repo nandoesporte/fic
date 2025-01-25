@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { Loader2, Users, Vote, Trash2 } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Users, Vote } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MetricCard } from "@/components/analytics/MetricCard";
 import { DimensionFilter } from "@/components/analytics/DimensionFilter";
@@ -14,9 +12,6 @@ import { useQuestionnaireVotes } from "@/hooks/useQuestionnaireVotes";
 
 const QuestionnaireAnalytics = () => {
   const [selectedDimension, setSelectedDimension] = useState<string>("all");
-  const [isClearing, setIsClearing] = useState(false);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const { data: dimensions } = useQuery({
     queryKey: ["dimensions"],
@@ -32,33 +27,6 @@ const QuestionnaireAnalytics = () => {
   });
 
   const { data: voteData, isLoading } = useQuestionnaireVotes(selectedDimension);
-
-  const handleClearVotes = async () => {
-    try {
-      setIsClearing(true);
-      const { error: cleanError } = await supabase.rpc('clean_questionnaire_votes');
-      
-      if (cleanError) throw cleanError;
-
-      // Invalidate queries to refresh the UI
-      queryClient.invalidateQueries({ queryKey: ['questionnaire-votes'] });
-      queryClient.invalidateQueries({ queryKey: ['registered-voters'] });
-
-      toast({
-        title: "Sucesso",
-        description: "Todos os votos foram limpos com sucesso!",
-      });
-    } catch (error) {
-      console.error('Error clearing votes:', error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao limpar os votos.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsClearing(false);
-    }
-  };
 
   const processDataForChart = (type: string) => {
     if (!voteData) return [];
@@ -87,25 +55,8 @@ const QuestionnaireAnalytics = () => {
   return (
     <div className="flex-1 p-8">
       <div className="mb-8">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Análise de Votos</h1>
-            <p className="text-gray-500">Visualização detalhada dos votos por questionário</p>
-          </div>
-          <Button
-            variant="destructive"
-            onClick={handleClearVotes}
-            disabled={isClearing}
-            className="gap-2"
-          >
-            {isClearing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Trash2 className="h-4 w-4" />
-            )}
-            Limpar Votos
-          </Button>
-        </div>
+        <h1 className="text-3xl font-bold text-gray-900">Análise de Votos</h1>
+        <p className="text-gray-500">Visualização detalhada dos votos por questionário</p>
       </div>
 
       {isLoading ? (
