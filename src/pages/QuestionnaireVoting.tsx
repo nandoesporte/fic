@@ -178,9 +178,21 @@ export const QuestionnaireVoting = () => {
 
       if (dimensionVoteError) throw dimensionVoteError;
 
-      const votePromises = votes.flatMap(({ optionType, optionNumbers }) =>
-        optionNumbers.map(optionNumber =>
-          supabase
+      // First, delete any existing votes for this user and questionnaire
+      const { error: deleteError } = await supabase
+        .from('questionnaire_votes')
+        .delete()
+        .match({
+          questionnaire_id: questionnaireId,
+          user_id: voter.id
+        });
+
+      if (deleteError && deleteError.code !== '23505') throw deleteError;
+
+      // Then insert the new votes
+      for (const { optionType, optionNumbers } of votes) {
+        for (const optionNumber of optionNumbers) {
+          const { error: insertError } = await supabase
             .from('questionnaire_votes')
             .insert({
               questionnaire_id: questionnaireId,
@@ -188,11 +200,11 @@ export const QuestionnaireVoting = () => {
               vote_type: 'upvote',
               option_type: optionType,
               option_number: optionNumber,
-            })
-        )
-      );
+            });
 
-      await Promise.all(votePromises);
+          if (insertError && insertError.code !== '23505') throw insertError;
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
