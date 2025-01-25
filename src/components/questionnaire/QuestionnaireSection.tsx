@@ -105,7 +105,7 @@ export const QuestionnaireSection = ({
                 {questionnaire.group || 'Sem grupo'}
               </span>
               <span className="ml-4 text-gray-500">
-                <span className="font-bold text-lg">Dimensão:</span> {questionnaire.dimension}
+                <span className="font-bold text-lg">Dimensão:</span> <span className="font-bold text-lg">{questionnaire.dimension}</span>
               </span>
             </div>
             <div className="space-y-2">
