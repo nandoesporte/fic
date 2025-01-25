@@ -2,14 +2,21 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/components/AuthProvider";
 
 export const useExportOperations = () => {
   const [isExporting, setIsExporting] = useState(false);
   const queryClient = useQueryClient();
+  const { session } = useAuth();
 
   const handleExportAndClear = async (backupName: string) => {
     if (!backupName.trim()) {
       toast.error('Nome do backup é obrigatório');
+      return;
+    }
+
+    if (!session?.user?.id) {
+      toast.error('Usuário não autenticado');
       return;
     }
 
@@ -44,7 +51,8 @@ export const useExportOperations = () => {
           .insert({
             filename: `${backupName}_questionarios_${new Date().toISOString()}.csv`,
             data: questionnaires,
-            type: 'questionnaires'
+            type: 'questionnaires',
+            created_by: session.user.id
           });
 
         if (backupError) {
@@ -59,7 +67,8 @@ export const useExportOperations = () => {
           .insert({
             filename: `${backupName}_votos_${new Date().toISOString()}.csv`,
             data: votes,
-            type: 'votes'
+            type: 'votes',
+            created_by: session.user.id
           });
 
         if (backupError) {
