@@ -784,10 +784,7 @@ export type Database = {
       }
     }
     Functions: {
-      clean_questionnaire_votes: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
