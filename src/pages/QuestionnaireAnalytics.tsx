@@ -66,9 +66,7 @@ const QuestionnaireAnalytics = () => {
             challenges,
             opportunities
           )
-        `)
-        .filter('upvotes', 'gt', 0)
-        .order('upvotes', { ascending: false });
+        `);
 
       if (selectedDimension && selectedDimension !== "all") {
         query = query.eq('fic_questionnaires.dimension', selectedDimension);
@@ -147,22 +145,28 @@ const QuestionnaireAnalytics = () => {
 
     return (
       <div className="mb-4 space-y-3">
-        {data.map((item, index) => (
-          <div 
-            key={index} 
-            className={`flex items-center justify-between p-5 rounded-lg ${getBgColor()}`}
-          >
-            <div className="flex-1">
-              <span className="text-sm font-medium">{item.text}</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <span className="text-xs opacity-75">Total de votos</span>
-                <p className="font-bold">{item.total}</p>
+        {data.length === 0 ? (
+          <div className="text-center p-4 text-gray-500">
+            Nenhum voto registrado para esta seção
+          </div>
+        ) : (
+          data.map((item, index) => (
+            <div 
+              key={index} 
+              className={`flex items-center justify-between p-5 rounded-lg ${getBgColor()}`}
+            >
+              <div className="flex-1">
+                <span className="text-sm font-medium">{item.text}</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <span className="text-xs opacity-75">Total de votos</span>
+                  <p className="font-bold">{item.total}</p>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     );
   };
