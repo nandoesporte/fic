@@ -120,29 +120,39 @@ export const QuestionnaireVoting = () => {
         optionNumbers: number[];
       }[];
     }) => {
+      let userProfileId: string;
+
       // First get the user's profile ID
-      const { data: profile, error: profileError } = await supabase
+      const { data: existingProfile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
         .eq('email', userEmail.toLowerCase())
         .single();
 
       if (profileError) {
-        // If profile doesn't exist, create it
+        // If profile doesn't exist, create it with a generated UUID
+        const newProfileId = crypto.randomUUID();
         const { data: newProfile, error: createProfileError } = await supabase
           .from('profiles')
           .insert({ 
+            id: newProfileId,
             email: userEmail.toLowerCase(),
-            cpf: 'PENDING' // Required field with default value
+            cpf: `PENDING_${newProfileId}`
           })
           .select('id')
           .single();
 
-        if (createProfileError) throw new Error('Erro ao criar perfil do usuário');
-        profile = newProfile;
+        if (createProfileError) {
+          console.error('Error creating profile:', createProfileError);
+          throw new Error('Erro ao criar perfil do usuário');
+        }
+        
+        userProfileId = newProfile.id;
+      } else {
+        userProfileId = existingProfile.id;
       }
 
-      const hasVoted = await checkExistingVote(questionnaireId, profile.id);
+      const hasVoted = await checkExistingVote(questionnaireId, userProfileId);
       if (hasVoted) {
         throw new Error('Você já votou neste questionário');
       }
@@ -153,7 +163,7 @@ export const QuestionnaireVoting = () => {
         .delete()
         .match({
           questionnaire_id: questionnaireId,
-          user_id: profile.id
+          user_id: userProfileId
         });
 
       if (deleteError) throw deleteError;
@@ -165,13 +175,16 @@ export const QuestionnaireVoting = () => {
             .from('questionnaire_votes')
             .insert({
               questionnaire_id: questionnaireId,
-              user_id: profile.id,
+              user_id: userProfileId,
               vote_type: 'upvote',
               option_type: optionType,
               option_number: optionNumber,
             });
 
-          if (insertError) throw insertError;
+          if (insertError) {
+            console.error('Error inserting vote:', insertError);
+            throw insertError;
+          }
         }
       }
     },
