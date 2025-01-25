@@ -126,15 +126,18 @@ const ExportData = () => {
 
         toast.success(`Análise da dimensão ${dimension} concluída!`);
         
+        // Format dates as YYYY-MM-DD for PostgreSQL
+        const currentDate = new Date().toISOString().split('T')[0];
+        
         // Save the analysis report
         const { error: reportError } = await supabase
           .from('fic_reports')
-          .insert([{  // Now we're passing an array with a single object
+          .insert([{
             title: `Análise de Votos - ${dimension}`,
             description: response.data.analysis,
             dimension: dimension,
-            start_date: new Date().toISOString(),
-            end_date: new Date().toISOString(),
+            start_date: currentDate,
+            end_date: currentDate,
             metrics: { totalVotes: (votes as any[]).length }
           }]);
 
