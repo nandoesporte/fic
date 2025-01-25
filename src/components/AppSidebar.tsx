@@ -38,7 +38,7 @@ export function AppSidebar() {
                   className="w-full justify-start text-sm"
                 >
                   <FileText className="mr-2 h-4 w-4" />
-                  <span>Questionários</span>
+                  <span>Sistema de Votação</span>
                 </Button>
               </Link>
               <Link to="/analytics">
