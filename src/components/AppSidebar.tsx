@@ -9,53 +9,53 @@ export function AppSidebar() {
   const { pathname } = useLocation();
 
   return (
-    <Sidebar className="border-r border-border bg-sidebar-background w-[300px] overflow-hidden" collapsible="icon">
+    <Sidebar className="border-r border-border bg-sidebar-background w-[285px] md:w-[285px] sm:w-full overflow-hidden" collapsible="icon">
       <ScrollArea className="h-full">
         <div className="space-y-4 py-6">
-          <div className="px-6">
-            <div className="space-y-3">
+          <div className="px-4 sm:px-6">
+            <div className="space-y-2 sm:space-y-3">
               <Link to="/">
                 <Button
                   variant={pathname === "/" ? "secondary" : "ghost"}
-                  className="w-full justify-start"
+                  className="w-full justify-start text-sm"
                 >
-                  <LayoutDashboard className="mr-3 h-4 w-4" />
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
                   <span>Dashboard</span>
                 </Button>
               </Link>
               <Link to="/formulario">
                 <Button
                   variant={pathname === "/formulario" ? "secondary" : "ghost"}
-                  className="w-full justify-start"
+                  className="w-full justify-start text-sm"
                 >
-                  <FormInput className="mr-3 h-4 w-4" />
+                  <FormInput className="mr-2 h-4 w-4" />
                   <span>Formulário</span>
                 </Button>
               </Link>
               <Link to="/voting">
                 <Button
                   variant={pathname === "/voting" ? "secondary" : "ghost"}
-                  className="w-full justify-start"
+                  className="w-full justify-start text-sm"
                 >
-                  <FileText className="mr-3 h-4 w-4" />
+                  <FileText className="mr-2 h-4 w-4" />
                   <span>Questionários</span>
                 </Button>
               </Link>
               <Link to="/analytics">
                 <Button
                   variant={pathname === "/analytics" ? "secondary" : "ghost"}
-                  className="w-full justify-start"
+                  className="w-full justify-start text-sm"
                 >
-                  <BarChart2 className="mr-3 h-4 w-4" />
+                  <BarChart2 className="mr-2 h-4 w-4" />
                   <span>Análise de Votos</span>
                 </Button>
               </Link>
               <Link to="/export">
                 <Button
                   variant={pathname === "/export" ? "secondary" : "ghost"}
-                  className="w-full justify-start"
+                  className="w-full justify-start text-sm"
                 >
-                  <Database className="mr-3 h-4 w-4" />
+                  <Database className="mr-2 h-4 w-4" />
                   <span>Exportar Dados</span>
                 </Button>
               </Link>
