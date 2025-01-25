@@ -105,6 +105,7 @@ const ExportData = () => {
       // Invalidate queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ['questionnaire-votes'] });
       queryClient.invalidateQueries({ queryKey: ['data-backups'] });
+      queryClient.invalidateQueries({ queryKey: ['registered-voters'] });
       
       toast.success('Dados exportados e limpos com sucesso!');
       setBackupName("");
