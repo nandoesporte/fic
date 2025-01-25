@@ -36,6 +36,11 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
 
       console.log("Raw vote data:", votes);
 
+      // If no votes found, return empty array
+      if (!votes || votes.length === 0) {
+        return [];
+      }
+
       const processedVotes = votes?.reduce((acc: any[], vote) => {
         const key = `${vote.questionnaire_id}-${vote.option_type}-${vote.option_number}`;
         const existingVote = acc.find(v => 
@@ -74,5 +79,9 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
       console.log("Processed vote data:", processedVotes);
       return processedVotes;
     },
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 };
