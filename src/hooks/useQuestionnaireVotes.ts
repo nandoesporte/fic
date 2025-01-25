@@ -16,7 +16,6 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
           vote_type,
           fic_questionnaires (
             dimension,
-            satisfaction,
             strengths,
             challenges,
             opportunities
@@ -37,7 +36,6 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
       console.log("Raw vote data:", votes);
 
       const processedVotes = votes?.reduce((acc: any[], vote) => {
-        const key = `${vote.questionnaire_id}-${vote.option_type}-${vote.option_number}`;
         const existingVote = acc.find(v => 
           v.questionnaire_id === vote.questionnaire_id && 
           v.option_type === vote.option_type && 
@@ -72,9 +70,9 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
       }, []);
 
       console.log("Processed vote data:", processedVotes);
-      return processedVotes;
+      return processedVotes || [];
     },
-    staleTime: 0, // This ensures we always fetch fresh data
-    cacheTime: 0, // This ensures the cache is cleared immediately
+    staleTime: 0,
+    gcTime: 0,
   });
 };

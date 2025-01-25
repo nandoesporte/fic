@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Loader2, Users, Vote } from "lucide-react";
+import { Loader2, Users, Vote, RefreshCw } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { MetricCard } from "@/components/analytics/MetricCard";
 import { DimensionFilter } from "@/components/analytics/DimensionFilter";
 import { VoteList } from "@/components/analytics/VoteList";
@@ -12,6 +13,7 @@ import { useQuestionnaireVotes } from "@/hooks/useQuestionnaireVotes";
 
 const QuestionnaireAnalytics = () => {
   const [selectedDimension, setSelectedDimension] = useState<string>("all");
+  const [isClearing, setIsClearing] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: dimensions } = useQuery({
@@ -29,6 +31,26 @@ const QuestionnaireAnalytics = () => {
 
   const { data: voteData, isLoading } = useQuestionnaireVotes(selectedDimension);
 
+  const handleClearVotes = async () => {
+    if (window.confirm("Tem certeza que deseja limpar todos os votos? Esta ação não pode ser desfeita.")) {
+      try {
+        setIsClearing(true);
+        const { error } = await supabase.rpc('clean_questionnaire_votes');
+        
+        if (error) throw error;
+
+        await queryClient.invalidateQueries({ queryKey: ["questionnaire-votes"] });
+        await queryClient.invalidateQueries({ queryKey: ["questionnaires"] });
+        toast.success("Votos limpos com sucesso!");
+      } catch (error) {
+        console.error("Error clearing votes:", error);
+        toast.error("Erro ao limpar votos");
+      } finally {
+        setIsClearing(false);
+      }
+    }
+  };
+
   const processDataForChart = (type: string) => {
     if (!voteData) return [];
     
@@ -36,8 +58,8 @@ const QuestionnaireAnalytics = () => {
       .filter(item => item.option_type === type)
       .map(item => ({
         optionNumber: `Opção ${item.option_number}`,
-        total: (item.upvotes || 0),
-        text: item.option_text || "",
+        total: item.upvotes || 0,
+        text: item.option_text || `Opção ${item.option_number}`,
       }))
       .sort((a, b) => b.total - a.total);
   };
@@ -55,15 +77,30 @@ const QuestionnaireAnalytics = () => {
 
   return (
     <div className="flex-1 p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Análise de Votos</h1>
-        <p className="text-gray-500">Visualização detalhada dos votos por questionário</p>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Análise de Votos</h1>
+          <p className="text-gray-500">Visualização detalhada dos votos por questionário</p>
+        </div>
+        <Button
+          variant="destructive"
+          onClick={handleClearVotes}
+          disabled={isClearing}
+          className="flex items-center gap-2"
+        >
+          {isClearing ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4" />
+          )}
+          Limpar Votos
+        </Button>
       </div>
 
       {isLoading ? (
         <div className="space-y-4">
-          <Skeleton className="h-[150px] w-full" />
-          <Skeleton className="h-[150px] w-full" />
+          <Card className="h-[150px] w-full animate-pulse bg-gray-100" />
+          <Card className="h-[150px] w-full animate-pulse bg-gray-100" />
         </div>
       ) : (
         <>
@@ -72,18 +109,21 @@ const QuestionnaireAnalytics = () => {
               icon={Users}
               title="Total de Participantes"
               value={getTotalParticipants()}
-              iconClassName="bg-blue-100"
+              iconClassName="bg-blue-100 text-blue-600"
             />
             <MetricCard
               icon={Vote}
               title="Total de Votos"
               value={getTotalVotes()}
-              iconClassName="bg-green-100"
+              iconClassName="bg-green-100 text-green-600"
             />
             <DimensionFilter
               selectedDimension={selectedDimension}
               onDimensionChange={setSelectedDimension}
-              dimensions={dimensions}
+              dimensions={dimensions?.map(dim => ({
+                identifier: dim.identifier,
+                label: dim.label,
+              }))}
             />
           </div>
 
