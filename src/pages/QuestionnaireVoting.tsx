@@ -127,27 +127,25 @@ export const QuestionnaireVoting = () => {
         .from('profiles')
         .select('id')
         .eq('email', userEmail.toLowerCase())
-        .single();
+        .maybeSingle();
 
-      if (profileError) {
-        // If profile doesn't exist, create it with a generated UUID
-        const newProfileId = crypto.randomUUID();
-        const { data: newProfile, error: createProfileError } = await supabase
-          .from('profiles')
-          .insert({ 
-            id: newProfileId,
-            email: userEmail.toLowerCase(),
-            cpf: `PENDING_${newProfileId}`
-          })
-          .select('id')
-          .single();
+      if (!existingProfile) {
+        // Create auth user first
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: userEmail.toLowerCase(),
+          password: crypto.randomUUID(), // Generate a random password
+        });
 
-        if (createProfileError) {
-          console.error('Error creating profile:', createProfileError);
-          throw new Error('Erro ao criar perfil do usuário');
+        if (authError) {
+          console.error('Error creating auth user:', authError);
+          throw new Error('Erro ao criar usuário');
         }
-        
-        userProfileId = newProfile.id;
+
+        if (!authData.user) {
+          throw new Error('Erro ao criar usuário');
+        }
+
+        userProfileId = authData.user.id;
       } else {
         userProfileId = existingProfile.id;
       }
