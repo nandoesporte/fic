@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Save, Database } from "lucide-react";
+import { Save, Database, FileText } from "lucide-react";
 import { BackupList } from "@/components/export/BackupList";
 import { BackupCreationDialog } from "@/components/export/BackupCreationDialog";
 
@@ -13,6 +13,7 @@ const ExportData = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [backupName, setBackupName] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const { data: backups, isLoading } = useQuery({
     queryKey: ['data-backups'],
@@ -56,28 +57,10 @@ const ExportData = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      const { data: questionnaires, error: questionnairesError } = await supabase
-        .from('fic_questionnaires')
-        .select('*');
-      if (questionnairesError) throw questionnairesError;
-
       const { data: votes, error: votesError } = await supabase
         .from('questionnaire_votes')
         .select('*');
       if (votesError) throw votesError;
-
-      if (questionnaires && questionnaires.length > 0) {
-        const { error: backupError } = await supabase
-          .from('data_backups')
-          .insert({
-            filename: `${backupName}_questionarios.json`,
-            data: questionnaires,
-            type: 'questionnaires',
-            created_by: user.id,
-            description: backupName
-          });
-        if (backupError) throw backupError;
-      }
 
       if (votes && votes.length > 0) {
         const { error: backupError } = await supabase
@@ -91,12 +74,6 @@ const ExportData = () => {
           });
         if (backupError) throw backupError;
       }
-
-      const { error: clearQuestionnaireError } = await supabase
-        .from('fic_questionnaires')
-        .delete()
-        .not('id', 'is', null);
-      if (clearQuestionnaireError) throw clearQuestionnaireError;
 
       const { error: clearVotesError } = await supabase
         .from('questionnaire_votes')
@@ -113,6 +90,61 @@ const ExportData = () => {
       toast.error('Erro ao exportar e limpar dados');
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const analyzeBackup = async (backup: any) => {
+    setIsAnalyzing(true);
+    try {
+      const { data: dimensions } = await supabase
+        .from('fic_dimensions')
+        .select('*');
+
+      if (!dimensions) {
+        throw new Error('No dimensions found');
+      }
+
+      const votingData = backup.data;
+      
+      // Group votes by dimension
+      const votesByDimension = dimensions.reduce((acc: any, dim: any) => {
+        acc[dim.identifier] = votingData.filter((vote: any) => 
+          vote.dimension === dim.identifier
+        );
+        return acc;
+      }, {});
+
+      // Analyze each dimension
+      for (const [dimension, votes] of Object.entries(votesByDimension)) {
+        const response = await supabase.functions.invoke('analyze-votes', {
+          body: { votingData: votes, dimension }
+        });
+
+        if (response.error) {
+          throw new Error(`Error analyzing dimension ${dimension}: ${response.error}`);
+        }
+
+        toast.success(`Análise da dimensão ${dimension} concluída!`);
+        
+        // Save the analysis report
+        await supabase
+          .from('fic_reports')
+          .insert({
+            title: `Análise de Votos - ${dimension}`,
+            description: response.data.analysis,
+            dimension: dimension,
+            start_date: new Date(),
+            end_date: new Date(),
+            metrics: { totalVotes: (votes as any[]).length }
+          });
+      }
+
+      toast.success('Análise completa! Os relatórios foram salvos.');
+    } catch (error) {
+      console.error('Error analyzing backup:', error);
+      toast.error('Erro ao analisar o backup');
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -166,6 +198,8 @@ const ExportData = () => {
         backups={backups || []}
         onDownload={handleDownloadBackup}
         onDelete={handleDeleteBackup}
+        onAnalyze={analyzeBackup}
+        isAnalyzing={isAnalyzing}
       />
 
       <BackupCreationDialog

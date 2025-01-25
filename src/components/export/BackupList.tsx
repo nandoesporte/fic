@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Trash2, Database } from "lucide-react";
+import { Download, Trash2, Database, FileText } from "lucide-react";
 
 interface Backup {
   id: string;
@@ -13,9 +13,11 @@ interface BackupListProps {
   backups: Backup[];
   onDownload: (backup: Backup) => void;
   onDelete: (backupId: string) => void;
+  onAnalyze: (backup: Backup) => void;
+  isAnalyzing: boolean;
 }
 
-export const BackupList = ({ backups, onDownload, onDelete }: BackupListProps) => {
+export const BackupList = ({ backups, onDownload, onDelete, onAnalyze, isAnalyzing }: BackupListProps) => {
   return (
     <Card className="p-6">
       <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
@@ -44,6 +46,16 @@ export const BackupList = ({ backups, onDownload, onDelete }: BackupListProps) =
                 </p>
               </div>
               <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onAnalyze(backup)}
+                  disabled={isAnalyzing}
+                  className="flex items-center gap-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  {isAnalyzing ? 'Analisando...' : 'Analisar'}
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
