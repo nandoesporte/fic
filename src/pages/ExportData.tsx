@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Download, Database, Trash2, RefreshCw } from "lucide-react";
+import { Download, Database, RefreshCw } from "lucide-react";
 
 const ExportData = () => {
   const queryClient = useQueryClient();
@@ -32,6 +32,9 @@ const ExportData = () => {
 
     setIsExporting(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
       // Fetch all questionnaires
       const { data: questionnaires, error: questionnairesError } = await supabase
         .from('fic_questionnaires')
@@ -51,7 +54,8 @@ const ExportData = () => {
           .insert({
             filename: `questionarios_${new Date().toISOString()}.json`,
             data: questionnaires,
-            type: 'questionnaires'
+            type: 'questionnaires',
+            created_by: user.id
           });
         if (backupError) throw backupError;
       }
@@ -63,7 +67,8 @@ const ExportData = () => {
           .insert({
             filename: `votos_${new Date().toISOString()}.json`,
             data: votes,
-            type: 'votes'
+            type: 'votes',
+            created_by: user.id
           });
         if (backupError) throw backupError;
       }
