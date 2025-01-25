@@ -15,6 +15,18 @@ type VoteSelection = {
   };
 };
 
+type ConsolidatedQuestionnaire = {
+  id: string;
+  dimension: string;
+  strengths: string;
+  challenges: string;
+  opportunities: string;
+  created_at: string;
+  strengths_statuses?: string;
+  challenges_statuses?: string;
+  opportunities_statuses?: string;
+};
+
 export const QuestionnaireVoting = () => {
   const [userEmail, setUserEmail] = useState("");
   const [isEmailVerified, setIsEmailVerified] = useState(false);
@@ -68,7 +80,7 @@ export const QuestionnaireVoting = () => {
         throw questionnairesError;
       }
 
-      const consolidatedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: any }, curr) => {
+      const consolidatedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: ConsolidatedQuestionnaire }, curr) => {
         if (!acc[curr.dimension]) {
           const strengths_array = curr.strengths.split('\n\n');
           const challenges_array = curr.challenges.split('\n\n');
@@ -83,7 +95,7 @@ export const QuestionnaireVoting = () => {
           const filtered_opportunities = opportunities_array.filter((_, index) => opportunities_statuses[index] === 'active');
 
           acc[curr.dimension] = {
-            id: curr.id,
+            id: curr.dimension,
             dimension: curr.dimension,
             strengths: filtered_strengths.join('\n\n'),
             challenges: filtered_challenges.join('\n\n'),
@@ -93,84 +105,94 @@ export const QuestionnaireVoting = () => {
             challenges_statuses: curr.challenges_statuses,
             opportunities_statuses: curr.opportunities_statuses,
           };
+        } else {
+          const strengths_array = curr.strengths.split('\n\n');
+          const challenges_array = curr.challenges.split('\n\n');
+          const opportunities_array = curr.opportunities.split('\n\n');
+          
+          const strengths_statuses = (curr.strengths_statuses || 'pending,pending,pending').split(',');
+          const challenges_statuses = (curr.challenges_statuses || 'pending,pending,pending').split(',');
+          const opportunities_statuses = (curr.opportunities_statuses || 'pending,pending,pending').split(',');
+          
+          const filtered_strengths = strengths_array.filter((_, index) => strengths_statuses[index] === 'active');
+          const filtered_challenges = challenges_array.filter((_, index) => challenges_statuses[index] === 'active');
+          const filtered_opportunities = opportunities_array.filter((_, index) => opportunities_statuses[index] === 'active');
+
+          if (filtered_strengths.length > 0) {
+            acc[curr.dimension].strengths += '\n\n' + filtered_strengths.join('\n\n');
+          }
+          if (filtered_challenges.length > 0) {
+            acc[curr.dimension].challenges += '\n\n' + filtered_challenges.join('\n\n');
+          }
+          if (filtered_opportunities.length > 0) {
+            acc[curr.dimension].opportunities += '\n\n' + filtered_opportunities.join('\n\n');
+          }
         }
         return acc;
       }, {});
+
       return Object.values(consolidatedQuestionnaires);
     },
     enabled: isEmailVerified,
   });
 
+  const checkExistingVote = async (dimension: string) => {
+    const { data: existingVote } = await supabase
+      .from('dimension_votes')
+      .select('id')
+      .eq('email', userEmail.toLowerCase())
+      .eq('dimension', dimension)
+      .maybeSingle();
+
+    return existingVote !== null;
+  };
+
   const submitVotesMutation = useMutation({
-    mutationFn: async ({ questionnaireId, votes }: { 
+    mutationFn: async ({ questionnaireId, votes, dimension }: { 
       questionnaireId: string;
       votes: {
         optionType: string;
         optionNumbers: number[];
       }[];
+      dimension: string;
     }) => {
-      let userProfileId: string;
+      const hasVoted = await checkExistingVote(dimension);
+      if (hasVoted) {
+        throw new Error('Você já votou nesta dimensão');
+      }
 
-      // Get or create user profile
-      const { data: existingProfile, error: profileError } = await supabase
-        .from('profiles')
+      const { data: voter } = await supabase
+        .from('registered_voters')
         .select('id')
         .eq('email', userEmail.toLowerCase())
-        .maybeSingle();
+        .single();
 
-      if (!existingProfile) {
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+      if (!voter) throw new Error('Usuário não encontrado');
+
+      const { error: dimensionVoteError } = await supabase
+        .from('dimension_votes')
+        .insert({
           email: userEmail.toLowerCase(),
-          password: crypto.randomUUID(),
+          dimension: dimension
         });
 
-        if (authError) {
-          console.error('Error creating auth user:', authError);
-          throw new Error('Erro ao criar usuário');
-        }
+      if (dimensionVoteError) throw dimensionVoteError;
 
-        userProfileId = authData.user?.id;
-        if (!userProfileId) throw new Error('Erro ao criar usuário');
-      } else {
-        userProfileId = existingProfile.id;
-      }
-
-      // Delete existing votes first
-      const { error: deleteError } = await supabase
-        .from('questionnaire_votes')
-        .delete()
-        .match({
-          questionnaire_id: questionnaireId,
-          user_id: userProfileId
-        });
-
-      if (deleteError) {
-        console.error('Error deleting existing votes:', deleteError);
-        throw new Error('Erro ao limpar votos existentes');
-      }
-
-      // Wait a bit to ensure deletion is processed
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Insert new votes
-      for (const { optionType, optionNumbers } of votes) {
-        for (const optionNumber of optionNumbers) {
-          const { error: insertError } = await supabase
+      const votePromises = votes.flatMap(({ optionType, optionNumbers }) =>
+        optionNumbers.map(optionNumber =>
+          supabase
             .from('questionnaire_votes')
             .insert({
               questionnaire_id: questionnaireId,
-              user_id: userProfileId,
+              user_id: voter.id,
               vote_type: 'upvote',
               option_type: optionType,
               option_number: optionNumber,
-            });
+            })
+        )
+      );
 
-          if (insertError) {
-            console.error('Error inserting vote:', insertError);
-            throw new Error('Erro ao registrar voto');
-          }
-        }
-      }
+      await Promise.all(votePromises);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
@@ -179,7 +201,6 @@ export const QuestionnaireVoting = () => {
       setSelections({});
     },
     onError: (error) => {
-      console.error('Vote submission error:', error);
       toast.error('Erro ao registrar votos: ' + error.message);
     },
   });
@@ -218,6 +239,9 @@ export const QuestionnaireVoting = () => {
   };
 
   const handleConfirmVotes = async (questionnaireId: string) => {
+    const questionnaire = questionnaires?.find(q => q.id === questionnaireId);
+    if (!questionnaire) return;
+
     const questionnaireSelections = selections[questionnaireId];
     if (!questionnaireSelections) return;
 
@@ -227,8 +251,9 @@ export const QuestionnaireVoting = () => {
     }));
 
     await submitVotesMutation.mutate({ 
-      questionnaireId,
+      questionnaireId, 
       votes,
+      dimension: questionnaire.dimension 
     });
   };
 
