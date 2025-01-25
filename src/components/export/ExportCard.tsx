@@ -45,7 +45,7 @@ export const ExportCard = ({ isExporting, onExport }: ExportCardProps) => {
   };
 
   return (
-    <Card className="p-4 md:p-6 mb-6">
+    <Card className="p-6 mb-6 bg-white shadow-lg hover:shadow-xl transition-all duration-300">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-lg md:text-xl font-semibold">Exportar e Limpar Dados</h2>
@@ -56,7 +56,7 @@ export const ExportCard = ({ isExporting, onExport }: ExportCardProps) => {
         <Button
           onClick={() => setOpen(true)}
           disabled={isExporting}
-          className="w-full md:w-auto"
+          className="w-full md:w-auto bg-primary hover:bg-primary/90"
         >
           {isExporting ? (
             <>
