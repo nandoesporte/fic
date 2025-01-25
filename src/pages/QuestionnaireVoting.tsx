@@ -96,21 +96,10 @@ export const QuestionnaireVoting = () => {
         }
         return acc;
       }, {});
-
       return Object.values(consolidatedQuestionnaires);
     },
     enabled: isEmailVerified,
   });
-
-  const checkExistingVote = async (questionnaireId: string, userId: string) => {
-    const { data: existingVotes } = await supabase
-      .from('questionnaire_votes')
-      .select('id')
-      .eq('questionnaire_id', questionnaireId)
-      .eq('user_id', userId);
-
-    return existingVotes && existingVotes.length > 0;
-  };
 
   const submitVotesMutation = useMutation({
     mutationFn: async ({ questionnaireId, votes }: { 
@@ -122,6 +111,7 @@ export const QuestionnaireVoting = () => {
     }) => {
       let userProfileId: string;
 
+      // Get or create user profile
       const { data: existingProfile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
@@ -145,81 +135,41 @@ export const QuestionnaireVoting = () => {
         userProfileId = existingProfile.id;
       }
 
-      // Delete existing votes with retries
-      let deleteAttempts = 0;
-      const maxDeleteAttempts = 3;
-      
-      while (deleteAttempts < maxDeleteAttempts) {
-        const { error: deleteError } = await supabase
-          .from('questionnaire_votes')
-          .delete()
-          .match({
-            questionnaire_id: questionnaireId,
-            user_id: userProfileId
-          });
+      // Delete existing votes first
+      const { error: deleteError } = await supabase
+        .from('questionnaire_votes')
+        .delete()
+        .match({
+          questionnaire_id: questionnaireId,
+          user_id: userProfileId
+        });
 
-        if (!deleteError) {
-          break;
-        }
-
-        console.error(`Delete attempt ${deleteAttempts + 1} failed:`, deleteError);
-        deleteAttempts++;
-        
-        if (deleteAttempts === maxDeleteAttempts) {
-          throw new Error('Erro ao limpar votos existentes após várias tentativas');
-        }
-        
-        // Wait before retrying
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      if (deleteError) {
+        console.error('Error deleting existing votes:', deleteError);
+        throw new Error('Erro ao limpar votos existentes');
       }
 
-      // Wait a bit after successful deletion to ensure consistency
+      // Wait a bit to ensure deletion is processed
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Then insert all new votes with retries for each vote
-      try {
-        for (const { optionType, optionNumbers } of votes) {
-          for (const optionNumber of optionNumbers) {
-            let insertAttempts = 0;
-            const maxInsertAttempts = 3;
-            
-            while (insertAttempts < maxInsertAttempts) {
-              const { error: insertError } = await supabase
-                .from('questionnaire_votes')
-                .insert({
-                  questionnaire_id: questionnaireId,
-                  user_id: userProfileId,
-                  vote_type: 'upvote',
-                  option_type: optionType,
-                  option_number: optionNumber,
-                });
+      // Insert new votes
+      for (const { optionType, optionNumbers } of votes) {
+        for (const optionNumber of optionNumbers) {
+          const { error: insertError } = await supabase
+            .from('questionnaire_votes')
+            .insert({
+              questionnaire_id: questionnaireId,
+              user_id: userProfileId,
+              vote_type: 'upvote',
+              option_type: optionType,
+              option_number: optionNumber,
+            });
 
-              if (!insertError) {
-                break;
-              }
-
-              console.error(`Insert attempt ${insertAttempts + 1} failed:`, insertError);
-              insertAttempts++;
-              
-              if (insertAttempts === maxInsertAttempts) {
-                throw new Error('Erro ao inserir voto após várias tentativas');
-              }
-              
-              // Wait before retrying
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            }
+          if (insertError) {
+            console.error('Error inserting vote:', insertError);
+            throw new Error('Erro ao registrar voto');
           }
         }
-      } catch (error) {
-        // If any insert fails, clean up any votes that were inserted
-        await supabase
-          .from('questionnaire_votes')
-          .delete()
-          .match({
-            questionnaire_id: questionnaireId,
-            user_id: userProfileId
-          });
-        throw error;
       }
     },
     onSuccess: () => {
