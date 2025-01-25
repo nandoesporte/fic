@@ -98,16 +98,15 @@ const ExportData = () => {
         if (backupError) throw backupError;
       }
 
-      // Call the clean_questionnaire_votes function to clean all tables
-      const { error: cleanError } = await supabase
-        .rpc('clean_questionnaire_votes');
+      // Call the clean_questionnaire_votes function
+      const { error: cleanError } = await supabase.rpc('clean_questionnaire_votes');
       if (cleanError) throw cleanError;
 
-      // Invalidate all relevant queries to refresh the UI
+      // Invalidate queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ['questionnaire-votes'] });
       queryClient.invalidateQueries({ queryKey: ['data-backups'] });
       queryClient.invalidateQueries({ queryKey: ['registered-voters'] });
-
+      
       toast.success('Dados exportados e limpos com sucesso!');
       setBackupName("");
       setIsDialogOpen(false);
@@ -156,7 +155,7 @@ const ExportData = () => {
                     Exportar e Limpar Dados
                   </h2>
                   <p className="text-gray-500 mt-1">
-                    Esta ação irá criar um backup dos dados atuais, limpar as tabelas e resetar os votos
+                    Esta ação irá criar um backup dos dados atuais e limpar as tabelas
                   </p>
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

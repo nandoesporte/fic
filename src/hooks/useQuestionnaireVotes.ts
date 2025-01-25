@@ -36,7 +36,7 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
 
       console.log("Raw vote data:", votes);
 
-      // If no votes found, return empty array
+      // If no votes found, return empty array to properly reset counters
       if (!votes || votes.length === 0) {
         return [];
       }
