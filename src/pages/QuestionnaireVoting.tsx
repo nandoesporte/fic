@@ -15,18 +15,6 @@ type VoteSelection = {
   };
 };
 
-type ConsolidatedQuestionnaire = {
-  id: string;
-  dimension: string;
-  strengths: string;
-  challenges: string;
-  opportunities: string;
-  created_at: string;
-  strengths_statuses?: string;
-  challenges_statuses?: string;
-  opportunities_statuses?: string;
-};
-
 export const QuestionnaireVoting = () => {
   const [userEmail, setUserEmail] = useState("");
   const [isEmailVerified, setIsEmailVerified] = useState(false);
@@ -80,7 +68,7 @@ export const QuestionnaireVoting = () => {
         throw questionnairesError;
       }
 
-      const consolidatedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: ConsolidatedQuestionnaire }, curr) => {
+      const consolidatedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: any }, curr) => {
         if (!acc[curr.dimension]) {
           const strengths_array = curr.strengths.split('\n\n');
           const challenges_array = curr.challenges.split('\n\n');
@@ -95,7 +83,7 @@ export const QuestionnaireVoting = () => {
           const filtered_opportunities = opportunities_array.filter((_, index) => opportunities_statuses[index] === 'active');
 
           acc[curr.dimension] = {
-            id: curr.id, // Keep the original questionnaire ID
+            id: curr.id,
             dimension: curr.dimension,
             strengths: filtered_strengths.join('\n\n'),
             challenges: filtered_challenges.join('\n\n'),
@@ -132,15 +120,29 @@ export const QuestionnaireVoting = () => {
         optionNumbers: number[];
       }[];
     }) => {
-      const { data: voter } = await supabase
-        .from('registered_voters')
+      // First get the user's profile ID
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
         .select('id')
         .eq('email', userEmail.toLowerCase())
         .single();
 
-      if (!voter) throw new Error('Usuário não encontrado');
+      if (profileError) {
+        // If profile doesn't exist, create it
+        const { data: newProfile, error: createProfileError } = await supabase
+          .from('profiles')
+          .insert({ 
+            email: userEmail.toLowerCase(),
+            cpf: 'PENDING' // Required field with default value
+          })
+          .select('id')
+          .single();
 
-      const hasVoted = await checkExistingVote(questionnaireId, voter.id);
+        if (createProfileError) throw new Error('Erro ao criar perfil do usuário');
+        profile = newProfile;
+      }
+
+      const hasVoted = await checkExistingVote(questionnaireId, profile.id);
       if (hasVoted) {
         throw new Error('Você já votou neste questionário');
       }
@@ -151,7 +153,7 @@ export const QuestionnaireVoting = () => {
         .delete()
         .match({
           questionnaire_id: questionnaireId,
-          user_id: voter.id
+          user_id: profile.id
         });
 
       if (deleteError) throw deleteError;
@@ -163,7 +165,7 @@ export const QuestionnaireVoting = () => {
             .from('questionnaire_votes')
             .insert({
               questionnaire_id: questionnaireId,
-              user_id: voter.id,
+              user_id: profile.id,
               vote_type: 'upvote',
               option_type: optionType,
               option_number: optionNumber,
