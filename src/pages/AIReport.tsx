@@ -15,12 +15,11 @@ export default function AIReport() {
     queryKey: ['dimensions'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('fic_questionnaires')
-        .select('dimension')
-        .distinct();
+        .from('fic_dimensions')
+        .select('identifier, label');
       
       if (error) throw error;
-      return data.map(d => d.dimension);
+      return data;
     },
   });
 
@@ -77,8 +76,8 @@ export default function AIReport() {
             >
               <option value="">Selecione uma dimensão...</option>
               {dimensions?.map((dimension) => (
-                <option key={dimension} value={dimension}>
-                  {dimension}
+                <option key={dimension.identifier} value={dimension.identifier}>
+                  {dimension.label}
                 </option>
               ))}
             </select>
