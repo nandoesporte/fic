@@ -12,14 +12,14 @@ export function AppSidebar() {
     <Sidebar className="border-r border-border bg-sidebar-background w-[300px] overflow-hidden" collapsible="icon">
       <ScrollArea className="h-full">
         <div className="space-y-4 py-6">
-          <div className="px-4">
-            <div className="space-y-2">
+          <div className="px-6">
+            <div className="space-y-3">
               <Link to="/">
                 <Button
                   variant={pathname === "/" ? "secondary" : "ghost"}
                   className="w-full justify-start"
                 >
-                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  <LayoutDashboard className="mr-3 h-4 w-4" />
                   <span>Dashboard</span>
                 </Button>
               </Link>
@@ -28,7 +28,7 @@ export function AppSidebar() {
                   variant={pathname === "/formulario" ? "secondary" : "ghost"}
                   className="w-full justify-start"
                 >
-                  <FormInput className="mr-2 h-4 w-4" />
+                  <FormInput className="mr-3 h-4 w-4" />
                   <span>Formulário</span>
                 </Button>
               </Link>
@@ -37,7 +37,7 @@ export function AppSidebar() {
                   variant={pathname === "/voting" ? "secondary" : "ghost"}
                   className="w-full justify-start"
                 >
-                  <FileText className="mr-2 h-4 w-4" />
+                  <FileText className="mr-3 h-4 w-4" />
                   <span>Questionários</span>
                 </Button>
               </Link>
@@ -46,7 +46,7 @@ export function AppSidebar() {
                   variant={pathname === "/analytics" ? "secondary" : "ghost"}
                   className="w-full justify-start"
                 >
-                  <BarChart2 className="mr-2 h-4 w-4" />
+                  <BarChart2 className="mr-3 h-4 w-4" />
                   <span>Análise de Votos</span>
                 </Button>
               </Link>
@@ -55,7 +55,7 @@ export function AppSidebar() {
                   variant={pathname === "/export" ? "secondary" : "ghost"}
                   className="w-full justify-start"
                 >
-                  <Database className="mr-2 h-4 w-4" />
+                  <Database className="mr-3 h-4 w-4" />
                   <span>Exportar Dados</span>
                 </Button>
               </Link>

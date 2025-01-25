@@ -23,7 +23,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
     <div className="min-h-screen flex w-full bg-background">
       {showSidebar && <AppSidebar />}
       <div className="flex-1 overflow-auto">
-        <div className="container mx-auto py-6 px-4">
+        <div className="container mx-auto py-8 px-6">
           {children}
         </div>
       </div>
