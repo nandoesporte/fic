@@ -1,12 +1,18 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Save, Database } from "lucide-react";
 import { BackupList } from "@/components/export/BackupList";
-import { BackupManagement } from "@/components/export/BackupManagement";
-import { analyzeBackup } from "@/components/export/BackupAnalysis";
+import { BackupCreationDialog } from "@/components/export/BackupCreationDialog";
 
 const ExportData = () => {
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const queryClient = useQueryClient();
+  const [isExporting, setIsExporting] = useState(false);
+  const [backupName, setBackupName] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const { data: backups, isLoading } = useQuery({
     queryKey: ['data-backups'],
@@ -21,6 +27,71 @@ const ExportData = () => {
     },
   });
 
+  const deleteBackupMutation = useMutation({
+    mutationFn: async (backupId: string) => {
+      const { error } = await supabase
+        .from('data_backups')
+        .delete()
+        .eq('id', backupId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['data-backups'] });
+      toast.success('Backup excluído com sucesso!');
+    },
+    onError: () => {
+      toast.error('Erro ao excluir backup');
+    },
+  });
+
+  const handleExportAndClear = async () => {
+    if (!backupName.trim()) {
+      toast.error('Por favor, insira um nome para o backup');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data: votes, error: votesError } = await supabase
+        .from('questionnaire_votes')
+        .select('*');
+      if (votesError) throw votesError;
+
+      if (votes && votes.length > 0) {
+        const { error: backupError } = await supabase
+          .from('data_backups')
+          .insert({
+            filename: `${backupName}_votos.json`,
+            data: votes,
+            type: 'votes',
+            created_by: user.id,
+            description: backupName
+          });
+        if (backupError) throw backupError;
+      }
+
+      const { error: clearVotesError } = await supabase
+        .from('questionnaire_votes')
+        .delete()
+        .not('id', 'is', null);
+      if (clearVotesError) throw clearVotesError;
+
+      queryClient.invalidateQueries({ queryKey: ['data-backups'] });
+      toast.success('Votos exportados e limpos com sucesso!');
+      setBackupName("");
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Erro ao exportar e limpar votos');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleDownloadBackup = (backup: any) => {
     const blob = new Blob([JSON.stringify(backup.data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -33,17 +104,9 @@ const ExportData = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleDeleteBackup = async (backupId: string) => {
+  const handleDeleteBackup = (backupId: string) => {
     if (window.confirm('Tem certeza que deseja excluir este backup?')) {
-      const { error } = await supabase
-        .from('data_backups')
-        .delete()
-        .eq('id', backupId);
-      
-      if (error) {
-        console.error('Error deleting backup:', error);
-        return;
-      }
+      deleteBackupMutation.mutate(backupId);
     }
   };
 
@@ -54,14 +117,40 @@ const ExportData = () => {
         <p className="text-gray-500 mt-2">Gerencie backups e limpe os dados do sistema</p>
       </div>
 
-      <BackupManagement />
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Database className="h-5 w-5 text-primary" />
+              Exportar e Limpar Votos
+            </h2>
+            <p className="text-gray-500 mt-1">
+              Esta ação irá criar um backup dos votos atuais e limpar a tabela de votos
+            </p>
+          </div>
+          <Button 
+            className="bg-primary hover:bg-primary/90"
+            onClick={() => setIsDialogOpen(true)}
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Criar Novo Backup
+          </Button>
+        </div>
+      </Card>
 
       <BackupList
         backups={backups || []}
         onDownload={handleDownloadBackup}
         onDelete={handleDeleteBackup}
-        onAnalyze={(backup) => analyzeBackup(backup, setIsAnalyzing)}
-        isAnalyzing={isAnalyzing}
+      />
+
+      <BackupCreationDialog
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        backupName={backupName}
+        onBackupNameChange={setBackupName}
+        onConfirm={handleExportAndClear}
+        isExporting={isExporting}
       />
     </div>
   );
