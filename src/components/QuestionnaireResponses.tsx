@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Loader2, Download, RefreshCw, Check, Circle } from "lucide-react";
+import { Edit, Loader2, Download, RefreshCw, Check, Circle, LayoutList, LayoutCards } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ import {
 export const QuestionnaireResponses = () => {
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<string | null>(null);
   const [selectedDimension, setSelectedDimension] = useState<string>("todos");
+  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
   const [editingLine, setEditingLine] = useState<{
     questionnaireId: string;
     type: 'strengths' | 'challenges' | 'opportunities';
@@ -225,6 +226,115 @@ export const QuestionnaireResponses = () => {
     );
   };
 
+  const renderListView = () => {
+    const filteredQuestionnaires = filterQuestionnaires(questionnaires || []);
+    
+    const sections = [
+      { title: 'Pontos Fortes', type: 'strengths', bgColor: 'bg-[#228B22]' },
+      { title: 'Desafios', type: 'challenges', bgColor: 'bg-[#FFD700]' },
+      { title: 'Oportunidades', type: 'opportunities', bgColor: 'bg-[#000080]' }
+    ];
+
+    return (
+      <div className="space-y-8">
+        {sections.map(section => (
+          <Card key={section.type} className="p-6">
+            <h3 className={`font-medium p-2 rounded-lg ${section.bgColor} ${section.type === 'challenges' ? 'text-gray-900' : 'text-white'} mb-4`}>
+              {section.title}
+            </h3>
+            <div className="space-y-4">
+              {filteredQuestionnaires.map(questionnaire => {
+                const lines = splitText(questionnaire[section.type]);
+                return lines.map((line, index) => (
+                  <div key={`${questionnaire.id}-${index}`} className="border-b pb-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="font-medium">Grupo:</span>
+                      <span className="bg-black text-white px-2 py-1 rounded">
+                        {questionnaire.group || 'Sem grupo'}
+                      </span>
+                      <span className="ml-4 text-gray-500">
+                        Dimensão: {questionnaire.dimension}
+                      </span>
+                    </div>
+                    {renderLine(questionnaire, section.type as any, line, index)}
+                  </div>
+                ));
+              })}
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
+  const renderCardView = () => (
+    <div className="space-y-6">
+      {filterQuestionnaires(questionnaires || []).map((questionnaire) => (
+        <Card key={questionnaire.id} className="p-6">
+          <div className="flex justify-between items-start">
+            <div className="w-full">
+              <div className="flex justify-between items-center mb-2">
+                <div>
+                  <h3 className="font-medium text-lg">
+                    Dimensão: {questionnaire.dimension}
+                  </h3>
+                  {questionnaire.group && (
+                    <div className="mt-2 inline-block">
+                      <span className="bg-black text-white px-4 py-2 rounded-lg text-xl font-semibold">
+                        Grupo: {questionnaire.group}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <p className="text-sm text-gray-500 mb-4">
+                Enviado em: {new Date(questionnaire.created_at).toLocaleDateString('pt-BR')}
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium p-2 rounded-lg bg-[#228B22] text-white">
+                    Pontos Fortes
+                  </h4>
+                  <div className="space-y-2 mt-2">
+                    {splitText(questionnaire.strengths).map((strength, index) => (
+                      <div key={index}>
+                        {renderLine(questionnaire, 'strengths', strength, index)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-medium p-2 rounded-lg bg-[#FFD700] text-gray-900">
+                    Desafios
+                  </h4>
+                  <div className="space-y-2 mt-2">
+                    {splitText(questionnaire.challenges).map((challenge, index) => (
+                      <div key={index}>
+                        {renderLine(questionnaire, 'challenges', challenge, index)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-medium p-2 rounded-lg bg-[#000080] text-white">
+                    Oportunidades
+                  </h4>
+                  <div className="space-y-2 mt-2">
+                    {splitText(questionnaire.opportunities).map((opportunity, index) => (
+                      <div key={index}>
+                        {renderLine(questionnaire, 'opportunities', opportunity, index)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+
   const splitText = (text: string): string[] => {
     return text.split('\n').filter(line => line.trim() !== '');
   };
@@ -325,7 +435,27 @@ export const QuestionnaireResponses = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end gap-4 mb-4">
+      <div className="flex justify-between items-center gap-4 mb-4">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setViewMode('cards')}
+            className={viewMode === 'cards' ? 'bg-primary/10' : ''}
+          >
+            <LayoutCards className="h-4 w-4 mr-2" />
+            Cards
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setViewMode('list')}
+            className={viewMode === 'list' ? 'bg-primary/10' : ''}
+          >
+            <LayoutList className="h-4 w-4 mr-2" />
+            Lista
+          </Button>
+        </div>
         <Select value={selectedDimension} onValueChange={setSelectedDimension}>
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Selecione uma dimensão" />
@@ -341,71 +471,7 @@ export const QuestionnaireResponses = () => {
         </Select>
       </div>
 
-      <div className="space-y-6">
-        {filterQuestionnaires(questionnaires || []).map((questionnaire) => (
-          <Card key={questionnaire.id} className="p-6">
-            <div className="flex justify-between items-start">
-              <div className="w-full">
-                <div className="flex justify-between items-center mb-2">
-                  <div>
-                    <h3 className="font-medium text-lg">
-                      Dimensão: {questionnaire.dimension}
-                    </h3>
-                    {questionnaire.group && (
-                      <div className="mt-2 inline-block">
-                        <span className="bg-black text-white px-4 py-2 rounded-lg text-xl font-semibold">
-                          Grupo: {questionnaire.group}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <p className="text-sm text-gray-500 mb-4">
-                  Enviado em: {new Date(questionnaire.created_at).toLocaleDateString('pt-BR')}
-                </p>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className={`font-medium p-2 rounded-lg bg-[#228B22] text-white`}>
-                      Pontos Fortes
-                    </h4>
-                    <div className="space-y-2 mt-2">
-                      {splitText(questionnaire.strengths).map((strength, index) => (
-                        <div key={index}>
-                          {renderLine(questionnaire, 'strengths', strength, index)}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className={`font-medium p-2 rounded-lg bg-[#FFD700] text-gray-900`}>
-                      Desafios
-                    </h4>
-                    <div className="space-y-2 mt-2">
-                      {splitText(questionnaire.challenges).map((challenge, index) => (
-                        <div key={index}>
-                          {renderLine(questionnaire, 'challenges', challenge, index)}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className={`font-medium p-2 rounded-lg bg-[#000080] text-white`}>
-                      Oportunidades
-                    </h4>
-                    <div className="space-y-2 mt-2">
-                      {splitText(questionnaire.opportunities).map((opportunity, index) => (
-                        <div key={index}>
-                          {renderLine(questionnaire, 'opportunities', opportunity, index)}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
+      {viewMode === 'cards' ? renderCardView() : renderListView()}
 
       {(!questionnaires || questionnaires.length === 0) && (
         <p className="text-center text-gray-500 py-4">
