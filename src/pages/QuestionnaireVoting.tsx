@@ -172,6 +172,14 @@ export const QuestionnaireVoting = () => {
     const questionnaireSelections = selections[questionnaireId];
     if (!questionnaireSelections) return;
 
+    // Validate that each section has exactly 3 votes
+    if (questionnaireSelections.strengths?.length !== 3 ||
+        questionnaireSelections.challenges?.length !== 3 ||
+        questionnaireSelections.opportunities?.length !== 3) {
+      toast.error('Por favor, selecione exatamente 3 opções em cada seção antes de confirmar');
+      return;
+    }
+
     const votes = Object.entries(questionnaireSelections).map(([optionType, optionNumbers]) => ({
       optionType,
       optionNumbers,
@@ -245,10 +253,11 @@ export const QuestionnaireVoting = () => {
           />
 
           {questionnaires?.map((questionnaire) => {
+            const questionnaireSelections = selections[questionnaire.id] || {};
             const allSectionsComplete = 
-              (selections[questionnaire.id]?.strengths?.length === 3) &&
-              (selections[questionnaire.id]?.challenges?.length === 3) &&
-              (selections[questionnaire.id]?.opportunities?.length === 3);
+              (questionnaireSelections.strengths?.length === 3) &&
+              (questionnaireSelections.challenges?.length === 3) &&
+              (questionnaireSelections.opportunities?.length === 3);
 
             return (
               <ConfirmVoteButton
