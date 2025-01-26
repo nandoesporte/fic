@@ -73,12 +73,11 @@ const QuestionnaireAnalytics = () => {
     
     return Object.values(data).reduce((acc: number, categoryVotes) => {
       if (!Array.isArray(categoryVotes)) return acc;
-      return acc + categoryVotes.reduce((sum, vote) => sum + (Number(vote.total) || 0), 0);
+      return acc + categoryVotes.reduce((sum, vote) => sum + (vote.total || 0), 0);
     }, 0);
   };
 
   const totalVotes = calculateTotalVotes(votingData as VotingData);
-  
   const expectedVotesPerUser = 9;
   const expectedTotalVotes = totalVoters * expectedVotesPerUser;
   const participationRate = expectedTotalVotes > 0 

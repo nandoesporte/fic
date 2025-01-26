@@ -28,6 +28,7 @@ export const QuestionnaireVoting = () => {
       const { data: questionnairesData, error: questionnairesError } = await supabase
         .from('fic_questionnaires')
         .select('*')
+        .eq('status', 'active')
         .order('created_at', { ascending: false });
 
       if (questionnairesError) {
@@ -37,8 +38,9 @@ export const QuestionnaireVoting = () => {
 
       console.log('Questionnaires data fetched:', questionnairesData);
       
+      // Consolidate questionnaires by group
       const consolidatedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: any }, curr) => {
-        if (curr.status === 'active' && curr.group) {
+        if (curr.group) {
           acc[curr.group] = {
             id: curr.id,
             dimension: curr.dimension,
@@ -69,11 +71,19 @@ export const QuestionnaireVoting = () => {
       }[];
       dimension: string;
     }) => {
-      const hasVoted = await checkExistingVote(dimension);
-      if (hasVoted) {
+      // Verificar se já votou nesta dimensão
+      const { data: existingVote } = await supabase
+        .from('dimension_votes')
+        .select('id')
+        .eq('email', userEmail.toLowerCase())
+        .eq('dimension', dimension)
+        .maybeSingle();
+
+      if (existingVote) {
         throw new Error('Você já votou nesta dimensão');
       }
 
+      // Registrar o voto na dimensão
       await supabase
         .from('dimension_votes')
         .insert({
@@ -81,13 +91,13 @@ export const QuestionnaireVoting = () => {
           dimension: dimension
         });
 
+      // Registrar os votos individuais
       const votePromises = votes.flatMap(({ optionType, optionNumbers }) =>
         optionNumbers.map(optionNumber =>
           supabase
             .from('questionnaire_votes')
             .insert({
               questionnaire_id: questionnaireId,
-              user_id: null,
               vote_type: 'upvote',
               option_type: optionType,
               option_number: optionNumber,
@@ -109,17 +119,6 @@ export const QuestionnaireVoting = () => {
       toast.error('Erro ao registrar votos: ' + error.message);
     },
   });
-
-  const checkExistingVote = async (dimension: string) => {
-    const { data: existingVote } = await supabase
-      .from('dimension_votes')
-      .select('id')
-      .eq('email', userEmail.toLowerCase())
-      .eq('dimension', dimension)
-      .maybeSingle();
-
-    return existingVote !== null;
-  };
 
   const handleVote = (questionnaireId: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => {
     if (!userEmail) {
