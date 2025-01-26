@@ -18,7 +18,10 @@ const QuestionnaireAnalytics = () => {
         .select('*')
         .order('label');
 
-      if (error) throw error;
+      if (error) {
+        toast.error('Erro ao carregar dimensões');
+        throw error;
+      }
       return data;
     },
   });
@@ -63,7 +66,7 @@ const QuestionnaireAnalytics = () => {
       .map(item => ({
         optionNumber: String(item.option_number),
         total: item.total_votes || 0,
-        text: item[type] || '',
+        text: item[type]?.split('\n\n')[item.option_number - 1] || '',
       })) || [];
   };
 
@@ -72,7 +75,9 @@ const QuestionnaireAnalytics = () => {
   const participationRate = totalVoters > 0 ? Math.round((totalVotes / (totalVoters * 9)) * 100) : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
+      <h1 className="text-2xl font-bold mb-6">Análise de Votos</h1>
+      
       <div className="flex flex-col gap-6">
         <DimensionFilter
           selectedDimension={selectedDimension}

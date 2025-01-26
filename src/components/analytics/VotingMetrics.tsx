@@ -1,5 +1,5 @@
 import { MetricCard } from "./MetricCard";
-import { Users, Vote, Target } from "lucide-react";
+import { Users, Vote, ChartBar } from "lucide-react";
 
 interface VotingMetricsProps {
   totalVoters: number;
@@ -25,7 +25,7 @@ export const VotingMetrics = ({ totalVoters, totalVotes, participationRate }: Vo
         iconClassName="bg-green-100 text-green-600"
       />
       <MetricCard
-        icon={Target}
+        icon={ChartBar}
         title="Taxa de Participação"
         value={`${participationRate}%`}
         description="Baseado no total de votos esperados"
