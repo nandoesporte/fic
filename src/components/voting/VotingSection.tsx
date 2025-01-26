@@ -1,4 +1,4 @@
-import { QuestionnaireCard } from "@/components/QuestionnaireCard";
+import { GroupedQuestionnaireList } from "@/components/questionnaire/GroupedQuestionnaireList";
 import { Loader2 } from "lucide-react";
 
 interface VotingSectionProps {
@@ -24,13 +24,18 @@ export const VotingSection = ({
   onVote,
   onConfirmVotes
 }: VotingSectionProps) => {
-  const isOptionSelected = (questionnaireId: string, optionType: string, optionNumber: number) => {
-    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.includes(optionNumber) || false;
+  const groupQuestionnairesByDimension = (questionnaires: any[]) => {
+    return questionnaires.reduce((acc, curr) => {
+      const dimension = curr.dimension;
+      if (!acc[dimension]) {
+        acc[dimension] = [];
+      }
+      acc[dimension].push(curr);
+      return acc;
+    }, {} as { [key: string]: any[] });
   };
 
-  const getSelectionCount = (questionnaireId: string, optionType: string) => {
-    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.length || 0;
-  };
+  const groupedByDimension = groupQuestionnairesByDimension(questionnaires);
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -47,21 +52,18 @@ export const VotingSection = ({
           </div>
         ) : (
           <div className="space-y-6">
-            {questionnaires?.map((questionnaire) => (
-              <QuestionnaireCard
-                key={questionnaire.id}
-                questionnaire={questionnaire}
-                onVote={(optionType, optionNumber) => 
-                  onVote(questionnaire.id, optionType, optionNumber)
-                }
-                isOptionSelected={(optionType, optionNumber) =>
-                  isOptionSelected(questionnaire.id, optionType, optionNumber)
-                }
-                getSelectionCount={(optionType) =>
-                  getSelectionCount(questionnaire.id, optionType)
-                }
-                onConfirmVotes={() => onConfirmVotes(questionnaire.id)}
-              />
+            {Object.entries(groupedByDimension).map(([dimension, dimensionQuestionnaires]) => (
+              <div key={dimension} className="space-y-4">
+                <h2 className="text-xl font-semibold text-gray-800 capitalize">
+                  {dimension.replace(/-/g, ' ')}
+                </h2>
+                <GroupedQuestionnaireList
+                  questionnaires={dimensionQuestionnaires}
+                  selections={selections}
+                  onVote={onVote}
+                  onConfirmVotes={onConfirmVotes}
+                />
+              </div>
             ))}
           </div>
         )}
