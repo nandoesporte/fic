@@ -1,8 +1,9 @@
 import { Card } from "@/components/ui/card";
-import { VoteButtons } from "@/components/VoteButtons";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
+import { QuestionnaireOption } from "./questionnaire/QuestionnaireOption";
+import { QuestionnaireSectionHeader } from "./questionnaire/QuestionnaireSectionHeader";
 
 interface QuestionnaireCardProps {
   questionnaire: any;
@@ -43,31 +44,25 @@ export const QuestionnaireCard = ({
     return (
       <div className="space-y-4">
         <div className={`p-4 rounded-lg ${bgColorClass}`}>
-          <div className="flex justify-between items-center">
-            <h3 className="font-semibold text-lg">{title}</h3>
-            <span className="text-sm">
-              {selectionCount}/3 seleções
-            </span>
-          </div>
+          <QuestionnaireSectionHeader 
+            title={title}
+            selectionCount={selectionCount}
+          />
           <div className="space-y-3 mt-4">
             {options.map((option, index) => {
               const isActive = statuses[index] === 'active';
               const selected = isOptionSelected(type, index + 1);
               
               return (
-                <div 
-                  key={index} 
-                  className={`flex items-start justify-between gap-4 p-3 ${
-                    isActive ? 'bg-primary/10' : 'bg-white/90'
-                  } rounded-lg transition-colors`}
-                >
-                  <p className="flex-1 text-sm text-gray-900">{option}</p>
-                  <VoteButtons
-                    isSelected={selected}
-                    onVote={() => onVote(type, index + 1)}
-                    disabled={selectionCount >= MAX_SELECTIONS && !selected}
-                  />
-                </div>
+                <QuestionnaireOption
+                  key={index}
+                  option={option}
+                  index={index}
+                  isActive={isActive}
+                  isSelected={selected}
+                  onVote={() => onVote(type, index + 1)}
+                  disabled={selectionCount >= MAX_SELECTIONS && !selected}
+                />
               );
             })}
           </div>
