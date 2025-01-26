@@ -1,6 +1,7 @@
 import { QuestionnaireCard } from "@/components/QuestionnaireCard";
 import { Loader2 } from "lucide-react";
 import { VoteSelections } from "@/types/voting";
+import { Card } from "@/components/ui/card";
 
 interface QuestionnaireListProps {
   questionnaires: any[];
@@ -33,23 +34,39 @@ export const QuestionnaireList = ({
     );
   }
 
+  const sections = [
+    { title: 'Pontos Fortes', type: 'strengths' as const, bgColor: 'bg-[#228B22] text-white' },
+    { title: 'Desafios', type: 'challenges' as const, bgColor: 'bg-[#FFD700] text-gray-900' },
+    { title: 'Oportunidades', type: 'opportunities' as const, bgColor: 'bg-[#000080] text-white' }
+  ];
+
   return (
-    <div className="space-y-6">
-      {questionnaires?.map((questionnaire) => (
-        <QuestionnaireCard
-          key={questionnaire.id}
-          questionnaire={questionnaire}
-          onVote={(optionType, optionNumber) => 
-            onVote(questionnaire.id, optionType, optionNumber)
-          }
-          isOptionSelected={(optionType, optionNumber) =>
-            isOptionSelected(questionnaire.id, optionType, optionNumber)
-          }
-          getSelectionCount={(optionType) =>
-            getSelectionCount(questionnaire.id, optionType)
-          }
-          onConfirmVotes={() => onConfirmVotes(questionnaire.id)}
-        />
+    <div className="space-y-8">
+      {sections.map(section => (
+        <div key={section.type}>
+          <Card className={`p-4 mb-4 ${section.bgColor}`}>
+            <h2 className="text-xl font-semibold">{section.title}</h2>
+          </Card>
+          <div className="space-y-6">
+            {questionnaires?.map((questionnaire) => (
+              <QuestionnaireCard
+                key={questionnaire.id}
+                questionnaire={questionnaire}
+                onVote={(optionType, optionNumber) => 
+                  onVote(questionnaire.id, optionType, optionNumber)
+                }
+                isOptionSelected={(optionType, optionNumber) =>
+                  isOptionSelected(questionnaire.id, optionType, optionNumber)
+                }
+                getSelectionCount={(optionType) =>
+                  getSelectionCount(questionnaire.id, optionType)
+                }
+                onConfirmVotes={() => onConfirmVotes(questionnaire.id)}
+                activeSection={section.type}
+              />
+            ))}
+          </div>
+        </div>
       ))}
     </div>
   );

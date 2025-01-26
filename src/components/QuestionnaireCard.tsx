@@ -10,6 +10,7 @@ interface QuestionnaireCardProps {
   isOptionSelected: (optionType: string, optionNumber: number) => boolean;
   getSelectionCount: (optionType: string) => number;
   onConfirmVotes?: () => void;
+  activeSection: 'strengths' | 'challenges' | 'opportunities';
 }
 
 const MAX_SELECTIONS = 3;
@@ -19,7 +20,8 @@ export const QuestionnaireCard = ({
   onVote,
   isOptionSelected,
   getSelectionCount,
-  onConfirmVotes
+  onConfirmVotes,
+  activeSection
 }: QuestionnaireCardProps) => {
   const getBgColor = (type: string) => {
     switch (type) {
@@ -65,10 +67,13 @@ export const QuestionnaireCard = ({
     );
   };
 
-  const allSectionsComplete = 
-    getSelectionCount('strengths') === MAX_SELECTIONS &&
-    getSelectionCount('challenges') === MAX_SELECTIONS &&
-    getSelectionCount('opportunities') === MAX_SELECTIONS;
+  const sectionTitles = {
+    strengths: 'Pontos Fortes',
+    challenges: 'Desafios',
+    opportunities: 'Oportunidades'
+  };
+
+  const allSectionsComplete = getSelectionCount(activeSection) === MAX_SELECTIONS;
 
   return (
     <Card className="p-6">
@@ -87,9 +92,11 @@ export const QuestionnaireCard = ({
           </div>
         </div>
 
-        {renderSection("Pontos Fortes", questionnaire.strengths, 'strengths')}
-        {renderSection("Desafios", questionnaire.challenges, 'challenges')}
-        {renderSection("Oportunidades", questionnaire.opportunities, 'opportunities')}
+        {renderSection(
+          sectionTitles[activeSection],
+          questionnaire[activeSection],
+          activeSection
+        )}
 
         {onConfirmVotes && (
           <div className="flex justify-end mt-6">
