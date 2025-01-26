@@ -11,7 +11,6 @@ import { VoteButtons } from "@/components/VoteButtons";
 export const QuestionnaireVoting = () => {
   const [userEmail, setUserEmail] = useState("");
   const [isEmailVerified, setIsEmailVerified] = useState(false);
-  const [selectedDimension, setSelectedDimension] = useState<string>("todos");
   const [selections, setSelections] = useState<{
     [key: string]: {
       strengths: number[];
@@ -197,24 +196,33 @@ export const QuestionnaireVoting = () => {
     });
   };
 
-  const renderSection = (questionnaire: any, title: string, type: 'strengths' | 'challenges' | 'opportunities', bgColor: string) => {
-    const options = questionnaire[type].split('\n\n').filter(Boolean);
-    const currentSelections = selections[questionnaire.id]?.[type] || [];
+  const renderSection = (title: string, type: 'strengths' | 'challenges' | 'opportunities', bgColor: string) => {
+    if (!questionnaires || questionnaires.length === 0) return null;
+
+    const options = questionnaires.map(questionnaire => ({
+      id: questionnaire.id,
+      text: questionnaire[type].split('\n\n').filter(Boolean),
+      selections: selections[questionnaire.id]?.[type] || []
+    }));
 
     return (
       <Card className="p-6 mb-4">
         <h3 className={`font-medium p-2 rounded-lg ${bgColor} ${type === 'challenges' ? 'text-gray-900' : 'text-white'} mb-4`}>
           {title}
         </h3>
-        <div className="space-y-2">
-          {options.map((option: string, index: number) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border">
-              <p className="flex-1 text-sm">{option}</p>
-              <VoteButtons
-                isSelected={currentSelections.includes(index + 1)}
-                onVote={() => handleVote(questionnaire.id, type, index + 1)}
-                disabled={currentSelections.length >= 3 && !currentSelections.includes(index + 1)}
-              />
+        <div className="space-y-4">
+          {options.map((option) => (
+            <div key={option.id} className="space-y-2">
+              {option.text.map((text, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                  <p className="flex-1 text-sm">{text}</p>
+                  <VoteButtons
+                    isSelected={option.selections.includes(index + 1)}
+                    onVote={() => handleVote(option.id, type, index + 1)}
+                    disabled={option.selections.length >= 3 && !option.selections.includes(index + 1)}
+                  />
+                </div>
+              ))}
             </div>
           ))}
         </div>
@@ -257,40 +265,28 @@ export const QuestionnaireVoting = () => {
           </div>
         ) : (
           <div className="space-y-8">
-            {questionnaires?.map((questionnaire) => (
-              <Card key={questionnaire.id} className="p-6">
-                <div className="mb-6">
-                  <h2 className="text-xl font-semibold">{questionnaire.dimension}</h2>
-                  <div className="mt-2">
-                    <span className="bg-[#0D9488] text-white px-2 py-1 rounded">
-                      {questionnaire.group || 'Sem grupo'}
-                    </span>
-                  </div>
-                </div>
+            {renderSection("Pontos Fortes", 'strengths', 'bg-[#228B22]')}
+            {renderSection("Desafios", 'challenges', 'bg-[#FFD700]')}
+            {renderSection("Oportunidades", 'opportunities', 'bg-[#000080]')}
 
-                {renderSection(questionnaire, "Pontos Fortes", 'strengths', 'bg-[#228B22]')}
-                {renderSection(questionnaire, "Desafios", 'challenges', 'bg-[#FFD700]')}
-                {renderSection(questionnaire, "Oportunidades", 'opportunities', 'bg-[#000080]')}
+            {questionnaires?.map((questionnaire) => {
+              const allSectionsComplete = 
+                (selections[questionnaire.id]?.strengths?.length === 3) &&
+                (selections[questionnaire.id]?.challenges?.length === 3) &&
+                (selections[questionnaire.id]?.opportunities?.length === 3);
 
-                <div className="flex justify-end mt-6">
+              return (
+                <div key={questionnaire.id} className="flex justify-end">
                   <Button
                     onClick={() => handleConfirmVotes(questionnaire.id)}
-                    disabled={
-                      !selections[questionnaire.id] ||
-                      !selections[questionnaire.id].strengths ||
-                      !selections[questionnaire.id].challenges ||
-                      !selections[questionnaire.id].opportunities ||
-                      selections[questionnaire.id].strengths.length !== 3 ||
-                      selections[questionnaire.id].challenges.length !== 3 ||
-                      selections[questionnaire.id].opportunities.length !== 3
-                    }
+                    disabled={!allSectionsComplete}
                     className="bg-primary hover:bg-primary/90"
                   >
                     Confirmar Votos
                   </Button>
                 </div>
-              </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
