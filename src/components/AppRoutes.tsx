@@ -9,6 +9,7 @@ import ExportData from "@/pages/ExportData";
 import AIReport from "@/pages/AIReport";
 import Users from "@/pages/Users";
 import { FICForm } from "@/components/FICForm";
+import { DimensionManager } from "@/components/FICForm/DimensionManager";
 
 export function AppRoutes() {
   return (
@@ -20,6 +21,7 @@ export function AppRoutes() {
         <ProtectedRoute>
           <div className="space-y-8">
             <h1 className="text-2xl font-bold">Novo Questionário FIC</h1>
+            <DimensionManager />
             <FICForm />
           </div>
         </ProtectedRoute>
