@@ -7,16 +7,18 @@ import { EmailVerification } from "@/components/voting/EmailVerification";
 import { VotingSection } from "@/components/voting/VotingSection";
 import { ConfirmVoteButton } from "@/components/voting/ConfirmVoteButton";
 
+interface Selections {
+  [key: string]: {
+    strengths: number[];
+    challenges: number[];
+    opportunities: number[];
+  };
+}
+
 export const QuestionnaireVoting = () => {
   const [userEmail, setUserEmail] = useState("");
   const [isEmailVerified, setIsEmailVerified] = useState(false);
-  const [selections, setSelections] = useState<{
-    [key: string]: {
-      strengths: number[];
-      challenges: number[];
-      opportunities: number[];
-    };
-  }>({});
+  const [selections, setSelections] = useState<Selections>({});
   const queryClient = useQueryClient();
 
   const verifyEmail = async () => {
@@ -149,20 +151,22 @@ export const QuestionnaireVoting = () => {
       return;
     }
 
-    const currentSelections = selections[questionnaireId]?.[optionType] || [];
-    const isSelected = currentSelections.includes(optionNumber);
-
-    setSelections(prev => ({
-      ...prev,
-      [questionnaireId]: {
-        ...prev[questionnaireId],
-        [optionType]: isSelected
-          ? currentSelections.filter(num => num !== optionNumber)
-          : currentSelections.length >= 3
-            ? currentSelections
-            : [...currentSelections, optionNumber]
-      }
-    }));
+    setSelections(prev => {
+      const currentSelections = prev[questionnaireId]?.[optionType] || [];
+      const isSelected = currentSelections.includes(optionNumber);
+      
+      return {
+        ...prev,
+        [questionnaireId]: {
+          ...prev[questionnaireId],
+          [optionType]: isSelected
+            ? currentSelections.filter(num => num !== optionNumber)
+            : currentSelections.length >= 3
+              ? currentSelections
+              : [...currentSelections, optionNumber]
+        }
+      };
+    });
   };
 
   const handleConfirmVotes = async (questionnaireId: string) => {
@@ -173,9 +177,9 @@ export const QuestionnaireVoting = () => {
     if (!questionnaireSelections) return;
 
     // Validate that each section has exactly 3 votes
-    if (questionnaireSelections.strengths?.length !== 3 ||
-        questionnaireSelections.challenges?.length !== 3 ||
-        questionnaireSelections.opportunities?.length !== 3) {
+    if (!questionnaireSelections.strengths || questionnaireSelections.strengths.length !== 3 ||
+        !questionnaireSelections.challenges || questionnaireSelections.challenges.length !== 3 ||
+        !questionnaireSelections.opportunities || questionnaireSelections.opportunities.length !== 3) {
       toast.error('Por favor, selecione exatamente 3 opções em cada seção antes de confirmar');
       return;
     }
@@ -253,11 +257,16 @@ export const QuestionnaireVoting = () => {
           />
 
           {questionnaires?.map((questionnaire) => {
-            const questionnaireSelections = selections[questionnaire.id] || {};
+            const questionnaireSelections = selections[questionnaire.id] || {
+              strengths: [],
+              challenges: [],
+              opportunities: []
+            };
+            
             const allSectionsComplete = 
-              (questionnaireSelections.strengths?.length === 3) &&
-              (questionnaireSelections.challenges?.length === 3) &&
-              (questionnaireSelections.opportunities?.length === 3);
+              questionnaireSelections.strengths.length === 3 &&
+              questionnaireSelections.challenges.length === 3 &&
+              questionnaireSelections.opportunities.length === 3;
 
             return (
               <ConfirmVoteButton

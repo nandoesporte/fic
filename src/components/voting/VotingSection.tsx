@@ -34,7 +34,7 @@ export const VotingSection = ({
           {title}
         </h3>
         
-        <Alert variant={remainingVotes === 0 ? "success" : "warning"}>
+        <Alert variant={remainingVotes === 0 ? "default" : "destructive"}>
           <AlertCircle className="h-4 w-4" />
           <span className="ml-2">
             {remainingVotes === 0 
