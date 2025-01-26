@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Upload, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { BackupCreationDialog } from "@/components/export/BackupCreationDialog";
 import { BackupList } from "@/components/export/BackupList";
 import { useBackupOperations } from "@/hooks/useBackupOperations";
@@ -24,16 +24,6 @@ export const ExportData = () => {
     fetchBackups();
   }, []);
 
-  const handleBackupQuestionnaires = () => {
-    setBackupType("questionnaires");
-    setIsDialogOpen(true);
-  };
-
-  const handleBackupVotes = () => {
-    setBackupType("votes");
-    setIsDialogOpen(true);
-  };
-
   const handleExportAndClear = () => {
     setBackupType("export_and_clear");
     setIsDialogOpen(true);
@@ -53,14 +43,6 @@ export const ExportData = () => {
           <div>
             <h3 className="font-medium mb-2">Criar Backup</h3>
             <div className="flex flex-wrap gap-4">
-              <Button onClick={handleBackupQuestionnaires}>
-                <Upload className="h-4 w-4 mr-2" />
-                Backup Questionários
-              </Button>
-              <Button onClick={handleBackupVotes}>
-                <Upload className="h-4 w-4 mr-2" />
-                Backup Votos
-              </Button>
               <Button 
                 variant="destructive" 
                 onClick={handleExportAndClear}
