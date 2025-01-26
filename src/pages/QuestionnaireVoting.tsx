@@ -222,31 +222,33 @@ export const QuestionnaireVoting = () => {
       return;
     }
 
-    const currentSelections = selections[questionnaireId]?.[optionType] || [];
-    const isSelected = currentSelections.includes(optionNumber);
+    setSelections(prev => {
+      const currentSelections = prev[questionnaireId]?.[optionType] || [];
+      const isSelected = currentSelections.includes(optionNumber);
 
-    if (isSelected) {
-      setSelections(prev => ({
-        ...prev,
-        [questionnaireId]: {
-          ...prev[questionnaireId],
-          [optionType]: currentSelections.filter(num => num !== optionNumber)
+      if (isSelected) {
+        return {
+          ...prev,
+          [questionnaireId]: {
+            ...prev[questionnaireId],
+            [optionType]: currentSelections.filter(num => num !== optionNumber)
+          }
+        };
+      } else {
+        if (currentSelections.length >= 3) {
+          toast.error('Você já selecionou 3 opções nesta seção. Remova uma seleção para escolher outra.');
+          return prev;
         }
-      }));
-    } else {
-      if (currentSelections.length >= 3) {
-        toast.error('Você já selecionou 3 opções nesta seção. Remova uma seleção para escolher outra.');
-        return;
+
+        return {
+          ...prev,
+          [questionnaireId]: {
+            ...prev[questionnaireId],
+            [optionType]: [...currentSelections, optionNumber]
+          }
+        };
       }
-
-      setSelections(prev => ({
-        ...prev,
-        [questionnaireId]: {
-          ...prev[questionnaireId],
-          [optionType]: [...currentSelections, optionNumber]
-        }
-      }));
-    }
+    });
   };
 
   const handleConfirmVotes = async (questionnaireId: string) => {
