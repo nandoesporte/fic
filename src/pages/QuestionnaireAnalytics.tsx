@@ -52,9 +52,10 @@ const QuestionnaireAnalytics = () => {
     );
   }
 
-  const totalVoters = analytics?.length || 0;
   const totalVotes = analytics?.reduce((acc, curr) => acc + (curr.total_votes || 0), 0) || 0;
-  const participationRate = totalVoters > 0 ? Math.round((totalVotes / totalVoters) * 100) : 0;
+  // Calculate total voters based on the new logic: 9 votes = 1 participant
+  const totalVoters = Math.ceil(totalVotes / 9);
+  const participationRate = totalVoters > 0 ? Math.round((totalVotes / (totalVoters * 9)) * 100) : 0;
 
   const processVotingData = (type: string) => {
     return analytics
