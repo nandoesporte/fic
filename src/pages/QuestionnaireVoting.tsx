@@ -90,6 +90,17 @@ export const QuestionnaireVoting = () => {
         throw new Error('Você já votou nesta dimensão');
       }
 
+      // Get user_id from registered_voters table
+      const { data: voterData, error: voterError } = await supabase
+        .from('registered_voters')
+        .select('id')
+        .eq('email', userEmail.toLowerCase())
+        .single();
+
+      if (voterError || !voterData) {
+        throw new Error('Erro ao obter informações do votante');
+      }
+
       // Insert dimension vote record
       const { error: dimensionVoteError } = await supabase
         .from('dimension_votes')
@@ -100,7 +111,7 @@ export const QuestionnaireVoting = () => {
 
       if (dimensionVoteError) throw dimensionVoteError;
 
-      // Insert vote records
+      // Insert vote records with user_id
       const votePromises = votes.map(({ optionType, optionNumbers }) =>
         optionNumbers.map(optionNumber =>
           supabase
@@ -110,6 +121,7 @@ export const QuestionnaireVoting = () => {
               vote_type: 'upvote',
               option_type: optionType,
               option_number: optionNumber,
+              user_id: voterData.id // Include the user_id here
             })
         )
       ).flat();
