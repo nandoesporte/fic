@@ -9,6 +9,7 @@ import ExportData from "@/pages/ExportData";
 import AIReport from "@/pages/AIReport";
 import Users from "@/pages/Users";
 import Settings from "@/pages/Settings";
+import VoteSuccess from "@/pages/VoteSuccess";
 import { FICForm } from "@/components/FICForm";
 import { DimensionManager } from "@/components/FICForm/DimensionManager";
 import { QuestionnaireResponses } from "@/components/QuestionnaireResponses";
@@ -35,6 +36,7 @@ export function AppRoutes() {
         </div>
       } />
       <Route path="/voting" element={<QuestionnaireVoting />} />
+      <Route path="/vote-success" element={<VoteSuccess />} />
       <Route
         path="/analytics"
         element={

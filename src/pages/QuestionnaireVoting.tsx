@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { EmailVerification } from "@/components/voting/EmailVerification";
 import { VotingSection } from "@/components/voting/VotingSection";
 
@@ -14,6 +15,7 @@ type VoteSelection = {
 };
 
 export const QuestionnaireVoting = () => {
+  const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState("");
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [selections, setSelections] = useState<VoteSelection>({});
@@ -85,7 +87,7 @@ export const QuestionnaireVoting = () => {
             .from('questionnaire_votes')
             .insert({
               questionnaire_id: questionnaireId,
-              user_id: null, // Changed to null since we're not requiring authentication
+              user_id: null,
               vote_type: 'upvote',
               option_type: optionType,
               option_number: optionNumber,
@@ -100,6 +102,7 @@ export const QuestionnaireVoting = () => {
       queryClient.invalidateQueries({ queryKey: ['questionnaire-votes'] });
       toast.success('Votos registrados com sucesso!');
       setSelections({});
+      navigate('/vote-success');
     },
     onError: (error) => {
       console.error('Error submitting votes:', error);
