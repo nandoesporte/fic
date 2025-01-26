@@ -52,47 +52,81 @@ export const useBackupOperations = () => {
   };
 
   const handleExportAndClear = async (backupName: string) => {
-    // First, get all the data we want to backup
-    const { data: questionnairesData } = await supabase
-      .from("fic_questionnaires")
-      .select("*");
+    try {
+      console.log("Starting export and clear process...");
 
-    const { data: votesData } = await supabase
-      .from("questionnaire_votes")
-      .select("*");
+      // First, get all the data we want to backup
+      const { data: questionnairesData, error: questionnairesError } = await supabase
+        .from("fic_questionnaires")
+        .select("*");
 
-    const { data: registeredVotersData } = await supabase
-      .from("registered_voters")
-      .select("*");
+      if (questionnairesError) {
+        console.error("Error fetching questionnaires:", questionnairesError);
+        throw questionnairesError;
+      }
 
-    // Create the backup
-    const backup = {
-      id: crypto.randomUUID(),
-      filename: `full_backup_${new Date().toISOString()}.json`,
-      data: {
-        questionnaires: questionnairesData || [],
-        votes: votesData || [],
-        registeredVoters: registeredVotersData || [],
-      },
-      type: "full_backup",
-      created_by: user?.id || '',
-      description: backupName || "Backup completo antes da limpeza"
-    };
+      const { data: votesData, error: votesError } = await supabase
+        .from("questionnaire_votes")
+        .select("*");
 
-    // Save the backup
-    const { error: backupError } = await supabase
-      .from("data_backups")
-      .insert(backup);
+      if (votesError) {
+        console.error("Error fetching votes:", votesError);
+        throw votesError;
+      }
 
-    if (backupError) throw backupError;
+      const { data: registeredVotersData, error: votersError } = await supabase
+        .from("registered_voters")
+        .select("*");
 
-    // Clean up the data using the RPC function
-    const { error: cleanError } = await supabase
-      .rpc('clean_questionnaire_votes');
+      if (votersError) {
+        console.error("Error fetching registered voters:", votersError);
+        throw votersError;
+      }
 
-    if (cleanError) throw cleanError;
+      console.log("Data fetched successfully, creating backup...");
 
-    toast.success("Dados exportados e limpos com sucesso");
+      // Create the backup
+      const backup = {
+        id: crypto.randomUUID(),
+        filename: `full_backup_${new Date().toISOString()}.json`,
+        data: {
+          questionnaires: questionnairesData || [],
+          votes: votesData || [],
+          registeredVoters: registeredVotersData || [],
+        },
+        type: "full_backup",
+        created_by: user?.id || '',
+        description: backupName || "Backup completo antes da limpeza"
+      };
+
+      // Save the backup
+      const { error: backupError } = await supabase
+        .from("data_backups")
+        .insert(backup);
+
+      if (backupError) {
+        console.error("Error saving backup:", backupError);
+        throw backupError;
+      }
+
+      console.log("Backup saved successfully, cleaning data...");
+
+      // Clean up the data using the RPC function
+      const { error: cleanError } = await supabase
+        .rpc('clean_questionnaire_votes');
+
+      if (cleanError) {
+        console.error("Error cleaning data:", cleanError);
+        throw cleanError;
+      }
+
+      console.log("Data cleaned successfully");
+      toast.success("Dados exportados e limpos com sucesso");
+
+    } catch (error) {
+      console.error("Error in handleExportAndClear:", error);
+      throw error;
+    }
   };
 
   const handleRegularBackup = async (backupType: string, backupName: string) => {
