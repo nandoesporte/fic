@@ -26,20 +26,25 @@ const QuestionnaireAnalytics = () => {
   const { data: analytics, isLoading } = useQuery({
     queryKey: ['analytics', selectedDimension],
     queryFn: async () => {
-      const dimensionFilter = selectedDimension !== 'all' 
-        ? `dimension.eq.${selectedDimension}` 
-        : undefined;
-
-      const { data, error } = await supabase
+      console.log('Fetching analytics data for dimension:', selectedDimension);
+      
+      let query = supabase
         .from('questionnaire_voting_report')
         .select('*')
         .order('total_votes', { ascending: false });
+
+      if (selectedDimension !== 'all') {
+        query = query.eq('dimension', selectedDimension);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         toast.error('Erro ao carregar dados');
         throw error;
       }
 
+      console.log('Analytics data fetched:', data);
       return data;
     },
   });
@@ -52,11 +57,6 @@ const QuestionnaireAnalytics = () => {
     );
   }
 
-  const totalVotes = analytics?.reduce((acc, curr) => acc + (curr.total_votes || 0), 0) || 0;
-  // Calculate total voters based on the new logic: 9 votes = 1 participant
-  const totalVoters = Math.ceil(totalVotes / 9);
-  const participationRate = totalVoters > 0 ? Math.round((totalVotes / (totalVoters * 9)) * 100) : 0;
-
   const processVotingData = (type: string) => {
     return analytics
       ?.filter(item => item.option_type === type)
@@ -66,6 +66,10 @@ const QuestionnaireAnalytics = () => {
         text: item[type] || '',
       })) || [];
   };
+
+  const totalVotes = analytics?.reduce((acc, curr) => acc + (curr.total_votes || 0), 0) || 0;
+  const totalVoters = Math.floor(totalVotes / 9); // Each participant must make 9 votes
+  const participationRate = totalVoters > 0 ? Math.round((totalVotes / (totalVoters * 9)) * 100) : 0;
 
   return (
     <div className="space-y-6">
