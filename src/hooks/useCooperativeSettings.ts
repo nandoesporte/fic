@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 
 export type CooperativeData = {
   name: string;
@@ -35,13 +36,37 @@ type ProfileData = {
 export const useCooperativeSettings = () => {
   const [cooperatives, setCooperatives] = useState<CooperativeData[]>([]);
   const [loading, setLoading] = useState(true);
+  const { session } = useAuth();
 
   const fetchSettings = async () => {
     try {
+      // Only fetch if we have an authenticated user
+      if (!session?.user?.id) {
+        setCooperatives([
+          { 
+            name: "Cocamar", 
+            members: 15800, 
+            engagement: 88 
+          },
+          { 
+            name: "Sicoob", 
+            members: 25300, 
+            engagement: 92 
+          },
+          { 
+            name: "Frísia", 
+            members: 12400, 
+            engagement: 85 
+          }
+        ]);
+        setLoading(false);
+        return;
+      }
+
       const { data: profiles, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .eq('id', session.user.id)
         .maybeSingle();
 
       if (error) {
@@ -78,7 +103,7 @@ export const useCooperativeSettings = () => {
 
   useEffect(() => {
     fetchSettings();
-  }, []);
+  }, [session?.user?.id]); // Re-fetch when user ID changes
 
   return { cooperatives, loading, refetch: fetchSettings };
 };
