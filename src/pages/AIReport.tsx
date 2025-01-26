@@ -14,12 +14,26 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
+import { Json } from "@/integrations/supabase/types";
 
 interface ReportMetrics {
   total_votos: number;
   pontos_fortes: number;
   desafios: number;
   oportunidades: number;
+}
+
+function isReportMetrics(metrics: Json): metrics is ReportMetrics {
+  if (typeof metrics !== 'object' || metrics === null || Array.isArray(metrics)) {
+    return false;
+  }
+  
+  return (
+    'total_votos' in metrics &&
+    'pontos_fortes' in metrics &&
+    'desafios' in metrics &&
+    'oportunidades' in metrics
+  );
 }
 
 export default function AIReport() {
@@ -84,14 +98,22 @@ export default function AIReport() {
       return;
     }
 
-    const content = reports.map(report => ({
-      dimensao: report.dimension,
-      titulo: report.title,
-      descricao: report.description,
-      metricas: report.metrics as ReportMetrics,
-      data_inicio: new Date(report.start_date).toLocaleDateString('pt-BR'),
-      data_fim: new Date(report.end_date).toLocaleDateString('pt-BR'),
-    }));
+    const content = reports.map(report => {
+      const metrics = report.metrics;
+      if (!isReportMetrics(metrics)) {
+        console.error('Invalid metrics format:', metrics);
+        return null;
+      }
+
+      return {
+        dimensao: report.dimension,
+        titulo: report.title,
+        descricao: report.description,
+        metricas: metrics,
+        data_inicio: new Date(report.start_date).toLocaleDateString('pt-BR'),
+        data_fim: new Date(report.end_date).toLocaleDateString('pt-BR'),
+      };
+    }).filter(Boolean);
 
     switch (format) {
       case 'csv':
@@ -123,14 +145,6 @@ export default function AIReport() {
         break;
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -234,7 +248,12 @@ export default function AIReport() {
                 </TableHeader>
                 <TableBody>
                   {reports.map((report) => {
-                    const metrics = report.metrics as ReportMetrics;
+                    const metrics = report.metrics;
+                    if (!isReportMetrics(metrics)) {
+                      console.error('Invalid metrics format:', metrics);
+                      return null;
+                    }
+                    
                     return (
                       <TableRow key={report.id}>
                         <TableCell>{report.dimension}</TableCell>
