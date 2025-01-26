@@ -38,10 +38,16 @@ export const useCooperativeSettings = () => {
 
   const fetchSettings = async () => {
     try {
-      const { data: profiles } = await supabase
+      const { data: profiles, error } = await supabase
         .from('profiles')
         .select('*')
-        .single();
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching cooperative settings:', error);
+        return;
+      }
 
       if (profiles) {
         const profileData = profiles as ProfileData;

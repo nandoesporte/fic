@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Settings() {
@@ -19,6 +19,39 @@ export default function Settings() {
     frisiaMembers: "12400",
     frisiaEngagement: "85"
   });
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', (await supabase.auth.getUser()).data.user?.id)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (profile) {
+          setFormData({
+            cocamarName: profile.cocamarname || "Cocamar",
+            cocamarMembers: profile.cocamarmembers || "15800",
+            cocamarEngagement: profile.cocamarengagement || "88",
+            sicoobName: profile.sicoobname || "Sicoob",
+            sicoobMembers: profile.sicoobmembers || "25300",
+            sicoobEngagement: profile.sicoobengagement || "92",
+            frisiaName: profile.frisianame || "Frísia",
+            frisiaMembers: profile.frisiamembers || "12400",
+            frisiaEngagement: profile.frisiaengagement || "85"
+          });
+        }
+      } catch (error) {
+        console.error('Error loading settings:', error);
+        toast.error("Erro ao carregar configurações");
+      }
+    };
+
+    loadSettings();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
