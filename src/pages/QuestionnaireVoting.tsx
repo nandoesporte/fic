@@ -1,39 +1,25 @@
 import { useState } from "react";
+import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { EmailInput } from "@/components/EmailInput";
-import { QuestionnaireCard } from "@/components/QuestionnaireCard";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/components/AuthProvider";
-
-type VoteSelection = {
-  [key: string]: {
-    strengths: number[];
-    challenges: number[];
-    opportunities: number[];
-  };
-};
-
-type ConsolidatedQuestionnaire = {
-  id: string;
-  dimension: string;
-  strengths: string;
-  challenges: string;
-  opportunities: string;
-  created_at: string;
-  strengths_statuses?: string;
-  challenges_statuses?: string;
-  opportunities_statuses?: string;
-};
+import { VoteButtons } from "@/components/VoteButtons";
 
 export const QuestionnaireVoting = () => {
   const [userEmail, setUserEmail] = useState("");
   const [isEmailVerified, setIsEmailVerified] = useState(false);
-  const [selections, setSelections] = useState<VoteSelection>({});
+  const [selectedDimension, setSelectedDimension] = useState<string>("todos");
+  const [selections, setSelections] = useState<{
+    [key: string]: {
+      strengths: number[];
+      challenges: number[];
+      opportunities: number[];
+    };
+  }>({});
   const queryClient = useQueryClient();
-  const { session } = useAuth();
 
   const verifyEmail = async () => {
     if (!userEmail) {
@@ -62,44 +48,6 @@ export const QuestionnaireVoting = () => {
     toast.success('Email verificado com sucesso!');
   };
 
-  const createProfileIfNeeded = async () => {
-    if (!session?.user?.id) {
-      throw new Error('Usuário não está autenticado');
-    }
-
-    // Check if profile exists
-    const { data: existingProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', session.user.id)
-      .maybeSingle();
-
-    if (profileError) {
-      console.error('Error checking profile:', profileError);
-      throw new Error('Erro ao verificar perfil: ' + profileError.message);
-    }
-
-    if (!existingProfile) {
-      // Create new profile
-      const { error: insertError } = await supabase
-        .from('profiles')
-        .insert({
-          id: session.user.id,
-          email: userEmail.toLowerCase(),
-          cpf: `TEMP_${Date.now()}`
-        });
-
-      if (insertError) {
-        console.error('Error creating profile:', insertError);
-        throw new Error('Erro ao criar perfil: ' + insertError.message);
-      }
-
-      return session.user.id;
-    }
-
-    return existingProfile.id;
-  };
-
   const { data: questionnaires, isLoading } = useQuery({
     queryKey: ['questionnaires'],
     queryFn: async () => {
@@ -121,38 +69,69 @@ export const QuestionnaireVoting = () => {
         throw questionnairesError;
       }
 
-      const consolidatedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: ConsolidatedQuestionnaire }, curr) => {
-        if (!acc[curr.dimension]) {
-          const strengths_array = curr.strengths.split('\n\n');
-          const challenges_array = curr.challenges.split('\n\n');
-          const opportunities_array = curr.opportunities.split('\n\n');
-          
-          const strengths_statuses = (curr.strengths_statuses || 'pending,pending,pending').split(',');
-          const challenges_statuses = (curr.challenges_statuses || 'pending,pending,pending').split(',');
-          const opportunities_statuses = (curr.opportunities_statuses || 'pending,pending,pending').split(',');
-          
-          const filtered_strengths = strengths_array.filter((_, index) => strengths_statuses[index] === 'active');
-          const filtered_challenges = challenges_array.filter((_, index) => challenges_statuses[index] === 'active');
-          const filtered_opportunities = opportunities_array.filter((_, index) => opportunities_statuses[index] === 'active');
-
-          acc[curr.dimension] = {
-            id: curr.id,
-            dimension: curr.dimension,
-            strengths: filtered_strengths.join('\n\n'),
-            challenges: filtered_challenges.join('\n\n'),
-            opportunities: filtered_opportunities.join('\n\n'),
-            created_at: curr.created_at,
-            strengths_statuses: curr.strengths_statuses,
-            challenges_statuses: curr.challenges_statuses,
-            opportunities_statuses: curr.opportunities_statuses,
-          };
-        }
-        return acc;
-      }, {});
-
-      return Object.values(consolidatedQuestionnaires);
+      return questionnairesData;
     },
     enabled: isEmailVerified,
+  });
+
+  const submitVotesMutation = useMutation({
+    mutationFn: async ({ questionnaireId, votes, dimension }: { 
+      questionnaireId: string;
+      votes: {
+        optionType: string;
+        optionNumbers: number[];
+      }[];
+      dimension: string;
+    }) => {
+      const hasVoted = await checkExistingVote(dimension);
+      if (hasVoted) {
+        throw new Error('Você já votou nesta dimensão');
+      }
+
+      const { data: userData } = await supabase
+        .from('registered_voters')
+        .select('id')
+        .eq('email', userEmail.toLowerCase())
+        .single();
+
+      if (!userData) {
+        throw new Error('Usuário não encontrado');
+      }
+
+      const votePromises = votes.flatMap(({ optionType, optionNumbers }) =>
+        optionNumbers.map(optionNumber =>
+          supabase
+            .from('questionnaire_votes')
+            .insert({
+              questionnaire_id: questionnaireId,
+              user_id: userData.id,
+              vote_type: 'upvote',
+              option_type: optionType,
+              option_number: optionNumber,
+            })
+        )
+      );
+
+      await Promise.all(votePromises);
+
+      const { error: dimensionVoteError } = await supabase
+        .from('dimension_votes')
+        .insert({
+          email: userEmail.toLowerCase(),
+          dimension: dimension
+        });
+
+      if (dimensionVoteError) throw dimensionVoteError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
+      toast.success('Votos registrados com sucesso!');
+      setSelections({});
+    },
+    onError: (error) => {
+      console.error('Error submitting votes:', error);
+      toast.error('Erro ao registrar votos: ' + error.message);
+    },
   });
 
   const checkExistingVote = async (dimension: string) => {
@@ -165,79 +144,6 @@ export const QuestionnaireVoting = () => {
 
     return existingVote !== null;
   };
-
-  const submitVotesMutation = useMutation({
-    mutationFn: async ({ questionnaireId, votes, dimension }: { 
-      questionnaireId: string;
-      votes: {
-        optionType: string;
-        optionNumbers: number[];
-      }[];
-      dimension: string;
-    }) => {
-      console.log('Submitting votes for questionnaire:', questionnaireId);
-      
-      if (!session?.user?.id) {
-        throw new Error('Usuário não está autenticado');
-      }
-
-      const hasVoted = await checkExistingVote(dimension);
-      if (hasVoted) {
-        throw new Error('Você já votou nesta dimensão');
-      }
-
-      // Get or create profile
-      const profileId = await createProfileIfNeeded();
-
-      // First, delete any existing votes for this user and questionnaire
-      const { error: deleteError } = await supabase
-        .from('questionnaire_votes')
-        .delete()
-        .eq('questionnaire_id', questionnaireId)
-        .eq('user_id', profileId);
-
-      if (deleteError) throw deleteError;
-
-      // Wait a brief moment to ensure deletion is processed
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const { error: dimensionVoteError } = await supabase
-        .from('dimension_votes')
-        .insert({
-          email: userEmail.toLowerCase(),
-          dimension: dimension
-        });
-
-      if (dimensionVoteError) throw dimensionVoteError;
-
-      // Now insert the new votes
-      const votePromises = votes.flatMap(({ optionType, optionNumbers }) =>
-        optionNumbers.map(optionNumber =>
-          supabase
-            .from('questionnaire_votes')
-            .insert({
-              questionnaire_id: questionnaireId,
-              user_id: profileId,
-              vote_type: 'upvote',
-              option_type: optionType,
-              option_number: optionNumber,
-            })
-        )
-      );
-
-      await Promise.all(votePromises);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
-      queryClient.invalidateQueries({ queryKey: ['questionnaire-votes'] });
-      toast.success('Votos registrados com sucesso!');
-      setSelections({});
-    },
-    onError: (error) => {
-      console.error('Error submitting votes:', error);
-      toast.error('Erro ao registrar votos: ' + error.message);
-    },
-  });
 
   const handleVote = (questionnaireId: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => {
     if (!userEmail) {
@@ -291,12 +197,29 @@ export const QuestionnaireVoting = () => {
     });
   };
 
-  const isOptionSelected = (questionnaireId: string, optionType: string, optionNumber: number) => {
-    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.includes(optionNumber) || false;
-  };
+  const renderSection = (questionnaire: any, title: string, type: 'strengths' | 'challenges' | 'opportunities', bgColor: string) => {
+    const options = questionnaire[type].split('\n\n').filter(Boolean);
+    const currentSelections = selections[questionnaire.id]?.[type] || [];
 
-  const getSelectionCount = (questionnaireId: string, optionType: string) => {
-    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.length || 0;
+    return (
+      <Card className="p-6 mb-4">
+        <h3 className={`font-medium p-2 rounded-lg ${bgColor} ${type === 'challenges' ? 'text-gray-900' : 'text-white'} mb-4`}>
+          {title}
+        </h3>
+        <div className="space-y-2">
+          {options.map((option: string, index: number) => (
+            <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+              <p className="flex-1 text-sm">{option}</p>
+              <VoteButtons
+                isSelected={currentSelections.includes(index + 1)}
+                onVote={() => handleVote(questionnaire.id, type, index + 1)}
+                disabled={currentSelections.length >= 3 && !currentSelections.includes(index + 1)}
+              />
+            </div>
+          ))}
+        </div>
+      </Card>
+    );
   };
 
   if (!isEmailVerified) {
@@ -333,22 +256,40 @@ export const QuestionnaireVoting = () => {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {questionnaires?.map((questionnaire) => (
-              <QuestionnaireCard
-                key={questionnaire.id}
-                questionnaire={questionnaire}
-                onVote={(optionType, optionNumber) => 
-                  handleVote(questionnaire.id, optionType, optionNumber)
-                }
-                isOptionSelected={(optionType, optionNumber) =>
-                  isOptionSelected(questionnaire.id, optionType, optionNumber)
-                }
-                getSelectionCount={(optionType) =>
-                  getSelectionCount(questionnaire.id, optionType)
-                }
-                onConfirmVotes={() => handleConfirmVotes(questionnaire.id)}
-              />
+              <Card key={questionnaire.id} className="p-6">
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold">{questionnaire.dimension}</h2>
+                  <div className="mt-2">
+                    <span className="bg-[#0D9488] text-white px-2 py-1 rounded">
+                      {questionnaire.group || 'Sem grupo'}
+                    </span>
+                  </div>
+                </div>
+
+                {renderSection(questionnaire, "Pontos Fortes", 'strengths', 'bg-[#228B22]')}
+                {renderSection(questionnaire, "Desafios", 'challenges', 'bg-[#FFD700]')}
+                {renderSection(questionnaire, "Oportunidades", 'opportunities', 'bg-[#000080]')}
+
+                <div className="flex justify-end mt-6">
+                  <Button
+                    onClick={() => handleConfirmVotes(questionnaire.id)}
+                    disabled={
+                      !selections[questionnaire.id] ||
+                      !selections[questionnaire.id].strengths ||
+                      !selections[questionnaire.id].challenges ||
+                      !selections[questionnaire.id].opportunities ||
+                      selections[questionnaire.id].strengths.length !== 3 ||
+                      selections[questionnaire.id].challenges.length !== 3 ||
+                      selections[questionnaire.id].opportunities.length !== 3
+                    }
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    Confirmar Votos
+                  </Button>
+                </div>
+              </Card>
             ))}
           </div>
         )}
