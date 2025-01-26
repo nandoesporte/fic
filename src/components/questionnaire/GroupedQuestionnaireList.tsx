@@ -40,19 +40,11 @@ export const GroupedQuestionnaireList = ({
   };
 
   const isOptionSelected = (questionnaireId: string, optionType: string, optionNumber: number) => {
-    const questionnaireSelections = selections[questionnaireId];
-    if (!questionnaireSelections) return false;
-    
-    const typeSelections = questionnaireSelections[optionType as keyof typeof questionnaireSelections];
-    return Array.isArray(typeSelections) && typeSelections.includes(optionNumber);
+    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.includes(optionNumber) || false;
   };
 
   const getSelectionCount = (questionnaireId: string, optionType: string) => {
-    const questionnaireSelections = selections[questionnaireId];
-    if (!questionnaireSelections) return 0;
-    
-    const typeSelections = questionnaireSelections[optionType as keyof typeof questionnaireSelections];
-    return Array.isArray(typeSelections) ? typeSelections.length : 0;
+    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.length || 0;
   };
 
   const groupedResponses = groupResponsesByType(questionnaires);

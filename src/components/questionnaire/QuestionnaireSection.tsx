@@ -1,8 +1,10 @@
-import { VoteButtons } from "@/components/VoteButtons";
-import { getBgColor } from "@/utils/questionnaireUtils";
+import { Button } from "@/components/ui/button";
+import { Edit, Check, Circle } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 interface QuestionnaireSectionProps {
   title: string;
+  bgColor: string;
   questionnaires: any[];
   type: 'strengths' | 'challenges' | 'opportunities';
   editingLine: {
@@ -19,65 +21,102 @@ interface QuestionnaireSectionProps {
 
 export const QuestionnaireSection = ({
   title,
+  bgColor,
   questionnaires,
   type,
   editingLine,
   onLineEdit,
   onLineSave,
   onToggleStatus,
-  setEditingLine
+  setEditingLine,
 }: QuestionnaireSectionProps) => {
-  const getStatusesArray = (statusesString: string | null | undefined) => {
-    return statusesString?.split(',') || [];
+  const renderLine = (questionnaire: any, line: string, index: number) => {
+    const isEditing = editingLine?.questionnaireId === questionnaire.id && 
+                     editingLine?.type === type && 
+                     editingLine?.index === index;
+
+    const statuses = (questionnaire[`${type}_statuses`] || 'pending,pending,pending').split(',');
+    const currentStatus = statuses[index] || 'pending';
+
+    if (isEditing) {
+      return (
+        <div className="flex items-center gap-2">
+          <Input
+            value={editingLine.value}
+            onChange={(e) => setEditingLine({ ...editingLine, value: e.target.value })}
+            className="flex-1"
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onLineSave(questionnaire)}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setEditingLine(null)}
+          >
+            <Circle className="h-4 w-4" />
+          </Button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex justify-between items-center">
+        <p className="flex-1">{line}</p>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onLineEdit(questionnaire.id, type, index, line)}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onToggleStatus(questionnaire.id, type, index, currentStatus)}
+            className={currentStatus === 'active' ? 'bg-primary/10' : ''}
+          >
+            {currentStatus === 'pending' ? (
+              <Circle className="h-4 w-4" />
+            ) : (
+              <Check className="h-4 w-4 text-primary" />
+            )}
+          </Button>
+        </div>
+      </div>
+    );
   };
 
-  const bgColorClass = getBgColor(type);
-
   return (
-    <div className="space-y-4">
-      <div className={`p-4 rounded-lg ${bgColorClass}`}>
-        <h3 className="font-semibold text-lg text-white">{title}</h3>
-        <div className="space-y-3 mt-4">
-          {questionnaires.map((questionnaire) => {
-            const content = questionnaire[type];
-            if (!content) return null;
-            
-            const lines = content.split('\n').filter(Boolean);
-            const statuses = getStatusesArray(questionnaire[`${type}_statuses`]);
-
-            return lines.map((line: string, index: number) => {
-              const isEditing = editingLine?.questionnaireId === questionnaire.id && 
-                               editingLine?.type === type && 
-                               editingLine?.index === index;
-
-              return (
-                <div key={`${questionnaire.id}-${type}-${index}`} className="flex items-start justify-between gap-4 p-3 bg-white/90 rounded-lg">
-                  {isEditing ? (
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        value={editingLine.value}
-                        onChange={(e) => onLineEdit(questionnaire.id, type, index, e.target.value)}
-                        onBlur={() => {
-                          onLineSave(questionnaire);
-                          setEditingLine(null);
-                        }}
-                        className="w-full p-2 border rounded"
-                        autoFocus
-                      />
-                    </div>
-                  ) : (
-                    <p className="flex-1 text-sm text-gray-900">{line}</p>
-                  )}
-                  <VoteButtons
-                    isSelected={statuses[index] === 'active'}
-                    onVote={() => onToggleStatus(questionnaire.id, type, index, statuses[index] || 'pending')}
-                  />
+    <div className="space-y-6">
+      <h3 className={`font-medium p-2 rounded-lg ${bgColor} ${type === 'challenges' ? 'text-gray-900' : 'text-white'} mb-4`}>
+        {title}
+      </h3>
+      <div className="space-y-6">
+        {questionnaires.map((questionnaire) => (
+          <div key={questionnaire.id} className="border-b pb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-[#0D9488] text-white px-2 py-1 rounded">
+                {questionnaire.group || 'Sem grupo'}
+              </span>
+              <span className="ml-4 text-gray-500">
+                <span className="font-bold text-lg">Dimensão:</span> <span className="font-bold text-lg">{questionnaire.dimension}</span>
+              </span>
+            </div>
+            <div className="space-y-2">
+              {(questionnaire[type] || '').split('\n').filter((line: string) => line.trim() !== '').map((line: string, index: number) => (
+                <div key={index}>
+                  {renderLine(questionnaire, line, index)}
                 </div>
-              );
-            });
-          })}
-        </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
