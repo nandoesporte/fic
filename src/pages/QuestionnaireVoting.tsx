@@ -113,7 +113,6 @@ export const QuestionnaireVoting = () => {
 
       console.log('Questionnaires data fetched:', questionnairesData);
       
-      // Consolidate questionnaires by group and ensure active status
       const consolidatedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: ConsolidatedQuestionnaire }, curr) => {
         if (curr.status === 'active' && curr.group) {
           acc[curr.group] = {
@@ -168,10 +167,8 @@ export const QuestionnaireVoting = () => {
         throw new Error('Você já votou nesta dimensão');
       }
 
-      // Get or create profile
       const profileId = await createProfileIfNeeded();
 
-      // First, delete any existing votes for this user and questionnaire
       const { error: deleteError } = await supabase
         .from('questionnaire_votes')
         .delete()
@@ -180,7 +177,6 @@ export const QuestionnaireVoting = () => {
 
       if (deleteError) throw deleteError;
 
-      // Wait a brief moment to ensure deletion is processed
       await new Promise(resolve => setTimeout(resolve, 500));
 
       const { error: dimensionVoteError } = await supabase
@@ -192,7 +188,6 @@ export const QuestionnaireVoting = () => {
 
       if (dimensionVoteError) throw dimensionVoteError;
 
-      // Now insert the new votes
       const votePromises = votes.flatMap(({ optionType, optionNumbers }) =>
         optionNumbers.map(optionNumber =>
           supabase
@@ -271,6 +266,14 @@ export const QuestionnaireVoting = () => {
       votes,
       dimension: questionnaire.dimension 
     });
+  };
+
+  const isOptionSelected = (questionnaireId: string, optionType: string, optionNumber: number) => {
+    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.includes(optionNumber) || false;
+  };
+
+  const getSelectionCount = (questionnaireId: string, optionType: string) => {
+    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.length || 0;
   };
 
   if (!isEmailVerified) {
