@@ -25,7 +25,7 @@ serve(async (req) => {
       .from('data_backups')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(5); // Analyze last 5 backups
+      .limit(5);
 
     if (backupsError) throw backupsError;
 
@@ -54,26 +54,26 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are an expert analyst specializing in organizational development and strategic planning. Analyze the voting patterns and provide insights.'
+            content: 'Você é um analista especializado em desenvolvimento organizacional e planejamento estratégico. Analise os padrões de votação e forneça insights em português do Brasil.'
           },
           {
             role: 'user',
-            content: `Analyze the following voting data for dimension "${dimension}":
+            content: `Analise os seguintes dados de votação para a dimensão "${dimension}":
               
-              Strengths:
+              Pontos Fortes:
               ${analysisData.strengths.join('\n')}
               
-              Challenges:
+              Desafios:
               ${analysisData.challenges.join('\n')}
               
-              Opportunities:
+              Oportunidades:
               ${analysisData.opportunities.join('\n')}
               
-              Please provide:
-              1. Vote similarity patterns
-              2. Quantitative summary
-              3. Key insights for each category
-              4. Recommendations based on the patterns`
+              Por favor, forneça:
+              1. Padrões de similaridade entre os votos
+              2. Resumo quantitativo
+              3. Principais insights para cada categoria
+              4. Recomendações baseadas nos padrões identificados`
           }
         ],
       }),
@@ -85,16 +85,16 @@ serve(async (req) => {
     const { error: reportError } = await supabase
       .from('fic_reports')
       .insert({
-        title: `AI Analysis Report - ${dimension}`,
+        title: `Relatório de Análise IA - ${dimension}`,
         description: aiResponse.choices[0].message.content,
         dimension: dimension,
         start_date: backups[backups.length - 1]?.created_at,
         end_date: backups[0]?.created_at,
         metrics: {
-          total_votes: dimensionVotes.length,
-          strengths_count: analysisData.strengths.length,
-          challenges_count: analysisData.challenges.length,
-          opportunities_count: analysisData.opportunities.length,
+          total_votos: dimensionVotes.length,
+          pontos_fortes: analysisData.strengths.length,
+          desafios: analysisData.challenges.length,
+          oportunidades: analysisData.opportunities.length,
         }
       });
 
@@ -104,10 +104,10 @@ serve(async (req) => {
       JSON.stringify({
         analysis: aiResponse.choices[0].message.content,
         metrics: {
-          total_votes: dimensionVotes.length,
-          strengths_count: analysisData.strengths.length,
-          challenges_count: analysisData.challenges.length,
-          opportunities_count: analysisData.opportunities.length,
+          total_votos: dimensionVotes.length,
+          pontos_fortes: analysisData.strengths.length,
+          desafios: analysisData.challenges.length,
+          oportunidades: analysisData.opportunities.length,
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
