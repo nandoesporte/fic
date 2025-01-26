@@ -7,7 +7,7 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
     queryFn: async () => {
       console.log("Fetching vote data for dimension:", selectedDimension);
       
-      // First, get all votes with their corresponding questionnaire data
+      // First, get all questionnaires with their votes
       let query = supabase
         .from('questionnaire_votes')
         .select(`
@@ -36,23 +36,18 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
         throw error;
       }
 
-      // Initialize vote counters
-      const voteCounters: Record<string, Record<number, number>> = {
+      console.log("Raw votes data:", votes);
+
+      // Initialize vote counters for each category
+      const voteCounters: Record<string, Record<string, number>> = {
         strengths: {},
         challenges: {},
         opportunities: {}
       };
 
-      // Process votes
+      // Count votes for each option
       votes?.forEach(vote => {
-        const questionnaire = vote.fic_questionnaires;
-        if (!questionnaire) return;
-
         const { option_type, option_number } = vote;
-        
-        if (!voteCounters[option_type]) {
-          voteCounters[option_type] = {};
-        }
         
         if (!voteCounters[option_type][option_number]) {
           voteCounters[option_type][option_number] = 0;
@@ -61,17 +56,21 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
         voteCounters[option_type][option_number]++;
       });
 
-      // Get the text content for each option from any questionnaire (they should all have the same content)
+      console.log("Vote counters:", voteCounters);
+
+      // Get the text content for each option from the first questionnaire
       const sampleQuestionnaire = votes?.[0]?.fic_questionnaires;
       
-      // Format results
+      // Format results with text content
       const formatResults = (type: 'strengths' | 'challenges' | 'opportunities') => {
-        const options = sampleQuestionnaire?.[type]?.split('\n\n') || [];
-        return Object.entries(voteCounters[type]).map(([optionNumber, total]) => ({
-          optionNumber: String(optionNumber),
-          total,
-          text: options[parseInt(optionNumber) - 1] || ""
-        }));
+        return Object.entries(voteCounters[type]).map(([optionNumber, total]) => {
+          const options = sampleQuestionnaire?.[type]?.split('\n\n') || [];
+          return {
+            optionNumber: String(optionNumber),
+            total,
+            text: options[parseInt(optionNumber) - 1] || `Option ${optionNumber}`
+          };
+        });
       };
 
       const results = {
