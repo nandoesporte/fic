@@ -8,6 +8,7 @@ import QuestionnaireForm from "@/pages/QuestionnaireForm";
 import ExportData from "@/pages/ExportData";
 import AIReport from "@/pages/AIReport";
 import Users from "@/pages/Users";
+import Settings from "@/pages/Settings";
 import { FICForm } from "@/components/FICForm";
 import { DimensionManager } from "@/components/FICForm/DimensionManager";
 
@@ -63,6 +64,14 @@ export function AppRoutes() {
         element={
           <ProtectedRoute>
             <Users />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Settings />
           </ProtectedRoute>
         }
       />

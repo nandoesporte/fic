@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sidebar } from "@/components/ui/sidebar";
-import { FileText, BarChart2, Database, FormInput, LayoutDashboard, Brain, Users, ClipboardList, PlusCircle } from "lucide-react";
+import { FileText, BarChart2, Database, FormInput, LayoutDashboard, Brain, Users, ClipboardList, PlusCircle, Settings } from "lucide-react";
 
 export function AppSidebar() {
   const { pathname } = useLocation();
@@ -93,6 +93,15 @@ export function AppSidebar() {
                 >
                   <Users className="mr-2 h-4 w-4" />
                   <span>Usuários</span>
+                </Button>
+              </Link>
+              <Link to="/settings">
+                <Button
+                  variant={pathname === "/settings" ? "secondary" : "ghost"}
+                  className="w-full justify-start text-sm"
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Configurações</span>
                 </Button>
               </Link>
             </div>
