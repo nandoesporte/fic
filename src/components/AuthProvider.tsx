@@ -11,7 +11,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({ session: null, loading: true });
 
 // Define public routes that don't require authentication
-const PUBLIC_ROUTES = ['/voting', '/formulario', '/login'];
+const PUBLIC_ROUTES = ['/voting', '/formulario', '/login', '/vote-success'];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
