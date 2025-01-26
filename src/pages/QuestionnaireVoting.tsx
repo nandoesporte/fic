@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { EmailInput } from "@/components/EmailInput";
 import { QuestionnaireCard } from "@/components/QuestionnaireCard";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/components/AuthProvider";
 
 type VoteSelection = {
   [key: string]: {
@@ -32,6 +33,7 @@ export const QuestionnaireVoting = () => {
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [selections, setSelections] = useState<VoteSelection>({});
   const queryClient = useQueryClient();
+  const { session } = useAuth();
 
   const verifyEmail = async () => {
     if (!userEmail) {
@@ -46,6 +48,7 @@ export const QuestionnaireVoting = () => {
       .maybeSingle();
 
     if (error) {
+      console.error('Error verifying email:', error);
       toast.error('Erro ao verificar email');
       return;
     }
@@ -57,6 +60,44 @@ export const QuestionnaireVoting = () => {
 
     setIsEmailVerified(true);
     toast.success('Email verificado com sucesso!');
+  };
+
+  const createProfileIfNeeded = async () => {
+    if (!session?.user?.id) {
+      throw new Error('Usuário não está autenticado');
+    }
+
+    // Check if profile exists
+    const { data: existingProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', session.user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error('Error checking profile:', profileError);
+      throw new Error('Erro ao verificar perfil: ' + profileError.message);
+    }
+
+    if (!existingProfile) {
+      // Create new profile
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .insert({
+          id: session.user.id,
+          email: userEmail.toLowerCase(),
+          cpf: `TEMP_${Date.now()}`
+        });
+
+      if (insertError) {
+        console.error('Error creating profile:', insertError);
+        throw new Error('Erro ao criar perfil: ' + insertError.message);
+      }
+
+      return session.user.id;
+    }
+
+    return existingProfile.id;
   };
 
   const { data: questionnaires, isLoading } = useQuery({
@@ -125,37 +166,6 @@ export const QuestionnaireVoting = () => {
     return existingVote !== null;
   };
 
-  const createProfileIfNeeded = async () => {
-    // First check if profile exists
-    const { data: existingProfile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', userEmail.toLowerCase())
-      .single();
-
-    if (!existingProfile) {
-      // Create new profile if it doesn't exist
-      const { data: newProfile, error: profileError } = await supabase
-        .from('profiles')
-        .insert([
-          { 
-            email: userEmail.toLowerCase(),
-            cpf: `TEMP_${Date.now()}` // Temporary CPF as it's required
-          }
-        ])
-        .select()
-        .single();
-
-      if (profileError) {
-        throw new Error('Erro ao criar perfil: ' + profileError.message);
-      }
-
-      return newProfile.id;
-    }
-
-    return existingProfile.id;
-  };
-
   const submitVotesMutation = useMutation({
     mutationFn: async ({ questionnaireId, votes, dimension }: { 
       questionnaireId: string;
@@ -167,6 +177,10 @@ export const QuestionnaireVoting = () => {
     }) => {
       console.log('Submitting votes for questionnaire:', questionnaireId);
       
+      if (!session?.user?.id) {
+        throw new Error('Usuário não está autenticado');
+      }
+
       const hasVoted = await checkExistingVote(dimension);
       if (hasVoted) {
         throw new Error('Você já votou nesta dimensão');
