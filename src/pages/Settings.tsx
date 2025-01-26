@@ -5,9 +5,13 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
+import { useNavigate } from "react-router-dom";
 
 export default function Settings() {
   const [loading, setLoading] = useState(false);
+  const { session } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     cocamarName: "Cocamar",
     cocamarMembers: "15800",
@@ -21,12 +25,18 @@ export default function Settings() {
   });
 
   useEffect(() => {
+    // Redirect to login if not authenticated
+    if (!session?.user) {
+      navigate('/login');
+      return;
+    }
+
     const loadSettings = async () => {
       try {
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', (await supabase.auth.getUser()).data.user?.id)
+          .eq('id', session.user.id)
           .maybeSingle();
 
         if (error) throw error;
@@ -51,7 +61,7 @@ export default function Settings() {
     };
 
     loadSettings();
-  }, []);
+  }, [session, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -63,6 +73,11 @@ export default function Settings() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!session?.user) {
+      toast.error("Você precisa estar logado para salvar as configurações");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -79,7 +94,7 @@ export default function Settings() {
           frisiamembers: formData.frisiaMembers,
           frisiaengagement: formData.frisiaEngagement
         })
-        .eq('id', (await supabase.auth.getUser()).data.user?.id);
+        .eq('id', session.user.id);
 
       if (error) throw error;
       
@@ -207,4 +222,4 @@ export default function Settings() {
       </form>
     </div>
   );
-}
+};
