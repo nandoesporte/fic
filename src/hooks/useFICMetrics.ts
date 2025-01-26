@@ -1,6 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+interface FICDailyMetric {
+  id: string;
+  date: string;
+  average_index: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface DimensionPerformance {
+  id: string;
+  dimension: string;
+  score: number;
+  date: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export const useFICMetrics = () => {
   return useQuery({
     queryKey: ["fic-metrics"],
@@ -10,7 +27,7 @@ export const useFICMetrics = () => {
         .from("fic_daily_metrics")
         .select("*")
         .order("date", { ascending: false })
-        .limit(30);
+        .limit(30) as { data: FICDailyMetric[] | null; error: any };
 
       if (dailyError) {
         console.error("Error fetching daily metrics:", dailyError);
@@ -22,7 +39,7 @@ export const useFICMetrics = () => {
         .from("dimension_performance")
         .select("*")
         .order("date", { ascending: false })
-        .limit(30);
+        .limit(30) as { data: DimensionPerformance[] | null; error: any };
 
       if (dimensionError) {
         console.error("Error fetching dimension metrics:", dimensionError);

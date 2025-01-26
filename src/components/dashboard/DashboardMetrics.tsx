@@ -45,14 +45,14 @@ export const DashboardMetrics = () => {
       <StatCard 
         icon={Heart} 
         label="Índice FIC" 
-        value={`${currentFICIndex}%`} 
+        value={`${currentFICIndex.toFixed(1)}%`} 
         description={`${indexTrend}${indexChange.toFixed(1)}% em relação ao dia anterior`}
       />
       <StatCard 
         icon={Users} 
         label="Dimensão Destaque" 
         value={topDimension}
-        description={`Score: ${topDimensionScore}%`} 
+        description={`Score: ${topDimensionScore.toFixed(1)}%`} 
       />
       <StatCard 
         icon={BarChart2} 

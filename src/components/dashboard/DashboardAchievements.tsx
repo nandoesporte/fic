@@ -28,11 +28,12 @@ export const DashboardAchievements = () => {
   const { data: metrics } = useFICMetrics();
 
   const topDimensions = metrics?.dimensionMetrics
-    .sort((a, b) => b.score - a.score)
+    ?.sort((a, b) => b.score - a.score)
     .slice(0, 3) || [];
 
   const hasHighPerformer = topDimensions.some(d => d.score >= 80);
-  const hasImprovement = metrics?.dailyMetrics[0]?.average_index > (metrics?.dailyMetrics[1]?.average_index || 0);
+  const hasImprovement = (metrics?.dailyMetrics[0]?.average_index || 0) > 
+    (metrics?.dailyMetrics[1]?.average_index || 0);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
