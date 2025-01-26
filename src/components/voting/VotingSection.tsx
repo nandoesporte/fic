@@ -7,12 +7,9 @@ interface VotingSectionProps {
   title: string;
   type: 'strengths' | 'challenges' | 'opportunities';
   bgColor: string;
-  options: Array<{
-    id: string;
-    text: string[];
-    selections: number[];
-  }>;
-  onVote: (questionnaireId: string, type: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => void;
+  content: string;
+  onVote: (optionNumber: number) => void;
+  selectedOptions: number[];
   maxSelections?: number;
 }
 
@@ -20,12 +17,13 @@ export const VotingSection = ({
   title,
   type,
   bgColor,
-  options,
+  content,
   onVote,
+  selectedOptions,
   maxSelections = 3
 }: VotingSectionProps) => {
-  const totalVotes = options.reduce((sum, option) => sum + option.selections.length, 0);
-  const remainingVotes = maxSelections - totalVotes;
+  const options = content.split('\n\n').filter(Boolean);
+  const remainingVotes = maxSelections - selectedOptions.length;
 
   return (
     <Card className="p-6 mb-4">
@@ -44,18 +42,14 @@ export const VotingSection = ({
         </Alert>
 
         <div className="space-y-4">
-          {options.map((option) => (
-            <div key={option.id} className="space-y-2">
-              {option.text.map((text, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                  <p className="flex-1 text-sm">{text}</p>
-                  <VoteButtons
-                    isSelected={option.selections.includes(index + 1)}
-                    onVote={() => onVote(option.id, type, index + 1)}
-                    disabled={totalVotes >= maxSelections && !option.selections.includes(index + 1)}
-                  />
-                </div>
-              ))}
+          {options.map((text, index) => (
+            <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+              <p className="flex-1 text-sm">{text}</p>
+              <VoteButtons
+                isSelected={selectedOptions.includes(index + 1)}
+                onVote={() => onVote(index + 1)}
+                disabled={selectedOptions.length >= maxSelections && !selectedOptions.includes(index + 1)}
+              />
             </div>
           ))}
         </div>

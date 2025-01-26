@@ -53,18 +53,20 @@ export const QuestionnaireVoting = () => {
     queryClient.invalidateQueries({ queryKey: ["questionnaires"] });
   };
 
+  if (!isEmailVerified) {
+    return (
+      <EmailVerification
+        email={userEmail}
+        onEmailChange={setUserEmail}
+        onVerify={verifyEmail}
+      />
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Votação</h1>
-
-      <EmailVerification
-        userEmail={userEmail}
-        isEmailVerified={isEmailVerified}
-        onEmailChange={setUserEmail}
-        onVerifyEmail={verifyEmail}
-      />
-
-      <div className="space-y-8 mt-6">
+      <div className="space-y-8">
         {questionnaires?.map((questionnaire) => (
           <QuestionnaireSelectionManager
             key={questionnaire.id}

@@ -154,35 +154,40 @@ export const QuestionnaireSelectionManager = ({
     <div className="space-y-6">
       <VotingSection
         title="Pontos Fortes"
-        options={questionnaire.strengths.split("\n\n")}
+        type="strengths"
+        bgColor="bg-[#228B22]"
+        content={questionnaire.strengths}
         selectedOptions={questionnaireSelections.strengths}
-        onOptionSelect={(optionNumber) =>
+        onVote={(optionNumber) =>
           handleOptionSelect(questionnaire.id, "strengths", optionNumber)
         }
       />
 
       <VotingSection
         title="Desafios"
-        options={questionnaire.challenges.split("\n\n")}
+        type="challenges"
+        bgColor="bg-[#FFD700]"
+        content={questionnaire.challenges}
         selectedOptions={questionnaireSelections.challenges}
-        onOptionSelect={(optionNumber) =>
+        onVote={(optionNumber) =>
           handleOptionSelect(questionnaire.id, "challenges", optionNumber)
         }
       />
 
       <VotingSection
         title="Oportunidades"
-        options={questionnaire.opportunities.split("\n\n")}
+        type="opportunities"
+        bgColor="bg-[#000080]"
+        content={questionnaire.opportunities}
         selectedOptions={questionnaireSelections.opportunities}
-        onOptionSelect={(optionNumber) =>
+        onVote={(optionNumber) =>
           handleOptionSelect(questionnaire.id, "opportunities", optionNumber)
         }
       />
 
       <ConfirmVoteButton
-        questionnaireId={questionnaire.id}
         isComplete={allSectionsComplete}
-        onConfirm={handleConfirmVotes}
+        onConfirm={() => handleConfirmVotes(questionnaire.id)}
       />
     </div>
   );
