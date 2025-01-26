@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Download, FileSpreadsheet, FileText } from "lucide-react";
+import { Loader2, FileSpreadsheet, FileText } from "lucide-react";
 import { toast } from "sonner";
 import {
   Table,
@@ -15,6 +15,9 @@ import {
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { Json } from "@/integrations/supabase/types";
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface ReportMetrics {
   total_votos: number;
@@ -92,7 +95,7 @@ export default function AIReport() {
     }
   };
 
-  const handleExport = async (format: 'pdf' | 'excel' | 'csv') => {
+  const handleExport = async (format: 'excel' | 'pdf') => {
     if (!reports || reports.length === 0) {
       toast.error("Nenhum relatório disponível para exportar");
       return;
@@ -109,40 +112,49 @@ export default function AIReport() {
         dimensao: report.dimension,
         titulo: report.title,
         descricao: report.description,
-        metricas: metrics,
+        total_votos: metrics.total_votos,
+        pontos_fortes: metrics.pontos_fortes,
+        desafios: metrics.desafios,
+        oportunidades: metrics.oportunidades,
         data_inicio: new Date(report.start_date).toLocaleDateString('pt-BR'),
         data_fim: new Date(report.end_date).toLocaleDateString('pt-BR'),
       };
     }).filter(Boolean);
 
-    switch (format) {
-      case 'csv':
-        const csv = [
-          ['Dimensão', 'Título', 'Descrição', 'Total Votos', 'Data Início', 'Data Fim'].join(','),
-          ...content.map(r => [
-            r.dimensao,
-            r.titulo,
-            r.descricao,
-            r.metricas.total_votos,
-            r.data_inicio,
-            r.data_fim
-          ].join(','))
-        ].join('\n');
-
-        const csvBlob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const csvUrl = URL.createObjectURL(csvBlob);
-        const csvLink = document.createElement('a');
-        csvLink.href = csvUrl;
-        csvLink.setAttribute('download', 'relatorio_ia.csv');
-        document.body.appendChild(csvLink);
-        csvLink.click();
-        document.body.removeChild(csvLink);
-        break;
-
-      case 'pdf':
-      case 'excel':
-        toast.info(`Exportação para ${format.toUpperCase()} será implementada em breve`);
-        break;
+    if (format === 'excel') {
+      const ws = XLSX.utils.json_to_sheet(content);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Relatório");
+      XLSX.writeFile(wb, "relatorio_ia.xlsx");
+      toast.success('Relatório Excel exportado com sucesso!');
+    } else if (format === 'pdf') {
+      const doc = new jsPDF();
+      
+      // Add title
+      doc.setFontSize(16);
+      doc.text("Relatório de Análise IA", 14, 15);
+      
+      // Add date
+      doc.setFontSize(10);
+      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 14, 25);
+      
+      // Create table
+      autoTable(doc, {
+        head: [['Dimensão', 'Total Votos', 'Pontos Fortes', 'Desafios', 'Oportunidades', 'Data Início', 'Data Fim']],
+        body: content.map(item => [
+          item.dimensao,
+          item.total_votos.toString(),
+          item.pontos_fortes.toString(),
+          item.desafios.toString(),
+          item.oportunidades.toString(),
+          item.data_inicio,
+          item.data_fim
+        ]),
+        startY: 30,
+      });
+      
+      doc.save('relatorio_ia.pdf');
+      toast.success('Relatório PDF exportado com sucesso!');
     }
   };
 
@@ -206,14 +218,6 @@ export default function AIReport() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Relatórios Gerados</h2>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleExport('csv')}
-                >
-                  <FileSpreadsheet className="h-4 w-4 mr-2" />
-                  CSV
-                </Button>
                 <Button
                   variant="outline"
                   size="sm"
