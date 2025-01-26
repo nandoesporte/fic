@@ -28,13 +28,11 @@ export function AppRoutes() {
         </ProtectedRoute>
       } />
       <Route path="/novo-questionario" element={
-        <ProtectedRoute>
-          <div className="space-y-8">
-            <h1 className="text-2xl font-bold">Novo Questionário FIC</h1>
-            <DimensionManager />
-            <FICForm />
-          </div>
-        </ProtectedRoute>
+        <div className="space-y-8">
+          <h1 className="text-2xl font-bold">Novo Questionário FIC</h1>
+          <DimensionManager />
+          <FICForm />
+        </div>
       } />
       <Route path="/voting" element={<QuestionnaireVoting />} />
       <Route
