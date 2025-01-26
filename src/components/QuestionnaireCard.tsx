@@ -38,6 +38,7 @@ export const QuestionnaireCard = ({
     const options = content.split('\n\n').filter(Boolean);
     const selectionCount = getSelectionCount(type);
     const bgColorClass = getBgColor(type);
+    const statuses = (questionnaire[`${type}_statuses`] || 'pending,pending,pending').split(',');
 
     return (
       <div className="space-y-4">
@@ -49,16 +50,26 @@ export const QuestionnaireCard = ({
             </span>
           </div>
           <div className="space-y-3 mt-4">
-            {options.map((option, index) => (
-              <div key={index} className="flex items-start justify-between gap-4 p-3 bg-white/90 rounded-lg">
-                <p className="flex-1 text-sm text-gray-900">{option}</p>
-                <VoteButtons
-                  isSelected={isOptionSelected(type, index + 1)}
-                  onVote={() => onVote(type, index + 1)}
-                  disabled={selectionCount >= MAX_SELECTIONS && !isOptionSelected(type, index + 1)}
-                />
-              </div>
-            ))}
+            {options.map((option, index) => {
+              const isActive = statuses[index] === 'active';
+              const selected = isOptionSelected(type, index + 1);
+              
+              return (
+                <div 
+                  key={index} 
+                  className={`flex items-start justify-between gap-4 p-3 ${
+                    isActive ? 'bg-primary/10' : 'bg-white/90'
+                  } rounded-lg transition-colors`}
+                >
+                  <p className="flex-1 text-sm text-gray-900">{option}</p>
+                  <VoteButtons
+                    isSelected={selected}
+                    onVote={() => onVote(type, index + 1)}
+                    disabled={selectionCount >= MAX_SELECTIONS && !selected}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

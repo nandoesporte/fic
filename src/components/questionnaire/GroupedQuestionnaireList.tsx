@@ -27,9 +27,9 @@ export const GroupedQuestionnaireList = ({
     };
 
     questionnaires.forEach(questionnaire => {
-      const strengthsLines = questionnaire.strengths.split('\n').filter(Boolean);
-      const challengesLines = questionnaire.challenges.split('\n').filter(Boolean);
-      const opportunitiesLines = questionnaire.opportunities.split('\n').filter(Boolean);
+      const strengthsLines = (questionnaire.strengths || '').split('\n\n').filter(Boolean);
+      const challengesLines = (questionnaire.challenges || '').split('\n\n').filter(Boolean);
+      const opportunitiesLines = (questionnaire.opportunities || '').split('\n\n').filter(Boolean);
 
       grouped.strengths.push(...strengthsLines);
       grouped.challenges.push(...challengesLines);
@@ -40,7 +40,11 @@ export const GroupedQuestionnaireList = ({
   };
 
   const isOptionSelected = (questionnaireId: string, optionType: string, optionNumber: number) => {
-    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.includes(optionNumber) || false;
+    const questionnaireSelections = selections[questionnaireId];
+    if (!questionnaireSelections) return false;
+    
+    const typeSelections = questionnaireSelections[optionType as keyof typeof questionnaireSelections];
+    return typeSelections?.includes(optionNumber) || false;
   };
 
   const getSelectionCount = (questionnaireId: string, optionType: string) => {
