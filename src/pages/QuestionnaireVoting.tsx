@@ -107,16 +107,15 @@ export const QuestionnaireVoting = () => {
         .order('created_at', { ascending: false });
 
       if (questionnairesError) {
-        console.error('Error fetching questionnaires:', questionnairesError);
         toast.error('Erro ao carregar questionários');
         throw questionnairesError;
       }
 
       console.log('Questionnaires data fetched:', questionnairesData);
       
-      // Consolidate questionnaires by group
+      // Consolidate questionnaires by group and ensure active status
       const consolidatedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: ConsolidatedQuestionnaire }, curr) => {
-        if (curr.group && !acc[curr.group]) {
+        if (curr.status === 'active' && curr.group) {
           acc[curr.group] = {
             id: curr.id,
             dimension: curr.dimension,
@@ -317,10 +316,10 @@ export const QuestionnaireVoting = () => {
                   handleVote(questionnaire.id, optionType, optionNumber)
                 }
                 isOptionSelected={(optionType, optionNumber) =>
-                  selections[questionnaire.id]?.[optionType]?.includes(optionNumber) || false
+                  isOptionSelected(questionnaire.id, optionType, optionNumber)
                 }
                 getSelectionCount={(optionType) =>
-                  selections[questionnaire.id]?.[optionType]?.length || 0
+                  getSelectionCount(questionnaire.id, optionType)
                 }
                 onConfirmVotes={() => handleConfirmVotes(questionnaire.id)}
               />
