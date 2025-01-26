@@ -2,6 +2,14 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+interface Questionnaire {
+  id: string;
+  strengths_statuses: string;
+  challenges_statuses: string;
+  opportunities_statuses: string;
+  [key: string]: any;
+}
+
 export const useQuestionnaireMutations = () => {
   const queryClient = useQueryClient();
 
@@ -34,8 +42,8 @@ export const useQuestionnaireMutations = () => {
       index: number;
       currentStatus: string;
     }) => {
-      const questionnaires = await queryClient.getQueryData(['questionnaires']);
-      const questionnaire = questionnaires?.find((q: any) => q.id === questionnaireId);
+      const questionnaires = queryClient.getQueryData(['questionnaires']) as Questionnaire[] | undefined;
+      const questionnaire = questionnaires?.find((q) => q.id === questionnaireId);
       if (!questionnaire) return;
 
       const statuses = (questionnaire[`${type}_statuses`] || 'pending,pending,pending').split(',')
