@@ -541,7 +541,7 @@ export type Database = {
           option_number: number
           option_type: string
           questionnaire_id: string
-          user_id: string
+          user_id: string | null
           vote_type: string
         }
         Insert: {
@@ -550,7 +550,7 @@ export type Database = {
           option_number: number
           option_type: string
           questionnaire_id: string
-          user_id: string
+          user_id?: string | null
           vote_type: string
         }
         Update: {
@@ -559,7 +559,7 @@ export type Database = {
           option_number?: number
           option_type?: string
           questionnaire_id?: string
-          user_id?: string
+          user_id?: string | null
           vote_type?: string
         }
         Relationships: [

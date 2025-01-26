@@ -85,7 +85,7 @@ export const QuestionnaireVoting = () => {
             .from('questionnaire_votes')
             .insert({
               questionnaire_id: questionnaireId,
-              user_id: null,
+              user_id: null, // Changed to null since we're not requiring authentication
               vote_type: 'upvote',
               option_type: optionType,
               option_number: optionNumber,
