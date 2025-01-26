@@ -26,6 +26,7 @@ type ConsolidatedQuestionnaire = {
   strengths_statuses?: string;
   challenges_statuses?: string;
   opportunities_statuses?: string;
+  group?: string;
 };
 
 export const QuestionnaireVoting = () => {
@@ -67,7 +68,6 @@ export const QuestionnaireVoting = () => {
       throw new Error('Usuário não está autenticado');
     }
 
-    // Check if profile exists
     const { data: existingProfile, error: profileError } = await supabase
       .from('profiles')
       .select('id')
@@ -80,7 +80,6 @@ export const QuestionnaireVoting = () => {
     }
 
     if (!existingProfile) {
-      // Create new profile
       const { error: insertError } = await supabase
         .from('profiles')
         .insert({
@@ -93,27 +92,18 @@ export const QuestionnaireVoting = () => {
         console.error('Error creating profile:', insertError);
         throw new Error('Erro ao criar perfil: ' + insertError.message);
       }
-
-      return session.user.id;
     }
 
-    return existingProfile.id;
+    return session.user.id;
   };
 
   const { data: questionnaires, isLoading } = useQuery({
     queryKey: ['questionnaires'],
     queryFn: async () => {
+      console.log('Fetching questionnaires data...');
       const { data: questionnairesData, error: questionnairesError } = await supabase
         .from('fic_questionnaires')
-        .select(`
-          *,
-          questionnaire_vote_counts (
-            option_type,
-            option_number,
-            upvotes,
-            downvotes
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (questionnairesError) {
@@ -121,30 +111,22 @@ export const QuestionnaireVoting = () => {
         throw questionnairesError;
       }
 
+      console.log('Questionnaires data fetched:', questionnairesData);
+      
+      // Consolidate questionnaires by group and ensure active status
       const consolidatedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: ConsolidatedQuestionnaire }, curr) => {
-        if (!acc[curr.dimension]) {
-          const strengths_array = curr.strengths.split('\n\n');
-          const challenges_array = curr.challenges.split('\n\n');
-          const opportunities_array = curr.opportunities.split('\n\n');
-          
-          const strengths_statuses = (curr.strengths_statuses || 'pending,pending,pending').split(',');
-          const challenges_statuses = (curr.challenges_statuses || 'pending,pending,pending').split(',');
-          const opportunities_statuses = (curr.opportunities_statuses || 'pending,pending,pending').split(',');
-          
-          const filtered_strengths = strengths_array.filter((_, index) => strengths_statuses[index] === 'active');
-          const filtered_challenges = challenges_array.filter((_, index) => challenges_statuses[index] === 'active');
-          const filtered_opportunities = opportunities_array.filter((_, index) => opportunities_statuses[index] === 'active');
-
-          acc[curr.dimension] = {
+        if (curr.status === 'active' && curr.group) {
+          acc[curr.group] = {
             id: curr.id,
             dimension: curr.dimension,
-            strengths: filtered_strengths.join('\n\n'),
-            challenges: filtered_challenges.join('\n\n'),
-            opportunities: filtered_opportunities.join('\n\n'),
+            strengths: curr.strengths,
+            challenges: curr.challenges,
+            opportunities: curr.opportunities,
             created_at: curr.created_at,
             strengths_statuses: curr.strengths_statuses,
             challenges_statuses: curr.challenges_statuses,
             opportunities_statuses: curr.opportunities_statuses,
+            group: curr.group
           };
         }
         return acc;
@@ -289,14 +271,6 @@ export const QuestionnaireVoting = () => {
       votes,
       dimension: questionnaire.dimension 
     });
-  };
-
-  const isOptionSelected = (questionnaireId: string, optionType: string, optionNumber: number) => {
-    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.includes(optionNumber) || false;
-  };
-
-  const getSelectionCount = (questionnaireId: string, optionType: string) => {
-    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.length || 0;
   };
 
   if (!isEmailVerified) {
