@@ -9,10 +9,13 @@ import { supabase } from "@/integrations/supabase/client";
 export default function Settings() {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
+    cocamarName: "Cocamar",
     cocamarMembers: "15800",
     cocamarEngagement: "88",
+    sicoobName: "Sicoob",
     sicoobMembers: "25300",
     sicoobEngagement: "92",
+    frisiaName: "Frísia",
     frisiaMembers: "12400",
     frisiaEngagement: "85"
   });
@@ -65,8 +68,16 @@ export default function Settings() {
           
           <div className="grid gap-6">
             <div className="space-y-4">
-              <h3 className="font-medium">Cocamar</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cocamarName">Nome da Cooperativa</Label>
+                  <Input
+                    id="cocamarName"
+                    name="cocamarName"
+                    value={formData.cocamarName}
+                    onChange={handleInputChange}
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="cocamarMembers">Número de Membros</Label>
                   <Input
@@ -89,8 +100,16 @@ export default function Settings() {
             </div>
 
             <div className="space-y-4">
-              <h3 className="font-medium">Sicoob</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="sicoobName">Nome da Cooperativa</Label>
+                  <Input
+                    id="sicoobName"
+                    name="sicoobName"
+                    value={formData.sicoobName}
+                    onChange={handleInputChange}
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="sicoobMembers">Número de Membros</Label>
                   <Input
@@ -113,8 +132,16 @@ export default function Settings() {
             </div>
 
             <div className="space-y-4">
-              <h3 className="font-medium">Frísia</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="frisiaName">Nome da Cooperativa</Label>
+                  <Input
+                    id="frisiaName"
+                    name="frisiaName"
+                    value={formData.frisiaName}
+                    onChange={handleInputChange}
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="frisiaMembers">Número de Membros</Label>
                   <Input

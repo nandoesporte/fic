@@ -27,6 +27,9 @@ type ProfileData = {
   sicoobengagement: string;
   frisiamembers: string;
   frisiaengagement: string;
+  cocamarname: string;
+  sicoobname: string;
+  frisianame: string;
 };
 
 export const useCooperativeSettings = () => {
@@ -44,17 +47,17 @@ export const useCooperativeSettings = () => {
         const profileData = profiles as ProfileData;
         setCooperatives([
           { 
-            name: "Cocamar", 
+            name: profileData.cocamarname || "Cocamar", 
             members: parseInt(profileData.cocamarmembers || "15800"), 
             engagement: parseInt(profileData.cocamarengagement || "88") 
           },
           { 
-            name: "Sicoob", 
+            name: profileData.sicoobname || "Sicoob", 
             members: parseInt(profileData.sicoobmembers || "25300"), 
             engagement: parseInt(profileData.sicoobengagement || "92") 
           },
           { 
-            name: "Frísia", 
+            name: profileData.frisianame || "Frísia", 
             members: parseInt(profileData.frisiamembers || "12400"), 
             engagement: parseInt(profileData.frisiaengagement || "85") 
           }
