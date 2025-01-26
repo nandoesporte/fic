@@ -23,16 +23,26 @@ export const QuestionnaireResponses = () => {
   const { updateLineMutation, toggleStatusMutation } = useQuestionnaireMutations();
 
   const handleLineEdit = (questionnaireId: string, type: 'strengths' | 'challenges' | 'opportunities', index: number, value: string) => {
+    console.log('Editing line:', { questionnaireId, type, index, value });
     setEditingLine({ questionnaireId, type, index, value });
   };
 
   const handleLineSave = async (questionnaire: any) => {
-    if (!editingLine) return;
+    if (!editingLine) {
+      console.log('No editing line found');
+      return;
+    }
 
     const lines = splitText(questionnaire[editingLine.type]);
     lines[editingLine.index] = editingLine.value;
     
     try {
+      console.log('Saving line:', { 
+        questionnaireId: editingLine.questionnaireId,
+        type: editingLine.type,
+        lines 
+      });
+
       await updateLineMutation.mutateAsync({
         questionnaireId: editingLine.questionnaireId,
         type: editingLine.type,
@@ -48,6 +58,13 @@ export const QuestionnaireResponses = () => {
 
   const handleToggleStatus = async (questionnaireId: string, type: 'strengths' | 'challenges' | 'opportunities', index: number, currentStatus: string) => {
     try {
+      console.log('Toggling status:', { 
+        questionnaireId, 
+        type, 
+        index, 
+        currentStatus 
+      });
+
       await toggleStatusMutation.mutateAsync({ 
         questionnaireId, 
         type, 

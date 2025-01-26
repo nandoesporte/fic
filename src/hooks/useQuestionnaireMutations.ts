@@ -41,21 +41,25 @@ export const useQuestionnaireMutations = () => {
     }) => {
       console.log('Toggling status:', { questionnaireId, type, index, currentStatus });
       
-      const questionnaires = queryClient.getQueryData(['questionnaires']) as Questionnaire[] | undefined;
-      const questionnaire = questionnaires?.find((q) => q.id === questionnaireId);
-      
-      if (!questionnaire) {
-        throw new Error('Questionnaire not found');
-      }
+      const { data: questionnaire, error: fetchError } = await supabase
+        .from('fic_questionnaires')
+        .select('*')
+        .eq('id', questionnaireId)
+        .single();
 
-      const statuses = (questionnaire[`${type}_statuses`] || 'pending,pending,pending').split(',')
+      if (fetchError) throw fetchError;
+
+      const statusField = `${type}_statuses`;
+      const statuses = (questionnaire[statusField] || 'pending,pending,pending').split(',')
         .map((status: string, i: number) => i === index ? (status === 'active' ? 'pending' : 'active') : status);
+
+      const hasActiveStatus = statuses.includes('active');
 
       const { error: updateError } = await supabase
         .from('fic_questionnaires')
         .update({ 
-          [`${type}_statuses`]: statuses.join(','),
-          status: statuses.includes('active') ? 'active' : 'pending'
+          [statusField]: statuses.join(','),
+          status: hasActiveStatus ? 'active' : 'pending'
         })
         .eq('id', questionnaireId);
 
@@ -65,12 +69,7 @@ export const useQuestionnaireMutations = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
-      toast.success('Status atualizado com sucesso');
     },
-    onError: (error) => {
-      console.error('Error toggling status:', error);
-      toast.error('Erro ao atualizar status');
-    }
   });
 
   return {
