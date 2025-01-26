@@ -16,41 +16,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let mounted = true;
+
     // Initialize session
     const initializeSession = async () => {
       try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        console.log("Initial session:", initialSession);
-        setSession(initialSession);
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error fetching initial session:", error);
+          return;
+        }
+
+        if (mounted) {
+          console.log("Initial session:", initialSession);
+          setSession(initialSession);
+          
+          if (!initialSession) {
+            navigate('/login');
+          }
+        }
       } catch (error) {
-        console.error("Error fetching initial session:", error);
+        console.error("Error in session initialization:", error);
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     initializeSession();
 
     // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
       console.log("Auth state changed:", event, currentSession);
       
-      if (event === 'SIGNED_IN') {
-        setSession(currentSession);
-        navigate('/');
-      } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-        setSession(null);
-        if (event === 'SIGNED_OUT') {
+      if (!mounted) return;
+
+      switch (event) {
+        case 'SIGNED_IN':
+          setSession(currentSession);
+          navigate('/');
+          break;
+        case 'SIGNED_OUT':
+          setSession(null);
           navigate('/login');
-        }
+          break;
+        case 'TOKEN_REFRESHED':
+          setSession(currentSession);
+          break;
+        case 'USER_UPDATED':
+          setSession(currentSession);
+          break;
       }
       
       setLoading(false);
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, [navigate]);
