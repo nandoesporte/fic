@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface AuthContextType {
   session: Session | null;
@@ -18,6 +19,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
 
   useEffect(() => {
     let mounted = true;
@@ -25,8 +27,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Initialize session
     const initializeSession = async () => {
       try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
         
+        if (error) {
+          console.error("Session initialization error:", error);
+          if (!PUBLIC_ROUTES.includes(location.pathname)) {
+            navigate('/login');
+          }
+          return;
+        }
+
         if (mounted) {
           setSession(initialSession);
           
@@ -37,6 +47,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error("Error in session initialization:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro de autenticação",
+          description: "Houve um problema ao inicializar sua sessão. Por favor, faça login novamente.",
+        });
       } finally {
         if (mounted) {
           setLoading(false);
@@ -47,17 +62,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeSession();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
       if (!mounted) return;
 
       console.log("Auth state changed:", event, currentSession);
       
-      if (currentSession) {
+      if (event === 'TOKEN_REFRESHED') {
+        setSession(currentSession);
+      } else if (event === 'SIGNED_IN') {
         setSession(currentSession);
         if (location.pathname === '/login') {
           navigate('/');
         }
-      } else {
+      } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
         setSession(null);
         // Only redirect to login if not on a public route
         if (!PUBLIC_ROUTES.includes(location.pathname)) {
