@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailInput } from "@/components/EmailInput";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 interface EmailVerificationProps {
   onVerified: (email: string) => void;
@@ -10,6 +11,7 @@ interface EmailVerificationProps {
 
 export const EmailVerification = ({ onVerified }: EmailVerificationProps) => {
   const [userEmail, setUserEmail] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const verifyEmail = async () => {
     if (!userEmail) {
@@ -17,25 +19,34 @@ export const EmailVerification = ({ onVerified }: EmailVerificationProps) => {
       return;
     }
 
-    const { data, error } = await supabase
-      .from('registered_voters')
-      .select('id')
-      .eq('email', userEmail.toLowerCase())
-      .maybeSingle();
+    setIsVerifying(true);
 
-    if (error) {
-      console.error('Error verifying email:', error);
+    try {
+      const { data, error } = await supabase
+        .from('registered_voters')
+        .select('id')
+        .eq('email', userEmail.toLowerCase())
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error verifying email:', error);
+        toast.error('Erro ao verificar email');
+        return;
+      }
+
+      if (!data) {
+        toast.error('Email não encontrado no sistema');
+        return;
+      }
+
+      onVerified(userEmail);
+      toast.success('Email verificado com sucesso!');
+    } catch (error) {
+      console.error('Error:', error);
       toast.error('Erro ao verificar email');
-      return;
+    } finally {
+      setIsVerifying(false);
     }
-
-    if (!data) {
-      toast.error('Email não encontrado no sistema');
-      return;
-    }
-
-    onVerified(userEmail);
-    toast.success('Email verificado com sucesso!');
   };
 
   return (
@@ -49,8 +60,16 @@ export const EmailVerification = ({ onVerified }: EmailVerificationProps) => {
         <Button 
           className="w-full" 
           onClick={verifyEmail}
+          disabled={isVerifying}
         >
-          Acessar Sistema de Votação
+          {isVerifying ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Verificando...
+            </>
+          ) : (
+            'Acessar Sistema de Votação'
+          )}
         </Button>
       </div>
     </div>
