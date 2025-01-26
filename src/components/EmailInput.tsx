@@ -13,7 +13,7 @@ export const EmailInput = ({ email, onChange }: EmailInputProps) => {
         placeholder="Digite seu email para votar"
         value={email}
         onChange={(e) => onChange(e.target.value)}
-        className="max-w-md"
+        className="max-w-full"
         autoComplete="email"
         required
       />

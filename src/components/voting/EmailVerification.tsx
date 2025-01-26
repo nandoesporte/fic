@@ -23,9 +23,9 @@ export const EmailVerification = ({ onVerified }: EmailVerificationProps) => {
 
     try {
       console.log('Verificando email:', userEmail);
-      const { data, error } = await supabase
+      const { data: voter, error } = await supabase
         .from('registered_voters')
-        .select('id')
+        .select('*')
         .eq('email', userEmail.toLowerCase())
         .maybeSingle();
 
@@ -35,8 +35,8 @@ export const EmailVerification = ({ onVerified }: EmailVerificationProps) => {
         return;
       }
 
-      if (!data) {
-        toast.error('Email não encontrado no sistema');
+      if (!voter) {
+        toast.error('Email não encontrado no sistema. Por favor, verifique se o email está correto.');
         return;
       }
 
@@ -50,6 +50,12 @@ export const EmailVerification = ({ onVerified }: EmailVerificationProps) => {
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      verifyEmail();
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md space-y-6">
@@ -57,7 +63,9 @@ export const EmailVerification = ({ onVerified }: EmailVerificationProps) => {
           <h1 className="text-3xl font-bold text-gray-900">Sistema de Votação</h1>
           <p className="mt-2 text-gray-500">Digite seu email cadastrado para acessar o sistema de votação</p>
         </div>
-        <EmailInput email={userEmail} onChange={setUserEmail} />
+        <div onKeyPress={handleKeyPress}>
+          <EmailInput email={userEmail} onChange={setUserEmail} />
+        </div>
         <Button 
           className="w-full" 
           onClick={verifyEmail}
