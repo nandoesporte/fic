@@ -16,19 +16,6 @@ type VoteSelection = {
   };
 };
 
-type ConsolidatedQuestionnaire = {
-  id: string;
-  dimension: string;
-  strengths: string;
-  challenges: string;
-  opportunities: string;
-  created_at: string;
-  strengths_statuses?: string;
-  challenges_statuses?: string;
-  opportunities_statuses?: string;
-  group?: string;
-};
-
 export const QuestionnaireVoting = () => {
   const [userEmail, setUserEmail] = useState("");
   const [isEmailVerified, setIsEmailVerified] = useState(false);
@@ -114,7 +101,7 @@ export const QuestionnaireVoting = () => {
       console.log('Questionnaires data fetched:', questionnairesData);
       
       // Consolidate questionnaires by group and ensure active status
-      const consolidatedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: ConsolidatedQuestionnaire }, curr) => {
+      const consolidatedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: any }, curr) => {
         if (curr.status === 'active' && curr.group) {
           acc[curr.group] = {
             id: curr.id,
