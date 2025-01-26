@@ -52,6 +52,7 @@ export const useBackupOperations = () => {
   };
 
   const handleExportAndClear = async (backupName: string) => {
+    // First, get all the data we want to backup
     const { data: questionnairesData } = await supabase
       .from("fic_questionnaires")
       .select("*");
@@ -60,28 +61,38 @@ export const useBackupOperations = () => {
       .from("questionnaire_votes")
       .select("*");
 
+    const { data: registeredVotersData } = await supabase
+      .from("registered_voters")
+      .select("*");
+
+    // Create the backup
     const backup = {
       id: crypto.randomUUID(),
       filename: `full_backup_${new Date().toISOString()}.json`,
       data: {
         questionnaires: questionnairesData || [],
         votes: votesData || [],
+        registeredVoters: registeredVotersData || [],
       },
       type: "full_backup",
       created_by: user?.id || '',
       description: backupName || "Backup completo antes da limpeza"
     };
 
+    // Save the backup
     const { error: backupError } = await supabase
       .from("data_backups")
       .insert(backup);
 
     if (backupError) throw backupError;
 
+    // Clean up the data using the RPC function
     const { error: cleanError } = await supabase
       .rpc('clean_questionnaire_votes');
 
     if (cleanError) throw cleanError;
+
+    toast.success("Dados exportados e limpos com sucesso");
   };
 
   const handleRegularBackup = async (backupType: string, backupName: string) => {
