@@ -65,6 +65,9 @@ export const useBackupOperations = () => {
       }
 
       console.log("Data fetched successfully, creating backup...");
+      console.log("Questionnaires to backup:", questionnairesData?.length || 0);
+      console.log("Votes to backup:", votesData?.length || 0);
+      console.log("Registered voters to backup:", registeredVotersData?.length || 0);
 
       // Create the backup
       const backup = {
@@ -100,6 +103,18 @@ export const useBackupOperations = () => {
         console.error("Error cleaning data:", cleanError);
         throw cleanError;
       }
+
+      // Verify if data was cleaned
+      const { data: remainingQuestionnaires } = await supabase
+        .from("fic_questionnaires")
+        .select("count");
+      
+      const { data: remainingVotes } = await supabase
+        .from("questionnaire_votes")
+        .select("count");
+
+      console.log("Remaining questionnaires:", remainingQuestionnaires);
+      console.log("Remaining votes:", remainingVotes);
 
       console.log("Data cleaned successfully");
       toast.success("Dados exportados e limpos com sucesso");
