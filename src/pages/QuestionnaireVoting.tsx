@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { EmailInput } from "@/components/EmailInput";
 import { QuestionnaireCard } from "@/components/QuestionnaireCard";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/components/AuthProvider";
 
 type VoteSelection = {
   [key: string]: {
@@ -15,11 +16,24 @@ type VoteSelection = {
   };
 };
 
+type ConsolidatedQuestionnaire = {
+  id: string;
+  dimension: string;
+  strengths: string;
+  challenges: string;
+  opportunities: string;
+  created_at: string;
+  strengths_statuses?: string;
+  challenges_statuses?: string;
+  opportunities_statuses?: string;
+};
+
 export const QuestionnaireVoting = () => {
   const [userEmail, setUserEmail] = useState("");
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [selections, setSelections] = useState<VoteSelection>({});
   const queryClient = useQueryClient();
+  const { session } = useAuth();
 
   const verifyEmail = async () => {
     if (!userEmail) {
@@ -48,27 +62,109 @@ export const QuestionnaireVoting = () => {
     toast.success('Email verificado com sucesso!');
   };
 
+  const createProfileIfNeeded = async () => {
+    if (!session?.user?.id) {
+      throw new Error('Usuário não está autenticado');
+    }
+
+    // Check if profile exists
+    const { data: existingProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', session.user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error('Error checking profile:', profileError);
+      throw new Error('Erro ao verificar perfil: ' + profileError.message);
+    }
+
+    if (!existingProfile) {
+      // Create new profile
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .insert({
+          id: session.user.id,
+          email: userEmail.toLowerCase(),
+          cpf: `TEMP_${Date.now()}`
+        });
+
+      if (insertError) {
+        console.error('Error creating profile:', insertError);
+        throw new Error('Erro ao criar perfil: ' + insertError.message);
+      }
+
+      return session.user.id;
+    }
+
+    return existingProfile.id;
+  };
+
   const { data: questionnaires, isLoading } = useQuery({
     queryKey: ['questionnaires'],
     queryFn: async () => {
-      console.log('Fetching questionnaires data...');
       const { data: questionnairesData, error: questionnairesError } = await supabase
         .from('fic_questionnaires')
-        .select('*')
-        .eq('status', 'active')
+        .select(`
+          *,
+          questionnaire_vote_counts (
+            option_type,
+            option_number,
+            upvotes,
+            downvotes
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (questionnairesError) {
-        console.error('Error fetching questionnaires:', questionnairesError);
         toast.error('Erro ao carregar questionários');
         throw questionnairesError;
       }
 
-      console.log('Questionnaires data fetched:', questionnairesData);
-      return questionnairesData;
+      const consolidatedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: ConsolidatedQuestionnaire }, curr) => {
+        if (!acc[curr.dimension]) {
+          const strengths_array = curr.strengths.split('\n\n');
+          const challenges_array = curr.challenges.split('\n\n');
+          const opportunities_array = curr.opportunities.split('\n\n');
+          
+          const strengths_statuses = (curr.strengths_statuses || 'pending,pending,pending').split(',');
+          const challenges_statuses = (curr.challenges_statuses || 'pending,pending,pending').split(',');
+          const opportunities_statuses = (curr.opportunities_statuses || 'pending,pending,pending').split(',');
+          
+          const filtered_strengths = strengths_array.filter((_, index) => strengths_statuses[index] === 'active');
+          const filtered_challenges = challenges_array.filter((_, index) => challenges_statuses[index] === 'active');
+          const filtered_opportunities = opportunities_array.filter((_, index) => opportunities_statuses[index] === 'active');
+
+          acc[curr.dimension] = {
+            id: curr.id,
+            dimension: curr.dimension,
+            strengths: filtered_strengths.join('\n\n'),
+            challenges: filtered_challenges.join('\n\n'),
+            opportunities: filtered_opportunities.join('\n\n'),
+            created_at: curr.created_at,
+            strengths_statuses: curr.strengths_statuses,
+            challenges_statuses: curr.challenges_statuses,
+            opportunities_statuses: curr.opportunities_statuses,
+          };
+        }
+        return acc;
+      }, {});
+
+      return Object.values(consolidatedQuestionnaires);
     },
     enabled: isEmailVerified,
   });
+
+  const checkExistingVote = async (dimension: string) => {
+    const { data: existingVote } = await supabase
+      .from('dimension_votes')
+      .select('id')
+      .eq('email', userEmail.toLowerCase())
+      .eq('dimension', dimension)
+      .maybeSingle();
+
+    return existingVote !== null;
+  };
 
   const submitVotesMutation = useMutation({
     mutationFn: async ({ questionnaireId, votes, dimension }: { 
@@ -79,29 +175,32 @@ export const QuestionnaireVoting = () => {
       }[];
       dimension: string;
     }) => {
-      const { data: existingVote } = await supabase
-        .from('dimension_votes')
-        .select('id')
-        .eq('email', userEmail.toLowerCase())
-        .eq('dimension', dimension)
-        .maybeSingle();
+      console.log('Submitting votes for questionnaire:', questionnaireId);
+      
+      if (!session?.user?.id) {
+        throw new Error('Usuário não está autenticado');
+      }
 
-      if (existingVote) {
+      const hasVoted = await checkExistingVote(dimension);
+      if (hasVoted) {
         throw new Error('Você já votou nesta dimensão');
       }
 
-      // Get user_id from registered_voters table
-      const { data: voterData, error: voterError } = await supabase
-        .from('registered_voters')
-        .select('id')
-        .eq('email', userEmail.toLowerCase())
-        .single();
+      // Get or create profile
+      const profileId = await createProfileIfNeeded();
 
-      if (voterError || !voterData) {
-        throw new Error('Erro ao obter informações do votante');
-      }
+      // First, delete any existing votes for this user and questionnaire
+      const { error: deleteError } = await supabase
+        .from('questionnaire_votes')
+        .delete()
+        .eq('questionnaire_id', questionnaireId)
+        .eq('user_id', profileId);
 
-      // Insert dimension vote record
+      if (deleteError) throw deleteError;
+
+      // Wait a brief moment to ensure deletion is processed
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       const { error: dimensionVoteError } = await supabase
         .from('dimension_votes')
         .insert({
@@ -111,20 +210,20 @@ export const QuestionnaireVoting = () => {
 
       if (dimensionVoteError) throw dimensionVoteError;
 
-      // Insert vote records with user_id
-      const votePromises = votes.map(({ optionType, optionNumbers }) =>
+      // Now insert the new votes
+      const votePromises = votes.flatMap(({ optionType, optionNumbers }) =>
         optionNumbers.map(optionNumber =>
           supabase
             .from('questionnaire_votes')
             .insert({
               questionnaire_id: questionnaireId,
+              user_id: profileId,
               vote_type: 'upvote',
               option_type: optionType,
               option_number: optionNumber,
-              user_id: voterData.id // Include the user_id here
             })
         )
-      ).flat();
+      );
 
       await Promise.all(votePromises);
     },
@@ -146,33 +245,31 @@ export const QuestionnaireVoting = () => {
       return;
     }
 
-    setSelections(prev => {
-      const currentSelections = prev[questionnaireId]?.[optionType] || [];
-      const isSelected = currentSelections.includes(optionNumber);
-      
-      if (isSelected) {
-        return {
-          ...prev,
-          [questionnaireId]: {
-            ...prev[questionnaireId],
-            [optionType]: currentSelections.filter(num => num !== optionNumber)
-          }
-        };
-      } else {
-        if (currentSelections.length >= 3) {
-          toast.error('Você já selecionou 3 opções nesta seção');
-          return prev;
+    const currentSelections = selections[questionnaireId]?.[optionType] || [];
+    const isSelected = currentSelections.includes(optionNumber);
+
+    if (isSelected) {
+      setSelections(prev => ({
+        ...prev,
+        [questionnaireId]: {
+          ...prev[questionnaireId],
+          [optionType]: currentSelections.filter(num => num !== optionNumber)
         }
-        
-        return {
-          ...prev,
-          [questionnaireId]: {
-            ...prev[questionnaireId],
-            [optionType]: [...currentSelections, optionNumber]
-          }
-        };
+      }));
+    } else {
+      if (currentSelections.length >= 3) {
+        toast.error('Você já selecionou 3 opções nesta seção. Remova uma seleção para escolher outra.');
+        return;
       }
-    });
+
+      setSelections(prev => ({
+        ...prev,
+        [questionnaireId]: {
+          ...prev[questionnaireId],
+          [optionType]: [...currentSelections, optionNumber]
+        }
+      }));
+    }
   };
 
   const handleConfirmVotes = async (questionnaireId: string) => {

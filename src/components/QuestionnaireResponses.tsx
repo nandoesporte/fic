@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import { ViewControls } from "./questionnaire/ViewControls";
-import { QuestionnaireList } from "./questionnaire/QuestionnaireList";
-import { useQuestionnaireData } from "@/hooks/useQuestionnaireData";
-import { useQuestionnaireMutations } from "@/hooks/useQuestionnaireMutations";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ViewControls } from "./questionnaire/ViewControls";
+import { QuestionnaireSection } from "./questionnaire/QuestionnaireSection";
 
 export const QuestionnaireResponses = () => {
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<string | null>(null);
@@ -16,9 +17,86 @@ export const QuestionnaireResponses = () => {
     index: number;
     value: string;
   } | null>(null);
+  const queryClient = useQueryClient();
 
-  const { data: questionnaires, isLoading } = useQuestionnaireData();
-  const { updateLineMutation, toggleStatusMutation } = useQuestionnaireMutations();
+  const { data: questionnaires, isLoading } = useQuery({
+    queryKey: ['questionnaires'],
+    queryFn: async () => {
+      const { data: questionnairesData, error: questionnairesError } = await supabase
+        .from('fic_questionnaires')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (questionnairesError) {
+        toast.error('Erro ao carregar questionários');
+        throw questionnairesError;
+      }
+
+      return questionnairesData?.map(q => ({
+        ...q,
+        strengths_statuses: q.strengths_statuses || 'pending,pending,pending',
+        challenges_statuses: q.challenges_statuses || 'pending,pending,pending',
+        opportunities_statuses: q.opportunities_statuses || 'pending,pending,pending',
+        status: q.status || 'pending'
+      }));
+    },
+  });
+
+  const updateLineMutation = useMutation({
+    mutationFn: async ({ questionnaireId, type, lines }: { 
+      questionnaireId: string; 
+      type: 'strengths' | 'challenges' | 'opportunities';
+      lines: string[];
+    }) => {
+      const { error } = await supabase
+        .from('fic_questionnaires')
+        .update({ [type]: lines.join('\n\n') })
+        .eq('id', questionnaireId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
+      toast.success('Linha atualizada com sucesso');
+      setEditingLine(null);
+    },
+    onError: () => {
+      toast.error('Erro ao atualizar linha');
+    },
+  });
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: async ({ questionnaireId, type, index, currentStatus }: { 
+      questionnaireId: string; 
+      type: 'strengths' | 'challenges' | 'opportunities';
+      index: number;
+      currentStatus: string;
+    }) => {
+      const questionnaire = questionnaires?.find(q => q.id === questionnaireId);
+      if (!questionnaire) return;
+
+      const statuses = (questionnaire[`${type}_statuses`] || 'pending,pending,pending').split(',')
+        .map((status, i) => i === index ? (status === 'active' ? 'pending' : 'active') : status);
+
+      const { error: updateError } = await supabase
+        .from('fic_questionnaires')
+        .update({ 
+          [`${type}_statuses`]: statuses.join(','),
+          status: statuses.includes('active') ? 'active' : 'pending'
+        })
+        .eq('id', questionnaireId);
+
+      if (updateError) throw updateError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
+      toast.success('Status atualizado com sucesso');
+    },
+    onError: (error) => {
+      console.error('Toggle status error:', error);
+      toast.error('Erro ao atualizar status');
+    },
+  });
 
   const handleEdit = (id: string) => {
     setSelectedQuestionnaire(id);
@@ -81,6 +159,12 @@ export const QuestionnaireResponses = () => {
     );
   }
 
+  const sections = [
+    { title: 'Pontos Fortes', type: 'strengths' as const, bgColor: 'bg-[#228B22]' },
+    { title: 'Desafios', type: 'challenges' as const, bgColor: 'bg-[#FFD700]' },
+    { title: 'Oportunidades', type: 'opportunities' as const, bgColor: 'bg-[#000080]' }
+  ];
+
   const filteredQuestionnaires = filterQuestionnaires(questionnaires || []);
 
   return (
@@ -93,14 +177,23 @@ export const QuestionnaireResponses = () => {
         dimensions={getUniqueDimensions()}
       />
 
-      <QuestionnaireList
-        questionnaires={filteredQuestionnaires}
-        editingLine={editingLine}
-        onLineEdit={handleLineEdit}
-        onLineSave={handleLineSave}
-        onToggleStatus={handleToggleStatus}
-        setEditingLine={setEditingLine}
-      />
+      <div className="space-y-8">
+        {sections.map(section => (
+          <Card key={section.type} className="p-6">
+            <QuestionnaireSection
+              title={section.title}
+              bgColor={section.bgColor}
+              questionnaires={filteredQuestionnaires}
+              type={section.type}
+              editingLine={editingLine}
+              onLineEdit={handleLineEdit}
+              onLineSave={handleLineSave}
+              onToggleStatus={handleToggleStatus}
+              setEditingLine={setEditingLine}
+            />
+          </Card>
+        ))}
+      </div>
 
       {(!questionnaires || questionnaires.length === 0) && (
         <p className="text-center text-gray-500 py-4">

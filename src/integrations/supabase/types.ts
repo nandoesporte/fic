@@ -179,33 +179,6 @@ export type Database = {
         }
         Relationships: []
       }
-      dimension_performance: {
-        Row: {
-          created_at: string | null
-          date: string
-          dimension: string
-          id: string
-          score: number
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          date?: string
-          dimension: string
-          id?: string
-          score: number
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          date?: string
-          dimension?: string
-          id?: string
-          score?: number
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       dimension_votes: {
         Row: {
           created_at: string
@@ -260,30 +233,6 @@ export type Database = {
           title?: string
           updated_at?: string | null
           video_url?: string | null
-        }
-        Relationships: []
-      }
-      fic_daily_metrics: {
-        Row: {
-          average_index: number
-          created_at: string | null
-          date: string
-          id: string
-          updated_at: string | null
-        }
-        Insert: {
-          average_index: number
-          created_at?: string | null
-          date?: string
-          id?: string
-          updated_at?: string | null
-        }
-        Update: {
-          average_index?: number
-          created_at?: string | null
-          date?: string
-          id?: string
-          updated_at?: string | null
         }
         Relationships: []
       }
@@ -462,72 +411,45 @@ export type Database = {
       profiles: {
         Row: {
           birth_date: string | null
-          cocamarengagement: string | null
-          cocamarmembers: string | null
-          cocamarname: string | null
           coins: number | null
           cpf: string
           created_at: string | null
           email: string
           fitness_level: string | null
-          frisiaengagement: string | null
-          frisiamembers: string | null
-          frisianame: string | null
           gender: string | null
           height: number | null
           id: string
           name: string | null
-          sicoobengagement: string | null
-          sicoobmembers: string | null
-          sicoobname: string | null
           steps: number | null
           updated_at: string | null
           weight: number | null
         }
         Insert: {
           birth_date?: string | null
-          cocamarengagement?: string | null
-          cocamarmembers?: string | null
-          cocamarname?: string | null
           coins?: number | null
           cpf?: string
           created_at?: string | null
           email: string
           fitness_level?: string | null
-          frisiaengagement?: string | null
-          frisiamembers?: string | null
-          frisianame?: string | null
           gender?: string | null
           height?: number | null
           id: string
           name?: string | null
-          sicoobengagement?: string | null
-          sicoobmembers?: string | null
-          sicoobname?: string | null
           steps?: number | null
           updated_at?: string | null
           weight?: number | null
         }
         Update: {
           birth_date?: string | null
-          cocamarengagement?: string | null
-          cocamarmembers?: string | null
-          cocamarname?: string | null
           coins?: number | null
           cpf?: string
           created_at?: string | null
           email?: string
           fitness_level?: string | null
-          frisiaengagement?: string | null
-          frisiamembers?: string | null
-          frisianame?: string | null
           gender?: string | null
           height?: number | null
           id?: string
           name?: string | null
-          sicoobengagement?: string | null
-          sicoobmembers?: string | null
-          sicoobname?: string | null
           steps?: number | null
           updated_at?: string | null
           weight?: number | null
@@ -863,10 +785,6 @@ export type Database = {
     }
     Functions: {
       clean_questionnaire_votes: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      update_fic_metrics: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
