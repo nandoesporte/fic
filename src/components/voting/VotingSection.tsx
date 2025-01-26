@@ -3,7 +3,7 @@ import { Loader2 } from "lucide-react";
 
 interface VotingSectionProps {
   userEmail: string;
-  questionnaires: any[];  // Explicitly typing as array
+  questionnaires: any[];
   isLoading: boolean;
   selections: {
     [key: string]: {
@@ -18,7 +18,7 @@ interface VotingSectionProps {
 
 export const VotingSection = ({
   userEmail,
-  questionnaires = [], // Provide default empty array
+  questionnaires = [],
   isLoading,
   selections,
   onVote,
@@ -38,12 +38,12 @@ export const VotingSection = ({
   const groupedByDimension = groupQuestionnairesByDimension(questionnaires);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Sistema de Votação</h1>
-          <p className="text-gray-500">Votando com o email: {userEmail}</p>
-          <p className="text-sm text-gray-500 mt-2">Selecione exatamente 3 opções em cada seção</p>
+          <h1 className="text-3xl font-bold text-foreground">Sistema de Votação</h1>
+          <p className="text-muted-foreground">Votando com o email: {userEmail}</p>
+          <p className="text-sm text-muted-foreground mt-2">Selecione exatamente 3 opções em cada seção</p>
         </div>
 
         {isLoading ? (
@@ -54,7 +54,7 @@ export const VotingSection = ({
           <div className="space-y-6">
             {Object.entries(groupedByDimension).map(([dimension, dimensionQuestionnaires]) => (
               <div key={dimension} className="space-y-4">
-                <h2 className="text-xl font-semibold text-gray-800 capitalize">
+                <h2 className="text-xl font-semibold text-foreground capitalize">
                   {dimension.replace(/-/g, ' ')}
                 </h2>
                 <GroupedQuestionnaireList
@@ -69,7 +69,7 @@ export const VotingSection = ({
         )}
 
         {(!questionnaires || questionnaires.length === 0) && (
-          <p className="text-center text-gray-500 py-4">
+          <p className="text-center text-muted-foreground py-4">
             Nenhum questionário encontrado.
           </p>
         )}
