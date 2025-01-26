@@ -36,6 +36,8 @@ export const QuestionnaireCard = ({
   };
 
   const renderSection = (title: string, content: string, type: 'strengths' | 'challenges' | 'opportunities') => {
+    if (!content) return null;
+    
     const options = content.split('\n\n').filter(Boolean);
     const selectionCount = getSelectionCount(type);
     const bgColorClass = getBgColor(type);

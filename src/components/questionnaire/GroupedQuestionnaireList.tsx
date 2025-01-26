@@ -44,11 +44,15 @@ export const GroupedQuestionnaireList = ({
     if (!questionnaireSelections) return false;
     
     const typeSelections = questionnaireSelections[optionType as keyof typeof questionnaireSelections];
-    return typeSelections?.includes(optionNumber) || false;
+    return Array.isArray(typeSelections) && typeSelections.includes(optionNumber);
   };
 
   const getSelectionCount = (questionnaireId: string, optionType: string) => {
-    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.length || 0;
+    const questionnaireSelections = selections[questionnaireId];
+    if (!questionnaireSelections) return 0;
+    
+    const typeSelections = questionnaireSelections[optionType as keyof typeof questionnaireSelections];
+    return Array.isArray(typeSelections) ? typeSelections.length : 0;
   };
 
   const groupedResponses = groupResponsesByType(questionnaires);
