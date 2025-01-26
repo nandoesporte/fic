@@ -4,25 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { GroupSelect } from "./FICForm/GroupSelect";
 import { DimensionSelect } from "./FICForm/DimensionSelect";
 import { TextAreaSection } from "./FICForm/TextAreaSection";
 import { formSchema, type FICFormSchema } from "./FICForm/types";
 
 export function FICForm() {
-  const [userId, setUserId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-      }
-    };
-    getUser();
-  }, []);
 
   const form = useForm<FICFormSchema>({
     resolver: zodResolver(formSchema),
@@ -40,11 +29,6 @@ export function FICForm() {
   });
 
   async function onSubmit(values: FICFormSchema) {
-    if (!userId) {
-      toast.error("Você precisa estar logado para enviar um questionário.");
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const { error } = await supabase.from("fic_questionnaires").insert({
@@ -53,7 +37,7 @@ export function FICForm() {
         strengths: [values.strengths1, values.strengths2, values.strengths3].join('\n\n'),
         challenges: [values.challenges1, values.challenges2, values.challenges3].join('\n\n'),
         opportunities: [values.opportunities1, values.opportunities2, values.opportunities3].join('\n\n'),
-        user_id: userId,
+        user_id: null, // Allow null user_id
       });
 
       if (error) throw error;
