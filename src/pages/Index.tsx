@@ -6,11 +6,10 @@ import { DashboardMetrics } from "@/components/dashboard/DashboardMetrics";
 import { DashboardAchievements } from "@/components/dashboard/DashboardAchievements";
 import { DimensionManager } from "@/components/FICForm/DimensionManager";
 import { FICForm } from "@/components/FICForm";
-import { QuestionnaireResponses } from "@/components/QuestionnaireResponses";
 import { ClipboardList } from "lucide-react";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState("questionarios");
+  const [activeTab, setActiveTab] = useState("novo");
 
   const handleNewQuestionnaire = () => {
     setActiveTab("novo");
@@ -24,9 +23,6 @@ const Index = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="bg-white shadow-sm p-1.5 rounded-lg">
-          <TabsTrigger value="questionarios" className="data-[state=active]:bg-primary/10 px-6">
-            Questionários
-          </TabsTrigger>
           <TabsTrigger value="conquistas" className="data-[state=active]:bg-primary/10 px-6">
             Conquistas
           </TabsTrigger>
@@ -34,16 +30,6 @@ const Index = () => {
             Novo Questionário
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="questionarios">
-          <Card className="p-8">
-            <h2 className="text-xl font-semibold mb-6 flex items-center gap-3">
-              <ClipboardList className="h-6 w-6 text-primary" />
-              Respostas dos Questionários
-            </h2>
-            <QuestionnaireResponses />
-          </Card>
-        </TabsContent>
 
         <TabsContent value="conquistas">
           <DashboardAchievements />
