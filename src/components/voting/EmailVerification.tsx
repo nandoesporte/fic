@@ -22,6 +22,7 @@ export const EmailVerification = ({ onVerified }: EmailVerificationProps) => {
     setIsVerifying(true);
 
     try {
+      console.log('Verificando email:', userEmail);
       const { data, error } = await supabase
         .from('registered_voters')
         .select('id')
@@ -29,7 +30,7 @@ export const EmailVerification = ({ onVerified }: EmailVerificationProps) => {
         .maybeSingle();
 
       if (error) {
-        console.error('Error verifying email:', error);
+        console.error('Erro ao verificar email:', error);
         toast.error('Erro ao verificar email');
         return;
       }
@@ -42,7 +43,7 @@ export const EmailVerification = ({ onVerified }: EmailVerificationProps) => {
       onVerified(userEmail);
       toast.success('Email verificado com sucesso!');
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Erro:', error);
       toast.error('Erro ao verificar email');
     } finally {
       setIsVerifying(false);

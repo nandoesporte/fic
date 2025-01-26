@@ -14,6 +14,8 @@ export const EmailInput = ({ email, onChange }: EmailInputProps) => {
         value={email}
         onChange={(e) => onChange(e.target.value)}
         className="max-w-md"
+        autoComplete="email"
+        required
       />
     </div>
   );
