@@ -8,24 +8,11 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
       console.log("Fetching vote data for dimension:", selectedDimension);
       
       let query = supabase
-        .from("questionnaire_votes")
-        .select(`
-          questionnaire_id,
-          option_type,
-          option_number,
-          vote_type,
-          fic_questionnaires!inner (
-            id,
-            dimension,
-            satisfaction,
-            strengths,
-            challenges,
-            opportunities
-          )
-        `);
+        .from("questionnaire_voting_report")
+        .select('*');
 
       if (selectedDimension && selectedDimension !== "all") {
-        query = query.eq('fic_questionnaires.dimension', selectedDimension);
+        query = query.eq('dimension', selectedDimension);
       }
 
       const { data: votes, error } = await query;
@@ -37,34 +24,25 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
 
       console.log("Raw vote data:", votes);
 
+      // Process votes to ensure no duplicates
       const processedVotes = votes?.reduce((acc: any[], vote) => {
-        const key = `${vote.questionnaire_id}-${vote.option_type}-${vote.option_number}`;
+        const key = `${vote.option_type}-${vote.option_number}`;
         const existingVote = acc.find(v => 
-          v.questionnaire_id === vote.questionnaire_id && 
           v.option_type === vote.option_type && 
           v.option_number === vote.option_number
         );
 
-        if (existingVote) {
-          existingVote.upvotes = (existingVote.upvotes || 0) + (vote.vote_type === 'upvote' ? 1 : 0);
-          existingVote.downvotes = (existingVote.downvotes || 0) + (vote.vote_type === 'downvote' ? 1 : 0);
-        } else {
-          const options = vote.option_type === "strengths" 
-            ? vote.fic_questionnaires?.strengths
+        if (!existingVote) {
+          const optionText = vote.option_type === "strengths" 
+            ? vote.strengths
             : vote.option_type === "challenges"
-              ? vote.fic_questionnaires?.challenges
-              : vote.fic_questionnaires?.opportunities;
-          
-          const optionsList = options?.split('\n\n').filter(Boolean) || [];
-          const optionText = optionsList[vote.option_number - 1] || "";
+              ? vote.challenges
+              : vote.opportunities;
 
           acc.push({
-            questionnaire_id: vote.questionnaire_id,
             option_type: vote.option_type,
             option_number: vote.option_number,
-            upvotes: vote.vote_type === 'upvote' ? 1 : 0,
-            downvotes: vote.vote_type === 'downvote' ? 1 : 0,
-            dimension: vote.fic_questionnaires?.dimension,
+            total: vote.total_votes || 0,
             option_text: optionText,
           });
         }
