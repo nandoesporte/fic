@@ -18,16 +18,18 @@ export const QuestionnaireOption = ({
 }: QuestionnaireOptionProps) => {
   return (
     <div 
-      className={`flex items-start justify-between gap-4 p-3 ${
+      className={`flex items-center justify-between gap-4 p-4 ${
         isActive ? 'bg-primary/10' : 'bg-white/90'
       } rounded-lg transition-colors`}
     >
-      <p className="flex-1 text-sm text-gray-900">{option}</p>
-      <VoteButtons
-        isSelected={isSelected}
-        onVote={onVote}
-        disabled={disabled}
-      />
+      <p className="flex-1 text-sm text-gray-900 leading-relaxed">{option}</p>
+      <div className="shrink-0">
+        <VoteButtons
+          isSelected={isSelected}
+          onVote={onVote}
+          disabled={disabled}
+        />
+      </div>
     </div>
   );
 };
