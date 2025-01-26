@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -10,10 +10,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({ session: null, loading: true });
 
+// Define public routes that don't require authentication
+const PUBLIC_ROUTES = ['/voting', '/formulario', '/login'];
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     let mounted = true;
@@ -32,7 +36,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log("Initial session:", initialSession);
           setSession(initialSession);
           
-          if (!initialSession) {
+          // Only redirect to login if not on a public route
+          if (!initialSession && !PUBLIC_ROUTES.includes(location.pathname)) {
             navigate('/login');
           }
         }
@@ -60,7 +65,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           break;
         case 'SIGNED_OUT':
           setSession(null);
-          navigate('/login');
+          // Only redirect to login if not on a public route
+          if (!PUBLIC_ROUTES.includes(location.pathname)) {
+            navigate('/login');
+          }
           break;
         case 'TOKEN_REFRESHED':
           setSession(currentSession);
@@ -77,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   return (
     <AuthContext.Provider value={{ session, loading }}>
