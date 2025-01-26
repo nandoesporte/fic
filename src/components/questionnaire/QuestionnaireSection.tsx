@@ -41,7 +41,7 @@ export const QuestionnaireSection = ({
         <div className="flex justify-between items-center">
           <h3 className="font-semibold text-lg">{title}</h3>
           <span className="text-sm">
-            {selectionCount}/3 seleções
+            {selectionCount}/{maxSelections} seleções
           </span>
         </div>
         <div className="space-y-3 mt-4">

@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { QuestionnaireSection } from "./QuestionnaireSection";
+import { QuestionnaireEditSection } from "./QuestionnaireEditSection";
 import { EditingLine } from "@/components/QuestionnaireResponses";
 
 interface QuestionnaireListProps {
@@ -29,7 +29,7 @@ export const QuestionnaireList = ({
     <div className="space-y-8">
       {sections.map(section => (
         <Card key={section.type} className="p-6">
-          <QuestionnaireSection
+          <QuestionnaireEditSection
             title={section.title}
             questionnaires={questionnaires}
             type={section.type}
