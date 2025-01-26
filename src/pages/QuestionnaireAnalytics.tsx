@@ -41,7 +41,6 @@ const QuestionnaireAnalytics = () => {
     },
   });
 
-  // Get total registered voters with proper typing
   const { data: registeredVoters } = useQuery<RegisteredVoter[]>({
     queryKey: ['registered-voters'],
     queryFn: async () => {
@@ -69,13 +68,18 @@ const QuestionnaireAnalytics = () => {
 
   const totalVoters = registeredVoters?.length || 0;
   
-  // Calculate total votes with proper type checking
-  const totalVotes = Object.values(votingData as VotingData || {}).reduce((acc: number, categoryVotes) => {
-    if (!Array.isArray(categoryVotes)) return acc;
-    return acc + categoryVotes.reduce((sum, vote) => sum + (Number(vote.total) || 0), 0);
-  }, 0);
+  const calculateTotalVotes = (data: VotingData | null | undefined): number => {
+    if (!data) return 0;
+    
+    return Object.values(data).reduce((acc: number, categoryVotes) => {
+      if (!Array.isArray(categoryVotes)) return acc;
+      return acc + categoryVotes.reduce((sum, vote) => sum + (Number(vote.total) || 0), 0);
+    }, 0);
+  };
+
+  const totalVotes = calculateTotalVotes(votingData as VotingData);
   
-  const expectedVotesPerUser = 9; // Each user should make 9 votes
+  const expectedVotesPerUser = 9;
   const expectedTotalVotes = totalVoters * expectedVotesPerUser;
   const participationRate = expectedTotalVotes > 0 
     ? Math.round((totalVotes / expectedTotalVotes) * 100) 
