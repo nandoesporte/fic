@@ -25,14 +25,19 @@ export const VoteList = ({ type, data }: VoteListProps) => {
     }
   };
 
+  // Sort data by option number to maintain consistent order
+  const sortedData = [...data].sort((a, b) => 
+    parseInt(a.optionNumber) - parseInt(b.optionNumber)
+  );
+
   return (
     <div className="mb-4 space-y-3">
-      {data.length === 0 ? (
+      {sortedData.length === 0 ? (
         <div className="text-center p-4 text-gray-500">
           Nenhum voto registrado para esta seção
         </div>
       ) : (
-        data.map((item, index) => (
+        sortedData.map((item, index) => (
           <div
             key={index}
             className={`flex items-center justify-between p-5 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ${getBgColor()}`}

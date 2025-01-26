@@ -42,7 +42,7 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
         );
 
         if (existingOption) {
-          existingOption.total += vote.total_votes;
+          existingOption.total = vote.total_votes;
         } else {
           acc[type].push({
             optionNumber: String(vote.option_number),

@@ -8,12 +8,15 @@ interface VotingMetricsProps {
 }
 
 export const VotingMetrics = ({ totalVoters, totalVotes, participationRate }: VotingMetricsProps) => {
+  // Calculate actual participants based on total votes (9 votes per participant)
+  const actualParticipants = Math.floor(totalVotes / 9);
+  
   return (
     <div className="grid gap-4 md:grid-cols-3">
       <MetricCard
         icon={Users}
         title="Total de Participantes"
-        value={totalVoters}
+        value={actualParticipants}
         description="Cada participante deve fazer 9 votos"
         iconClassName="bg-blue-100 text-blue-600"
       />
