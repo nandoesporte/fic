@@ -125,6 +125,37 @@ export const QuestionnaireVoting = () => {
     return existingVote !== null;
   };
 
+  const createProfileIfNeeded = async () => {
+    // First check if profile exists
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', userEmail.toLowerCase())
+      .single();
+
+    if (!existingProfile) {
+      // Create new profile if it doesn't exist
+      const { data: newProfile, error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          { 
+            email: userEmail.toLowerCase(),
+            cpf: `TEMP_${Date.now()}` // Temporary CPF as it's required
+          }
+        ])
+        .select()
+        .single();
+
+      if (profileError) {
+        throw new Error('Erro ao criar perfil: ' + profileError.message);
+      }
+
+      return newProfile.id;
+    }
+
+    return existingProfile.id;
+  };
+
   const submitVotesMutation = useMutation({
     mutationFn: async ({ questionnaireId, votes, dimension }: { 
       questionnaireId: string;
@@ -141,20 +172,15 @@ export const QuestionnaireVoting = () => {
         throw new Error('Você já votou nesta dimensão');
       }
 
-      const { data: voter } = await supabase
-        .from('registered_voters')
-        .select('id')
-        .eq('email', userEmail.toLowerCase())
-        .single();
-
-      if (!voter) throw new Error('Usuário não encontrado');
+      // Get or create profile
+      const profileId = await createProfileIfNeeded();
 
       // First, delete any existing votes for this user and questionnaire
       const { error: deleteError } = await supabase
         .from('questionnaire_votes')
         .delete()
         .eq('questionnaire_id', questionnaireId)
-        .eq('user_id', voter.id);
+        .eq('user_id', profileId);
 
       if (deleteError) throw deleteError;
 
@@ -177,7 +203,7 @@ export const QuestionnaireVoting = () => {
             .from('questionnaire_votes')
             .insert({
               questionnaire_id: questionnaireId,
-              user_id: voter.id,
+              user_id: profileId,
               vote_type: 'upvote',
               option_type: optionType,
               option_number: optionNumber,
