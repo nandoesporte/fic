@@ -26,10 +26,7 @@ type ConsolidatedQuestionnaire = {
   strengths_statuses?: string;
   challenges_statuses?: string;
   opportunities_statuses?: string;
-  group?: string;
 };
-
-const REQUIRED_VOTES = 3;
 
 export const QuestionnaireVoting = () => {
   const [userEmail, setUserEmail] = useState("");
@@ -70,6 +67,7 @@ export const QuestionnaireVoting = () => {
       throw new Error('Usuário não está autenticado');
     }
 
+    // Check if profile exists
     const { data: existingProfile, error: profileError } = await supabase
       .from('profiles')
       .select('id')
@@ -82,6 +80,7 @@ export const QuestionnaireVoting = () => {
     }
 
     if (!existingProfile) {
+      // Create new profile
       const { error: insertError } = await supabase
         .from('profiles')
         .insert({
@@ -94,18 +93,27 @@ export const QuestionnaireVoting = () => {
         console.error('Error creating profile:', insertError);
         throw new Error('Erro ao criar perfil: ' + insertError.message);
       }
+
+      return session.user.id;
     }
 
-    return session.user.id;
+    return existingProfile.id;
   };
 
   const { data: questionnaires, isLoading } = useQuery({
     queryKey: ['questionnaires'],
     queryFn: async () => {
-      console.log('Fetching questionnaires data...');
       const { data: questionnairesData, error: questionnairesError } = await supabase
         .from('fic_questionnaires')
-        .select('*')
+        .select(`
+          *,
+          questionnaire_vote_counts (
+            option_type,
+            option_number,
+            upvotes,
+            downvotes
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (questionnairesError) {
@@ -113,21 +121,30 @@ export const QuestionnaireVoting = () => {
         throw questionnairesError;
       }
 
-      console.log('Questionnaires data fetched:', questionnairesData);
-      
       const consolidatedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: ConsolidatedQuestionnaire }, curr) => {
-        if (curr.status === 'active' && curr.group) {
-          acc[curr.group] = {
+        if (!acc[curr.dimension]) {
+          const strengths_array = curr.strengths.split('\n\n');
+          const challenges_array = curr.challenges.split('\n\n');
+          const opportunities_array = curr.opportunities.split('\n\n');
+          
+          const strengths_statuses = (curr.strengths_statuses || 'pending,pending,pending').split(',');
+          const challenges_statuses = (curr.challenges_statuses || 'pending,pending,pending').split(',');
+          const opportunities_statuses = (curr.opportunities_statuses || 'pending,pending,pending').split(',');
+          
+          const filtered_strengths = strengths_array.filter((_, index) => strengths_statuses[index] === 'active');
+          const filtered_challenges = challenges_array.filter((_, index) => challenges_statuses[index] === 'active');
+          const filtered_opportunities = opportunities_array.filter((_, index) => opportunities_statuses[index] === 'active');
+
+          acc[curr.dimension] = {
             id: curr.id,
             dimension: curr.dimension,
-            strengths: curr.strengths,
-            challenges: curr.challenges,
-            opportunities: curr.opportunities,
+            strengths: filtered_strengths.join('\n\n'),
+            challenges: filtered_challenges.join('\n\n'),
+            opportunities: filtered_opportunities.join('\n\n'),
             created_at: curr.created_at,
             strengths_statuses: curr.strengths_statuses,
             challenges_statuses: curr.challenges_statuses,
             opportunities_statuses: curr.opportunities_statuses,
-            group: curr.group
           };
         }
         return acc;
@@ -138,37 +155,15 @@ export const QuestionnaireVoting = () => {
     enabled: isEmailVerified,
   });
 
-  const handleVote = (questionnaireId: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => {
-    if (!userEmail) {
-      toast.error('Por favor, insira seu email para votar');
-      return;
-    }
+  const checkExistingVote = async (dimension: string) => {
+    const { data: existingVote } = await supabase
+      .from('dimension_votes')
+      .select('id')
+      .eq('email', userEmail.toLowerCase())
+      .eq('dimension', dimension)
+      .maybeSingle();
 
-    const currentSelections = selections[questionnaireId]?.[optionType] || [];
-    const isSelected = currentSelections.includes(optionNumber);
-
-    if (isSelected) {
-      setSelections(prev => ({
-        ...prev,
-        [questionnaireId]: {
-          ...prev[questionnaireId],
-          [optionType]: currentSelections.filter(num => num !== optionNumber)
-        }
-      }));
-    } else {
-      if (currentSelections.length >= REQUIRED_VOTES) {
-        toast.error(`Você já selecionou ${REQUIRED_VOTES} opções nesta seção. Remova uma seleção para escolher outra.`);
-        return;
-      }
-
-      setSelections(prev => ({
-        ...prev,
-        [questionnaireId]: {
-          ...prev[questionnaireId],
-          [optionType]: [...currentSelections, optionNumber]
-        }
-      }));
-    }
+    return existingVote !== null;
   };
 
   const submitVotesMutation = useMutation({
@@ -180,6 +175,8 @@ export const QuestionnaireVoting = () => {
       }[];
       dimension: string;
     }) => {
+      console.log('Submitting votes for questionnaire:', questionnaireId);
+      
       if (!session?.user?.id) {
         throw new Error('Usuário não está autenticado');
       }
@@ -189,8 +186,10 @@ export const QuestionnaireVoting = () => {
         throw new Error('Você já votou nesta dimensão');
       }
 
+      // Get or create profile
       const profileId = await createProfileIfNeeded();
 
+      // First, delete any existing votes for this user and questionnaire
       const { error: deleteError } = await supabase
         .from('questionnaire_votes')
         .delete()
@@ -199,6 +198,7 @@ export const QuestionnaireVoting = () => {
 
       if (deleteError) throw deleteError;
 
+      // Wait a brief moment to ensure deletion is processed
       await new Promise(resolve => setTimeout(resolve, 500));
 
       const { error: dimensionVoteError } = await supabase
@@ -210,6 +210,7 @@ export const QuestionnaireVoting = () => {
 
       if (dimensionVoteError) throw dimensionVoteError;
 
+      // Now insert the new votes
       const votePromises = votes.flatMap(({ optionType, optionNumbers }) =>
         optionNumbers.map(optionNumber =>
           supabase
@@ -238,23 +239,37 @@ export const QuestionnaireVoting = () => {
     },
   });
 
-  const checkExistingVote = async (dimension: string) => {
-    const { data: existingVote } = await supabase
-      .from('dimension_votes')
-      .select('id')
-      .eq('email', userEmail.toLowerCase())
-      .eq('dimension', dimension)
-      .maybeSingle();
+  const handleVote = (questionnaireId: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => {
+    if (!userEmail) {
+      toast.error('Por favor, insira seu email para votar');
+      return;
+    }
 
-    return existingVote !== null;
-  };
+    const currentSelections = selections[questionnaireId]?.[optionType] || [];
+    const isSelected = currentSelections.includes(optionNumber);
 
-  const getSelectionCount = (questionnaireId: string, optionType: string) => {
-    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.length || 0;
-  };
+    if (isSelected) {
+      setSelections(prev => ({
+        ...prev,
+        [questionnaireId]: {
+          ...prev[questionnaireId],
+          [optionType]: currentSelections.filter(num => num !== optionNumber)
+        }
+      }));
+    } else {
+      if (currentSelections.length >= 3) {
+        toast.error('Você já selecionou 3 opções nesta seção. Remova uma seleção para escolher outra.');
+        return;
+      }
 
-  const isOptionSelected = (questionnaireId: string, optionType: string, optionNumber: number) => {
-    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.includes(optionNumber) || false;
+      setSelections(prev => ({
+        ...prev,
+        [questionnaireId]: {
+          ...prev[questionnaireId],
+          [optionType]: [...currentSelections, optionNumber]
+        }
+      }));
+    }
   };
 
   const handleConfirmVotes = async (questionnaireId: string) => {
@@ -263,18 +278,6 @@ export const QuestionnaireVoting = () => {
 
     const questionnaireSelections = selections[questionnaireId];
     if (!questionnaireSelections) return;
-
-    // Verify that exactly 3 options are selected for each category
-    const strengthsCount = questionnaireSelections.strengths?.length || 0;
-    const challengesCount = questionnaireSelections.challenges?.length || 0;
-    const opportunitiesCount = questionnaireSelections.opportunities?.length || 0;
-
-    if (strengthsCount !== REQUIRED_VOTES || 
-        challengesCount !== REQUIRED_VOTES || 
-        opportunitiesCount !== REQUIRED_VOTES) {
-      toast.error(`Você deve selecionar exatamente ${REQUIRED_VOTES} opções em cada categoria antes de confirmar.`);
-      return;
-    }
 
     const votes = Object.entries(questionnaireSelections).map(([optionType, optionNumbers]) => ({
       optionType,
@@ -286,6 +289,14 @@ export const QuestionnaireVoting = () => {
       votes,
       dimension: questionnaire.dimension 
     });
+  };
+
+  const isOptionSelected = (questionnaireId: string, optionType: string, optionNumber: number) => {
+    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.includes(optionNumber) || false;
+  };
+
+  const getSelectionCount = (questionnaireId: string, optionType: string) => {
+    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.length || 0;
   };
 
   if (!isEmailVerified) {
