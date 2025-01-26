@@ -25,6 +25,18 @@ interface Dimension {
   background_color: string;
 }
 
+interface VoteOption {
+  optionNumber: string;
+  total: number;
+  text: string;
+}
+
+interface VotingData {
+  strengths: VoteOption[];
+  challenges: VoteOption[];
+  opportunities: VoteOption[];
+}
+
 export const AnalyticsContainer = () => {
   const [selectedDimension, setSelectedDimension] = useState("all");
 
@@ -69,12 +81,12 @@ export const AnalyticsContainer = () => {
 
   const totalVoters = registeredVoters?.length || 0;
   
-  const calculateTotalVotes = (data: any): number => {
+  const calculateTotalVotes = (data: VotingData | undefined): number => {
     if (!data) return 0;
     
-    return Object.values(data).reduce((acc: number, categoryVotes: any) => {
+    return Object.values(data).reduce((acc: number, categoryVotes: VoteOption[]) => {
       if (!Array.isArray(categoryVotes)) return acc;
-      return acc + categoryVotes.reduce((sum: number, vote: any) => sum + (vote.total || 0), 0);
+      return acc + categoryVotes.reduce((sum: number, vote: VoteOption) => sum + (vote.total || 0), 0);
     }, 0);
   };
 
