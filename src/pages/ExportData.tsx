@@ -3,7 +3,7 @@ import { useUser } from "@/hooks/useUser";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Upload } from "lucide-react";
+import { Upload, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { BackupCreationDialog } from "@/components/export/BackupCreationDialog";
 import { BackupList } from "@/components/export/BackupList";
@@ -45,30 +45,75 @@ export const ExportData = () => {
     setIsDialogOpen(true);
   };
 
+  const handleExportAndClear = async () => {
+    setBackupType("export_and_clear");
+    setIsDialogOpen(true);
+  };
+
   const handleConfirmBackup = async () => {
     try {
       setIsExporting(true);
       
-      const { data: sourceData } = await supabase
-        .from(backupType === "questionnaires" ? "fic_questionnaires" : "questionnaire_votes")
-        .select("*");
+      if (backupType === "export_and_clear") {
+        // First, get all the data we want to backup
+        const { data: questionnairesData } = await supabase
+          .from("fic_questionnaires")
+          .select("*");
 
-      const backup = {
-        id: crypto.randomUUID(),
-        filename: `${backupType}_${new Date().toISOString()}.json`,
-        data: sourceData || [],
-        type: backupType,
-        created_by: user?.id || '',
-        description: backupName
-      };
+        const { data: votesData } = await supabase
+          .from("questionnaire_votes")
+          .select("*");
 
-      const { error } = await supabase
-        .from("data_backups")
-        .insert(backup);
+        const backup = {
+          id: crypto.randomUUID(),
+          filename: `full_backup_${new Date().toISOString()}.json`,
+          data: {
+            questionnaires: questionnairesData || [],
+            votes: votesData || [],
+          },
+          type: "full_backup",
+          created_by: user?.id || '',
+          description: backupName || "Backup completo antes da limpeza"
+        };
 
-      if (error) throw error;
-      
-      toast.success("Backup criado com sucesso");
+        // Create the backup
+        const { error: backupError } = await supabase
+          .from("data_backups")
+          .insert(backup);
+
+        if (backupError) throw backupError;
+
+        // Call the clean_questionnaire_votes function
+        const { error: cleanError } = await supabase
+          .rpc('clean_questionnaire_votes');
+
+        if (cleanError) throw cleanError;
+
+        toast.success("Dados exportados e limpos com sucesso");
+      } else {
+        // Handle regular backups
+        const { data: sourceData } = await supabase
+          .from(backupType === "questionnaires" ? "fic_questionnaires" : "questionnaire_votes")
+          .select("*");
+
+        const backup = {
+          id: crypto.randomUUID(),
+          filename: `${backupType}_${new Date().toISOString()}.json`,
+          data: sourceData || [],
+          type: backupType,
+          created_by: user?.id || '',
+          description: backupName
+        };
+
+        const { error } = await supabase
+          .from("data_backups")
+          .insert(backup);
+
+        if (error) throw error;
+        
+        toast.success("Backup criado com sucesso");
+      }
+
       setBackupName("");
       setIsDialogOpen(false);
       fetchBackups();
@@ -123,7 +168,7 @@ export const ExportData = () => {
         <div className="space-y-4">
           <div>
             <h3 className="font-medium mb-2">Criar Backup</h3>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-4">
               <Button onClick={handleBackupQuestionnaires}>
                 <Upload className="h-4 w-4 mr-2" />
                 Backup Questionários
@@ -131,6 +176,14 @@ export const ExportData = () => {
               <Button onClick={handleBackupVotes}>
                 <Upload className="h-4 w-4 mr-2" />
                 Backup Votos
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleExportAndClear}
+                className="flex items-center"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Exportar e Limpar Dados
               </Button>
             </div>
           </div>
