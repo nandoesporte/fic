@@ -14,7 +14,8 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
           option_type,
           option_number,
           vote_type,
-          fic_questionnaires (
+          fic_questionnaires!inner (
+            id,
             dimension,
             satisfaction,
             strengths,
