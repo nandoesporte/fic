@@ -254,6 +254,14 @@ export const QuestionnaireVoting = () => {
     }
   };
 
+  const isOptionSelected = (questionnaireId: string, optionType: string, optionNumber: number) => {
+    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.includes(optionNumber) || false;
+  };
+
+  const getSelectionCount = (questionnaireId: string, optionType: string) => {
+    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.length || 0;
+  };
+
   const handleConfirmVotes = async (questionnaireId: string) => {
     const questionnaire = questionnaires?.find(q => q.id === questionnaireId);
     if (!questionnaire) return;
