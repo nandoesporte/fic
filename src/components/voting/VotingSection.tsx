@@ -62,6 +62,25 @@ export const VotingSection = ({
     }, { strengths: [], challenges: [], opportunities: [] });
   };
 
+  const canSubmitVotes = (questionnaireId: string) => {
+    return getSelectionCount(questionnaireId, 'strengths') === 3 &&
+           getSelectionCount(questionnaireId, 'challenges') === 3 &&
+           getSelectionCount(questionnaireId, 'opportunities') === 3;
+  };
+
+  const getBgColor = (type: string) => {
+    switch (type) {
+      case 'strengths':
+        return 'bg-[#228B22]';
+      case 'challenges':
+        return 'bg-[#FFD700]';
+      case 'opportunities':
+        return 'bg-[#000080]';
+      default:
+        return '';
+    }
+  };
+
   const renderSection = (
     title: string,
     items: { text: string; questionnaireId: string; index: number }[],
@@ -74,7 +93,7 @@ export const VotingSection = ({
           <div className="flex justify-between items-center">
             <h3 className="font-semibold text-lg text-white">{title}</h3>
             <span className="text-sm text-white">
-              Seleções necessárias: {getSelectionCount(questionnaires[0]?.id || '', type)}/3
+              Seleções: {getSelectionCount(questionnaires[0]?.id || '', type)}/3
             </span>
           </div>
           <div className="space-y-3 mt-4">
@@ -115,12 +134,6 @@ export const VotingSection = ({
 
   const groupedContent = groupContentByType(questionnaires || []);
 
-  const canSubmitVotes = (questionnaireId: string) => {
-    return getSelectionCount(questionnaireId, 'strengths') === 3 &&
-           getSelectionCount(questionnaireId, 'challenges') === 3 &&
-           getSelectionCount(questionnaireId, 'opportunities') === 3;
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
@@ -136,9 +149,9 @@ export const VotingSection = ({
           </div>
         ) : (
           <div className="space-y-6">
-            {renderSection("Pontos Fortes", groupedContent.strengths, 'strengths', 'bg-[#228B22]')}
-            {renderSection("Desafios", groupedContent.challenges, 'challenges', 'bg-[#FFD700]')}
-            {renderSection("Oportunidades", groupedContent.opportunities, 'opportunities', 'bg-[#000080]')}
+            {renderSection("Pontos Fortes", groupedContent.strengths, 'strengths', getBgColor('strengths'))}
+            {renderSection("Desafios", groupedContent.challenges, 'challenges', getBgColor('challenges'))}
+            {renderSection("Oportunidades", groupedContent.opportunities, 'opportunities', getBgColor('opportunities'))}
             
             {questionnaires?.length > 0 && (
               <div className="flex justify-end">
