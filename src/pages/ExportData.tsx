@@ -1,102 +1,118 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUser } from "@/hooks/useUser";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Download, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 import { toast } from "sonner";
+import { BackupCreationDialog } from "@/components/export/BackupCreationDialog";
+import { BackupList } from "@/components/export/BackupList";
 
 export const ExportData = () => {
   const { user } = useUser();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [backups, setBackups] = useState([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [backupName, setBackupName] = useState("");
+  const [backupType, setBackupType] = useState("");
 
-  const handleBackupQuestionnaires = async () => {
+  useEffect(() => {
+    fetchBackups();
+  }, []);
+
+  const fetchBackups = async () => {
     try {
-      const { data: questionnaires } = await supabase
-        .from("fic_questionnaires")
-        .select("*");
-
-      const backup = {
-        id: crypto.randomUUID(),
-        filename: `questionnaires_${new Date().toISOString()}.json`,
-        data: questionnaires || [],
-        type: "questionnaires",
-        created_by: user?.id || '',
-        description: "Backup of questionnaire data"
-      };
-
-      const { error } = await supabase
-        .from("data_backups")
-        .insert(backup);
-
-      if (error) throw error;
-      toast.success("Backup created successfully");
-    } catch (error) {
-      console.error("Error creating backup:", error);
-      toast.error("Failed to create backup");
-    }
-  };
-
-  const handleBackupVotes = async () => {
-    try {
-      const { data: votes } = await supabase
-        .from("questionnaire_votes")
-        .select("*");
-
-      const backup = {
-        id: crypto.randomUUID(),
-        filename: `votes_${new Date().toISOString()}.json`,
-        data: votes || [],
-        type: "votes",
-        created_by: user?.id || '',
-        description: "Backup of voting data"
-      };
-
-      const { error } = await supabase
-        .from("data_backups")
-        .insert(backup);
-
-      if (error) throw error;
-      toast.success("Backup created successfully");
-    } catch (error) {
-      console.error("Error creating backup:", error);
-      toast.error("Failed to create backup");
-    }
-  };
-
-  const handleDownloadBackup = async () => {
-    try {
-      setIsLoading(true);
-      const { data: backups, error } = await supabase
+      const { data, error } = await supabase
         .from("data_backups")
         .select("*")
-        .order("created_at", { ascending: false })
-        .limit(1);
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
+      setBackups(data || []);
+    } catch (error) {
+      console.error("Error fetching backups:", error);
+      toast.error("Erro ao carregar backups");
+    }
+  };
 
-      if (!backups || backups.length === 0) {
-        toast.error("No backups found");
-        return;
-      }
+  const handleBackupQuestionnaires = () => {
+    setBackupType("questionnaires");
+    setIsDialogOpen(true);
+  };
 
-      const latestBackup = backups[0];
-      const jsonString = JSON.stringify(latestBackup.data, null, 2);
+  const handleBackupVotes = () => {
+    setBackupType("votes");
+    setIsDialogOpen(true);
+  };
+
+  const handleConfirmBackup = async () => {
+    try {
+      setIsExporting(true);
+      
+      const { data: sourceData } = await supabase
+        .from(backupType === "questionnaires" ? "fic_questionnaires" : "questionnaire_votes")
+        .select("*");
+
+      const backup = {
+        id: crypto.randomUUID(),
+        filename: `${backupType}_${new Date().toISOString()}.json`,
+        data: sourceData || [],
+        type: backupType,
+        created_by: user?.id || '',
+        description: backupName
+      };
+
+      const { error } = await supabase
+        .from("data_backups")
+        .insert(backup);
+
+      if (error) throw error;
+      
+      toast.success("Backup criado com sucesso");
+      setBackupName("");
+      setIsDialogOpen(false);
+      fetchBackups();
+    } catch (error) {
+      console.error("Error creating backup:", error);
+      toast.error("Erro ao criar backup");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleDownloadBackup = async (backup) => {
+    try {
+      const jsonString = JSON.stringify(backup.data, null, 2);
       const blob = new Blob([jsonString], { type: "application/json" });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = latestBackup.filename;
+      link.download = backup.filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      toast.success("Backup downloaded successfully");
+      toast.success("Backup baixado com sucesso");
     } catch (error) {
       console.error("Error downloading backup:", error);
-      toast.error("Failed to download backup");
-    } finally {
-      setIsLoading(false);
+      toast.error("Erro ao baixar backup");
+    }
+  };
+
+  const handleDeleteBackup = async (backupId) => {
+    try {
+      const { error } = await supabase
+        .from("data_backups")
+        .delete()
+        .eq("id", backupId);
+
+      if (error) throw error;
+      
+      toast.success("Backup excluído com sucesso");
+      fetchBackups();
+    } catch (error) {
+      console.error("Error deleting backup:", error);
+      toast.error("Erro ao excluir backup");
     }
   };
 
@@ -118,15 +134,23 @@ export const ExportData = () => {
               </Button>
             </div>
           </div>
-          <div>
-            <h3 className="font-medium mb-2">Download do Último Backup</h3>
-            <Button onClick={handleDownloadBackup} disabled={isLoading}>
-              <Download className="h-4 w-4 mr-2" />
-              {isLoading ? "Baixando..." : "Baixar Backup"}
-            </Button>
-          </div>
         </div>
       </Card>
+
+      <BackupList 
+        backups={backups}
+        onDownload={handleDownloadBackup}
+        onDelete={handleDeleteBackup}
+      />
+
+      <BackupCreationDialog
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        backupName={backupName}
+        onBackupNameChange={setBackupName}
+        onConfirm={handleConfirmBackup}
+        isExporting={isExporting}
+      />
     </div>
   );
 };
