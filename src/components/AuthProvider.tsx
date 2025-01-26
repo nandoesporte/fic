@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (location.pathname === '/login') {
           navigate('/');
         }
-      } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+      } else if (event === 'SIGNED_OUT') {
         setSession(null);
         // Only redirect to login if not on a public route
         if (!PUBLIC_ROUTES.includes(location.pathname)) {
