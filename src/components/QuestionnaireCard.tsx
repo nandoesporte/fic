@@ -34,19 +34,6 @@ export const QuestionnaireCard = ({
     }
   };
 
-  const renderOptions = (options: string[], type: 'strengths' | 'challenges' | 'opportunities') => {
-    return options.map((option, index) => (
-      <div key={index} className="flex items-start justify-between gap-4 p-3 bg-white/90 rounded-lg">
-        <p className="flex-1 text-sm text-gray-900">{option}</p>
-        <VoteButtons
-          isSelected={isOptionSelected(type, index + 1)}
-          onVote={() => onVote(type, index + 1)}
-          disabled={getSelectionCount(type) >= MAX_SELECTIONS && !isOptionSelected(type, index + 1)}
-        />
-      </div>
-    ));
-  };
-
   const renderSection = (title: string, content: string, type: 'strengths' | 'challenges' | 'opportunities') => {
     const options = content.split('\n\n').filter(Boolean);
     const selectionCount = getSelectionCount(type);
@@ -62,7 +49,16 @@ export const QuestionnaireCard = ({
             </span>
           </div>
           <div className="space-y-3 mt-4">
-            {renderOptions(options, type)}
+            {options.map((option, index) => (
+              <div key={index} className="flex items-start justify-between gap-4 p-3 bg-white/90 rounded-lg">
+                <p className="flex-1 text-sm text-gray-900">{option}</p>
+                <VoteButtons
+                  isSelected={isOptionSelected(type, index + 1)}
+                  onVote={() => onVote(type, index + 1)}
+                  disabled={selectionCount >= MAX_SELECTIONS && !isOptionSelected(type, index + 1)}
+                />
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -91,22 +87,9 @@ export const QuestionnaireCard = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6">
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Pontos Fortes</h3>
-            {renderSection("", questionnaire.strengths, 'strengths')}
-          </div>
-          
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Desafios</h3>
-            {renderSection("", questionnaire.challenges, 'challenges')}
-          </div>
-          
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Oportunidades</h3>
-            {renderSection("", questionnaire.opportunities, 'opportunities')}
-          </div>
-        </div>
+        {renderSection("Pontos Fortes", questionnaire.strengths, 'strengths')}
+        {renderSection("Desafios", questionnaire.challenges, 'challenges')}
+        {renderSection("Oportunidades", questionnaire.opportunities, 'opportunities')}
 
         {onConfirmVotes && (
           <div className="flex justify-end mt-6">

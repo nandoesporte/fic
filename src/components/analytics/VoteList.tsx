@@ -15,7 +15,7 @@ export const VoteList = ({ type, data }: VoteListProps) => {
   const getBgColor = () => {
     switch (type) {
       case "strengths":
-        return "bg-[#228B22] text-white";
+        return "bg-[#2F855A] text-white";
       case "challenges":
         return "bg-[#FFD700] text-gray-900";
       case "opportunities":
