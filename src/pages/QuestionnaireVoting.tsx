@@ -29,6 +29,8 @@ type ConsolidatedQuestionnaire = {
   group?: string;
 };
 
+const REQUIRED_VOTES = 3;
+
 export const QuestionnaireVoting = () => {
   const [userEmail, setUserEmail] = useState("");
   const [isEmailVerified, setIsEmailVerified] = useState(false);
@@ -136,15 +138,37 @@ export const QuestionnaireVoting = () => {
     enabled: isEmailVerified,
   });
 
-  const checkExistingVote = async (dimension: string) => {
-    const { data: existingVote } = await supabase
-      .from('dimension_votes')
-      .select('id')
-      .eq('email', userEmail.toLowerCase())
-      .eq('dimension', dimension)
-      .maybeSingle();
+  const handleVote = (questionnaireId: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => {
+    if (!userEmail) {
+      toast.error('Por favor, insira seu email para votar');
+      return;
+    }
 
-    return existingVote !== null;
+    const currentSelections = selections[questionnaireId]?.[optionType] || [];
+    const isSelected = currentSelections.includes(optionNumber);
+
+    if (isSelected) {
+      setSelections(prev => ({
+        ...prev,
+        [questionnaireId]: {
+          ...prev[questionnaireId],
+          [optionType]: currentSelections.filter(num => num !== optionNumber)
+        }
+      }));
+    } else {
+      if (currentSelections.length >= REQUIRED_VOTES) {
+        toast.error(`Você já selecionou ${REQUIRED_VOTES} opções nesta seção. Remova uma seleção para escolher outra.`);
+        return;
+      }
+
+      setSelections(prev => ({
+        ...prev,
+        [questionnaireId]: {
+          ...prev[questionnaireId],
+          [optionType]: [...currentSelections, optionNumber]
+        }
+      }));
+    }
   };
 
   const submitVotesMutation = useMutation({
@@ -156,8 +180,6 @@ export const QuestionnaireVoting = () => {
       }[];
       dimension: string;
     }) => {
-      console.log('Submitting votes for questionnaire:', questionnaireId);
-      
       if (!session?.user?.id) {
         throw new Error('Usuário não está autenticado');
       }
@@ -216,37 +238,15 @@ export const QuestionnaireVoting = () => {
     },
   });
 
-  const handleVote = (questionnaireId: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => {
-    if (!userEmail) {
-      toast.error('Por favor, insira seu email para votar');
-      return;
-    }
+  const checkExistingVote = async (dimension: string) => {
+    const { data: existingVote } = await supabase
+      .from('dimension_votes')
+      .select('id')
+      .eq('email', userEmail.toLowerCase())
+      .eq('dimension', dimension)
+      .maybeSingle();
 
-    const currentSelections = selections[questionnaireId]?.[optionType] || [];
-    const isSelected = currentSelections.includes(optionNumber);
-
-    if (isSelected) {
-      setSelections(prev => ({
-        ...prev,
-        [questionnaireId]: {
-          ...prev[questionnaireId],
-          [optionType]: currentSelections.filter(num => num !== optionNumber)
-        }
-      }));
-    } else {
-      if (currentSelections.length >= 3) {
-        toast.error('Você já selecionou 3 opções nesta seção. Remova uma seleção para escolher outra.');
-        return;
-      }
-
-      setSelections(prev => ({
-        ...prev,
-        [questionnaireId]: {
-          ...prev[questionnaireId],
-          [optionType]: [...currentSelections, optionNumber]
-        }
-      }));
-    }
+    return existingVote !== null;
   };
 
   const getSelectionCount = (questionnaireId: string, optionType: string) => {
@@ -263,6 +263,18 @@ export const QuestionnaireVoting = () => {
 
     const questionnaireSelections = selections[questionnaireId];
     if (!questionnaireSelections) return;
+
+    // Verify that exactly 3 options are selected for each category
+    const strengthsCount = questionnaireSelections.strengths?.length || 0;
+    const challengesCount = questionnaireSelections.challenges?.length || 0;
+    const opportunitiesCount = questionnaireSelections.opportunities?.length || 0;
+
+    if (strengthsCount !== REQUIRED_VOTES || 
+        challengesCount !== REQUIRED_VOTES || 
+        opportunitiesCount !== REQUIRED_VOTES) {
+      toast.error(`Você deve selecionar exatamente ${REQUIRED_VOTES} opções em cada categoria antes de confirmar.`);
+      return;
+    }
 
     const votes = Object.entries(questionnaireSelections).map(([optionType, optionNumbers]) => ({
       optionType,
