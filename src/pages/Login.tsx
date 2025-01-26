@@ -17,17 +17,33 @@ export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const checkSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("Session check error:", error);
+        return;
+      }
       if (session) {
         navigate("/");
       }
-    });
+    };
+
+    checkSession();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event, session);
       if (event === "SIGNED_IN" && session) {
-        navigate("/");
+        // Ensure we have a valid session before navigating
+        const { data: currentSession, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          console.error("Session validation error:", sessionError);
+          return;
+        }
+        if (currentSession?.session) {
+          navigate("/");
+        }
       }
     });
 
@@ -39,19 +55,39 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const { error } = isSignUp 
-        ? await supabase.auth.signUp({ email, password })
-        : await supabase.auth.signInWithPassword({ email, password });
-
-      if (error) throw error;
-
       if (isSignUp) {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: window.location.origin,
+          },
+        });
+
+        if (error) throw error;
+
         toast({
           title: "Conta criada com sucesso!",
           description: "Por favor, verifique seu email para confirmar o cadastro.",
         });
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
+        // Verify session immediately after sign in
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        
+        if (!sessionData.session) {
+          throw new Error("No session created after login");
+        }
       }
     } catch (error: any) {
+      console.error("Authentication error:", error);
       toast({
         variant: "destructive",
         title: "Erro",
