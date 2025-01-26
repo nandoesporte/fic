@@ -2,46 +2,30 @@ import { Loader2 } from "lucide-react";
 import { QuestionnaireCard } from "@/components/QuestionnaireCard";
 import { useQuestionnaireData } from "@/hooks/useQuestionnaireData";
 import { useQuestionnaireMutations } from "@/hooks/useQuestionnaireMutations";
-import { VoteSelection } from "./VoteSelectionManager";
 
 interface QuestionnaireListProps {
-  userEmail: string;
-  selections: VoteSelection;
-  onVote: (questionnaireId: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => void;
-  isOptionSelected: (questionnaireId: string, optionType: string, optionNumber: number) => boolean;
-  getSelectionCount: (questionnaireId: string, optionType: string) => number;
+  questionnaires: any[];
+  editingLine: {
+    questionnaireId: string;
+    type: 'strengths' | 'challenges' | 'opportunities';
+    index: number;
+    value: string;
+  } | null;
+  onLineEdit: (questionnaireId: string, type: 'strengths' | 'challenges' | 'opportunities', index: number, value: string) => void;
+  onLineSave: (questionnaire: any) => void;
+  onToggleStatus: (questionnaireId: string, type: 'strengths' | 'challenges' | 'opportunities', index: number, currentStatus: string) => void;
+  setEditingLine: (value: any) => void;
 }
 
 export const QuestionnaireList = ({
-  userEmail,
-  selections,
-  onVote,
-  isOptionSelected,
-  getSelectionCount,
+  questionnaires,
+  editingLine,
+  onLineEdit,
+  onLineSave,
+  onToggleStatus,
+  setEditingLine,
 }: QuestionnaireListProps) => {
-  const { data: questionnaires, isLoading } = useQuestionnaireData();
-  const { submitVotesMutation } = useQuestionnaireMutations();
-
-  const handleConfirmVotes = async (questionnaireId: string) => {
-    const questionnaireSelections = selections[questionnaireId];
-    if (!questionnaireSelections) return;
-
-    const questionnaire = questionnaires?.find(q => q.id === questionnaireId);
-    if (!questionnaire) return;
-
-    const votes = Object.entries(questionnaireSelections).map(([optionType, optionNumbers]) => ({
-      optionType,
-      optionNumbers,
-    }));
-
-    await submitVotesMutation.mutate({ 
-      questionnaireId, 
-      votes,
-      dimension: questionnaire.dimension 
-    });
-  };
-
-  if (isLoading) {
+  if (!questionnaires) {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -51,20 +35,22 @@ export const QuestionnaireList = ({
 
   return (
     <div className="space-y-6">
-      {questionnaires?.map((questionnaire) => (
+      {questionnaires.map((questionnaire) => (
         <QuestionnaireCard
           key={questionnaire.id}
           questionnaire={questionnaire}
           onVote={(optionType, optionNumber) => 
-            onVote(questionnaire.id, optionType, optionNumber)
+            onLineEdit(questionnaire.id, optionType, optionNumber, '')
           }
           isOptionSelected={(optionType, optionNumber) =>
-            isOptionSelected(questionnaire.id, optionType, optionNumber)
+            editingLine?.questionnaireId === questionnaire.id &&
+            editingLine?.type === optionType &&
+            editingLine?.index === optionNumber
           }
           getSelectionCount={(optionType) =>
-            getSelectionCount(questionnaire.id, optionType)
+            editingLine?.questionnaireId === questionnaire.id &&
+            editingLine?.type === optionType ? 1 : 0
           }
-          onConfirmVotes={() => handleConfirmVotes(questionnaire.id)}
         />
       ))}
     </div>
