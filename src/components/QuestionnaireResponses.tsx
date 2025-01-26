@@ -20,33 +20,45 @@ export const QuestionnaireResponses = () => {
   const { data: questionnaires, isLoading } = useQuestionnaireData();
   const { updateLineMutation, toggleStatusMutation } = useQuestionnaireMutations();
 
-  const handleEdit = (id: string) => {
-    setSelectedQuestionnaire(id);
-    toast.info('Funcionalidade de edição em desenvolvimento');
-  };
-
   const handleLineEdit = (questionnaireId: string, type: 'strengths' | 'challenges' | 'opportunities', index: number, value: string) => {
     setEditingLine({ questionnaireId, type, index, value });
   };
 
-  const handleLineSave = (questionnaire: any) => {
+  const handleLineSave = async (questionnaire: any) => {
     if (!editingLine) return;
 
     const lines = splitText(questionnaire[editingLine.type]);
     lines[editingLine.index] = editingLine.value;
     
-    updateLineMutation.mutate({
-      questionnaireId: editingLine.questionnaireId,
-      type: editingLine.type,
-      lines,
-    });
+    try {
+      await updateLineMutation.mutateAsync({
+        questionnaireId: editingLine.questionnaireId,
+        type: editingLine.type,
+        lines,
+      });
+      setEditingLine(null);
+    } catch (error) {
+      console.error('Error updating line:', error);
+      toast.error('Erro ao atualizar linha');
+    }
   };
 
-  const handleToggleStatus = (questionnaireId: string, type: 'strengths' | 'challenges' | 'opportunities', index: number, currentStatus: string) => {
-    toggleStatusMutation.mutate({ questionnaireId, type, index, currentStatus });
+  const handleToggleStatus = async (questionnaireId: string, type: 'strengths' | 'challenges' | 'opportunities', index: number, currentStatus: string) => {
+    try {
+      await toggleStatusMutation.mutateAsync({ 
+        questionnaireId, 
+        type, 
+        index, 
+        currentStatus 
+      });
+    } catch (error) {
+      console.error('Error toggling status:', error);
+      toast.error('Erro ao atualizar status');
+    }
   };
 
   const splitText = (text: string): string[] => {
+    if (!text) return [];
     return text.split('\n').filter(line => line.trim() !== '');
   };
 

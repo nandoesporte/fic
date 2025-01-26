@@ -21,7 +21,7 @@ export const useQuestionnaireMutations = () => {
     }) => {
       const { error } = await supabase
         .from('fic_questionnaires')
-        .update({ [type]: lines.join('\n\n') })
+        .update({ [type]: lines.join('\n') })
         .eq('id', questionnaireId);
 
       if (error) throw error;
