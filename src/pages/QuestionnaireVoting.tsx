@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useAuth } from "@/components/AuthProvider";
 import { EmailVerification } from "@/components/voting/EmailVerification";
 import { VotingSection } from "@/components/voting/VotingSection";
 
@@ -19,7 +18,6 @@ export const QuestionnaireVoting = () => {
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [selections, setSelections] = useState<VoteSelection>({});
   const queryClient = useQueryClient();
-  const { session } = useAuth();
 
   const { data: questionnaires, isLoading } = useQuery({
     queryKey: ['questionnaires'],
@@ -69,24 +67,10 @@ export const QuestionnaireVoting = () => {
       }[];
       dimension: string;
     }) => {
-      if (!session?.user?.id) {
-        throw new Error('Usuário não está autenticado');
-      }
-
       const hasVoted = await checkExistingVote(dimension);
       if (hasVoted) {
         throw new Error('Você já votou nesta dimensão');
       }
-
-      const profileId = await createProfileIfNeeded();
-
-      await supabase
-        .from('questionnaire_votes')
-        .delete()
-        .eq('questionnaire_id', questionnaireId)
-        .eq('user_id', profileId);
-
-      await new Promise(resolve => setTimeout(resolve, 500));
 
       await supabase
         .from('dimension_votes')
@@ -101,7 +85,7 @@ export const QuestionnaireVoting = () => {
             .from('questionnaire_votes')
             .insert({
               questionnaire_id: questionnaireId,
-              user_id: profileId,
+              user_id: null,
               vote_type: 'upvote',
               option_type: optionType,
               option_number: optionNumber,
@@ -132,40 +116,6 @@ export const QuestionnaireVoting = () => {
       .maybeSingle();
 
     return existingVote !== null;
-  };
-
-  const createProfileIfNeeded = async () => {
-    if (!session?.user?.id) {
-      throw new Error('Usuário não está autenticado');
-    }
-
-    const { data: existingProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', session.user.id)
-      .maybeSingle();
-
-    if (profileError) {
-      console.error('Error checking profile:', profileError);
-      throw new Error('Erro ao verificar perfil: ' + profileError.message);
-    }
-
-    if (!existingProfile) {
-      const { error: insertError } = await supabase
-        .from('profiles')
-        .insert({
-          id: session.user.id,
-          email: userEmail.toLowerCase(),
-          cpf: `TEMP_${Date.now()}`
-        });
-
-      if (insertError) {
-        console.error('Error creating profile:', insertError);
-        throw new Error('Erro ao criar perfil: ' + insertError.message);
-      }
-    }
-
-    return session.user.id;
   };
 
   const handleVote = (questionnaireId: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => {
