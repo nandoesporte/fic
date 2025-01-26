@@ -35,12 +35,9 @@ const CooperativeCard = ({
 export const DashboardCooperatives = () => {
   // This would ideally come from an API/database
   const cooperatives = [
-    { name: "Cooperativa Central", members: 1250, engagement: 85 },
-    { name: "Coop Agrícola Sul", members: 850, engagement: 78 },
-    { name: "CoopTech Inovação", members: 320, engagement: 92 },
-    { name: "Cooperativa Saúde Integrada", members: 680, engagement: 88 },
-    { name: "EcoCooperativa Verde", members: 450, engagement: 82 },
-    { name: "CoopFinanceira Nacional", members: 920, engagement: 75 }
+    { name: "Cocamar", members: 15800, engagement: 88 },
+    { name: "Sicoob", members: 25300, engagement: 92 },
+    { name: "Frísia", members: 12400, engagement: 85 }
   ];
 
   return (
