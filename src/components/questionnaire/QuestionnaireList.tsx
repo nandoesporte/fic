@@ -1,18 +1,14 @@
 import { Card } from "@/components/ui/card";
 import { QuestionnaireSection } from "./QuestionnaireSection";
+import { EditingLine } from "@/components/QuestionnaireResponses";
 
 interface QuestionnaireListProps {
   questionnaires: any[];
-  editingLine: {
-    questionnaireId: string;
-    type: 'strengths' | 'challenges' | 'opportunities';
-    index: number;
-    value: string;
-  } | null;
+  editingLine: EditingLine;
   onLineEdit: (questionnaireId: string, type: 'strengths' | 'challenges' | 'opportunities', index: number, value: string) => void;
   onLineSave: (questionnaire: any) => void;
   onToggleStatus: (questionnaireId: string, type: 'strengths' | 'challenges' | 'opportunities', index: number, currentStatus: string) => void;
-  setEditingLine: (value: any) => void;
+  setEditingLine: (value: EditingLine) => void;
 }
 
 export const QuestionnaireList = ({
@@ -24,9 +20,9 @@ export const QuestionnaireList = ({
   setEditingLine,
 }: QuestionnaireListProps) => {
   const sections = [
-    { title: 'Pontos Fortes', type: 'strengths' as const, bgColor: 'bg-[#228B22]' },
-    { title: 'Desafios', type: 'challenges' as const, bgColor: 'bg-[#FFD700]' },
-    { title: 'Oportunidades', type: 'opportunities' as const, bgColor: 'bg-[#000080]' }
+    { title: 'Pontos Fortes', type: 'strengths' as const },
+    { title: 'Desafios', type: 'challenges' as const },
+    { title: 'Oportunidades', type: 'opportunities' as const }
   ];
 
   return (
@@ -35,7 +31,6 @@ export const QuestionnaireList = ({
         <Card key={section.type} className="p-6">
           <QuestionnaireSection
             title={section.title}
-            bgColor={section.bgColor}
             questionnaires={questionnaires}
             type={section.type}
             editingLine={editingLine}

@@ -28,10 +28,6 @@ export const useQuestionnaireMutations = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
-      toast.success('Linha atualizada com sucesso');
-    },
-    onError: () => {
-      toast.error('Erro ao atualizar linha');
     },
   });
 
@@ -44,6 +40,7 @@ export const useQuestionnaireMutations = () => {
     }) => {
       const questionnaires = queryClient.getQueryData(['questionnaires']) as Questionnaire[] | undefined;
       const questionnaire = questionnaires?.find((q) => q.id === questionnaireId);
+      
       if (!questionnaire) return;
 
       const statuses = (questionnaire[`${type}_statuses`] || 'pending,pending,pending').split(',')
@@ -61,11 +58,6 @@ export const useQuestionnaireMutations = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
-      toast.success('Status atualizado com sucesso');
-    },
-    onError: (error) => {
-      console.error('Toggle status error:', error);
-      toast.error('Erro ao atualizar status');
     },
   });
 
