@@ -31,29 +31,10 @@ export const useBackupOperations = () => {
     }
   };
 
-  const createBackup = async (backupType: string, backupName: string) => {
-    try {
-      setIsExporting(true);
-      
-      if (backupType === "export_and_clear") {
-        await handleExportAndClear(backupName);
-      } else {
-        await handleRegularBackup(backupType, backupName);
-      }
-
-      toast.success("Backup criado com sucesso");
-      await fetchBackups();
-    } catch (error) {
-      console.error("Error creating backup:", error);
-      toast.error("Erro ao criar backup");
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   const handleExportAndClear = async (backupName: string) => {
     try {
       console.log("Starting export and clear process...");
+      setIsExporting(true);
 
       // First, get all the data we want to backup
       const { data: questionnairesData, error: questionnairesError } = await supabase
@@ -122,32 +103,14 @@ export const useBackupOperations = () => {
 
       console.log("Data cleaned successfully");
       toast.success("Dados exportados e limpos com sucesso");
+      await fetchBackups();
 
     } catch (error) {
       console.error("Error in handleExportAndClear:", error);
-      throw error;
+      toast.error("Erro ao exportar e limpar dados");
+    } finally {
+      setIsExporting(false);
     }
-  };
-
-  const handleRegularBackup = async (backupType: string, backupName: string) => {
-    const { data: sourceData } = await supabase
-      .from(backupType === "questionnaires" ? "fic_questionnaires" : "questionnaire_votes")
-      .select("*");
-
-    const backup = {
-      id: crypto.randomUUID(),
-      filename: `${backupType}_${new Date().toISOString()}.json`,
-      data: sourceData || [],
-      type: backupType,
-      created_by: user?.id || '',
-      description: backupName
-    };
-
-    const { error } = await supabase
-      .from("data_backups")
-      .insert(backup);
-
-    if (error) throw error;
   };
 
   const downloadBackup = async (backup: Backup) => {
@@ -190,7 +153,7 @@ export const useBackupOperations = () => {
     isExporting,
     backups,
     fetchBackups,
-    createBackup,
+    handleExportAndClear,
     downloadBackup,
     deleteBackup
   };
