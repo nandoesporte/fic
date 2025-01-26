@@ -36,14 +36,7 @@ export function AppRoutes() {
           </div>
         </ProtectedRoute>
       } />
-      <Route
-        path="/voting"
-        element={
-          <ProtectedRoute>
-            <QuestionnaireVoting />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/voting" element={<QuestionnaireVoting />} />
       <Route
         path="/analytics"
         element={
