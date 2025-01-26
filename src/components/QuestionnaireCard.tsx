@@ -1,9 +1,9 @@
 import { Card } from "@/components/ui/card";
-import { VoteButtons } from "@/components/VoteButtons";
+import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { QuestionnaireSection } from "./questionnaire/QuestionnaireSection";
+import { MAX_SELECTIONS } from "@/utils/questionnaireUtils";
 
 interface QuestionnaireCardProps {
   questionnaire: any;
@@ -13,8 +13,6 @@ interface QuestionnaireCardProps {
   onConfirmVotes?: () => void;
 }
 
-const MAX_SELECTIONS = 3;
-
 export const QuestionnaireCard = ({ 
   questionnaire, 
   onVote,
@@ -22,62 +20,6 @@ export const QuestionnaireCard = ({
   getSelectionCount,
   onConfirmVotes
 }: QuestionnaireCardProps) => {
-  const getBgColor = (type: string) => {
-    switch (type) {
-      case 'strengths':
-        return 'bg-[#228B22] text-white';
-      case 'challenges':
-        return 'bg-[#FFD700] text-gray-900';
-      case 'opportunities':
-        return 'bg-[#000080] text-white';
-      default:
-        return '';
-    }
-  };
-
-  const handleVote = (type: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => {
-    const currentCount = getSelectionCount(type);
-    const isSelected = isOptionSelected(type, optionNumber);
-
-    if (!isSelected && currentCount >= MAX_SELECTIONS) {
-      toast.error(`Você já selecionou ${MAX_SELECTIONS} opções nesta seção. Remova uma seleção para escolher outra.`);
-      return;
-    }
-
-    onVote(type, optionNumber);
-  };
-
-  const renderSection = (title: string, content: string, type: 'strengths' | 'challenges' | 'opportunities') => {
-    const options = content.split('\n\n').filter(Boolean);
-    const selectionCount = getSelectionCount(type);
-    const bgColorClass = getBgColor(type);
-
-    return (
-      <div className="space-y-4">
-        <div className={`p-4 rounded-lg ${bgColorClass}`}>
-          <div className="flex justify-between items-center">
-            <h3 className="font-semibold text-lg">{title}</h3>
-            <span className="text-sm">
-              {selectionCount}/{MAX_SELECTIONS} seleções
-            </span>
-          </div>
-          <div className="space-y-3 mt-4">
-            {options.map((option, index) => (
-              <div key={index} className="flex items-start justify-between gap-4 p-3 bg-white/90 rounded-lg">
-                <p className="flex-1 text-sm text-gray-900">{option}</p>
-                <VoteButtons
-                  isSelected={isOptionSelected(type, index + 1)}
-                  onVote={() => handleVote(type, index + 1)}
-                  disabled={getSelectionCount(type) >= MAX_SELECTIONS && !isOptionSelected(type, index + 1)}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const allSectionsComplete = 
     getSelectionCount('strengths') === MAX_SELECTIONS &&
     getSelectionCount('challenges') === MAX_SELECTIONS &&
@@ -100,9 +42,32 @@ export const QuestionnaireCard = ({
           </div>
         </div>
 
-        {renderSection("Pontos Fortes", questionnaire.strengths, 'strengths')}
-        {renderSection("Desafios", questionnaire.challenges, 'challenges')}
-        {renderSection("Oportunidades", questionnaire.opportunities, 'opportunities')}
+        <QuestionnaireSection
+          title="Pontos Fortes"
+          content={questionnaire.strengths}
+          type="strengths"
+          isOptionSelected={isOptionSelected}
+          getSelectionCount={getSelectionCount}
+          onVote={onVote}
+        />
+
+        <QuestionnaireSection
+          title="Desafios"
+          content={questionnaire.challenges}
+          type="challenges"
+          isOptionSelected={isOptionSelected}
+          getSelectionCount={getSelectionCount}
+          onVote={onVote}
+        />
+
+        <QuestionnaireSection
+          title="Oportunidades"
+          content={questionnaire.opportunities}
+          type="opportunities"
+          isOptionSelected={isOptionSelected}
+          getSelectionCount={getSelectionCount}
+          onVote={onVote}
+        />
 
         {onConfirmVotes && (
           <div className="flex justify-end mt-6">
