@@ -161,7 +161,7 @@ export type Database = {
           data: Json
           description?: string | null
           filename: string
-          id?: string
+          id: string
           size_bytes?: number | null
           status?: string | null
           type: string
@@ -217,7 +217,7 @@ export type Database = {
           description?: string | null
           difficulty?: string | null
           duration?: number | null
-          id?: string
+          id: string
           thumbnail_url?: string | null
           title: string
           updated_at?: string | null
@@ -342,7 +342,7 @@ export type Database = {
           description?: string | null
           dimension?: string | null
           end_date: string
-          id?: string
+          id: string
           metrics?: Json
           start_date: string
           title: string
@@ -378,8 +378,8 @@ export type Database = {
           created_at?: string | null
           current_value?: number | null
           end_date: string
-          id?: string
-          start_date?: string
+          id: string
+          start_date: string
           status?: string | null
           target_value: number
           type: string
@@ -588,7 +588,7 @@ export type Database = {
           id?: string
           receiver_id?: string | null
           sender_id?: string | null
-          status?: string
+          status: string
         }
         Update: {
           amount?: number
@@ -633,7 +633,7 @@ export type Database = {
           created_at?: string | null
           current?: number | null
           end_date: string
-          id?: string
+          id: string
           start_date: string
           status?: string | null
           target: number
@@ -807,7 +807,7 @@ export type Tables<
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
         Database[PublicTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never,
 > = PublicTableNameOrOptions extends { schema: keyof Database }
   ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
       Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
@@ -894,3 +894,20 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
     ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
+
+export interface FICDailyMetric {
+  id: string;
+  date: string;
+  average_index: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DimensionPerformance {
+  id: string;
+  dimension: string;
+  score: number;
+  date: string;
+  created_at: string;
+  updated_at: string;
+}
