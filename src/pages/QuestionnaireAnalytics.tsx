@@ -16,6 +16,12 @@ interface RegisteredVoter {
   updated_at: string;
 }
 
+interface VotingData {
+  strengths: Array<{ optionNumber: string; total: number; text: string }>;
+  challenges: Array<{ optionNumber: string; total: number; text: string }>;
+  opportunities: Array<{ optionNumber: string; total: number; text: string }>;
+}
+
 const QuestionnaireAnalytics = () => {
   const [selectedDimension, setSelectedDimension] = useState("all");
 
@@ -64,8 +70,9 @@ const QuestionnaireAnalytics = () => {
   const totalVoters = registeredVoters?.length || 0;
   
   // Calculate total votes with proper type checking
-  const totalVotes = Object.values(votingData || {}).reduce((acc: number, categoryVotes: any[]) => {
-    return acc + (Array.isArray(categoryVotes) ? categoryVotes.reduce((sum, vote) => sum + (vote.total || 0), 0) : 0);
+  const totalVotes = Object.values(votingData as VotingData || {}).reduce((acc: number, categoryVotes) => {
+    if (!Array.isArray(categoryVotes)) return acc;
+    return acc + categoryVotes.reduce((sum, vote) => sum + (Number(vote.total) || 0), 0);
   }, 0);
   
   const expectedVotesPerUser = 9; // Each user should make 9 votes
