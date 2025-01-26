@@ -11,6 +11,7 @@ import Users from "@/pages/Users";
 import Settings from "@/pages/Settings";
 import { FICForm } from "@/components/FICForm";
 import { DimensionManager } from "@/components/FICForm/DimensionManager";
+import { QuestionnaireResponses } from "@/components/QuestionnaireResponses";
 
 export function AppRoutes() {
   return (
@@ -18,6 +19,14 @@ export function AppRoutes() {
       <Route path="/" element={<Index />} />
       <Route path="/login" element={<Login />} />
       <Route path="/formulario" element={<QuestionnaireForm />} />
+      <Route path="/respostas" element={
+        <ProtectedRoute>
+          <div className="space-y-8">
+            <h1 className="text-2xl font-bold">Respostas dos Questionários</h1>
+            <QuestionnaireResponses />
+          </div>
+        </ProtectedRoute>
+      } />
       <Route path="/novo-questionario" element={
         <ProtectedRoute>
           <div className="space-y-8">
