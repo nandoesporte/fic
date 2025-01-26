@@ -6,18 +6,16 @@ import { useQuestionnaireData } from "@/hooks/useQuestionnaireData";
 import { useQuestionnaireMutations } from "@/hooks/useQuestionnaireMutations";
 import { toast } from "sonner";
 
-export type EditingLine = {
-  questionnaireId: string;
-  type: 'strengths' | 'challenges' | 'opportunities';
-  index: number;
-  value: string;
-} | null;
-
 export const QuestionnaireResponses = () => {
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<string | null>(null);
   const [selectedDimension, setSelectedDimension] = useState<string>("todos");
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
-  const [editingLine, setEditingLine] = useState<EditingLine>(null);
+  const [editingLine, setEditingLine] = useState<{
+    questionnaireId: string;
+    type: 'strengths' | 'challenges' | 'opportunities';
+    index: number;
+    value: string;
+  } | null>(null);
 
   const { data: questionnaires, isLoading } = useQuestionnaireData();
   const { updateLineMutation, toggleStatusMutation } = useQuestionnaireMutations();
@@ -39,7 +37,6 @@ export const QuestionnaireResponses = () => {
         lines,
       });
       setEditingLine(null);
-      toast.success('Linha atualizada com sucesso');
     } catch (error) {
       console.error('Error updating line:', error);
       toast.error('Erro ao atualizar linha');
@@ -54,7 +51,6 @@ export const QuestionnaireResponses = () => {
         index, 
         currentStatus 
       });
-      toast.success('Status atualizado com sucesso');
     } catch (error) {
       console.error('Error toggling status:', error);
       toast.error('Erro ao atualizar status');
@@ -63,7 +59,7 @@ export const QuestionnaireResponses = () => {
 
   const splitText = (text: string): string[] => {
     if (!text) return [];
-    return text.split('\n\n').filter(line => line.trim() !== '');
+    return text.split('\n').filter(line => line.trim() !== '');
   };
 
   const getUniqueDimensions = () => {
