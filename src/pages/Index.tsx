@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardMetrics } from "@/components/dashboard/DashboardMetrics";
 import { DashboardAchievements } from "@/components/dashboard/DashboardAchievements";
+import { RegisteredVotersSection } from "@/components/RegisteredVotersSection";
 import { DimensionManager } from "@/components/FICForm/DimensionManager";
 import { FICForm } from "@/components/FICForm";
 import { QuestionnaireResponses } from "@/components/QuestionnaireResponses";
@@ -33,6 +34,9 @@ const Index = () => {
           <TabsTrigger value="novo" className="data-[state=active]:bg-primary/10 px-6">
             Novo Questionário
           </TabsTrigger>
+          <TabsTrigger value="cooperados" className="data-[state=active]:bg-primary/10 px-6">
+            Cooperados
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="questionarios">
@@ -60,6 +64,10 @@ const Index = () => {
               <FICForm />
             </div>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="cooperados">
+          <RegisteredVotersSection />
         </TabsContent>
       </Tabs>
     </div>
