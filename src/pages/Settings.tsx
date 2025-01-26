@@ -30,8 +30,20 @@ export default function Settings() {
     setLoading(true);
 
     try {
-      // Here you would update the data in your database
-      // For now, we'll just show a success message
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          cocamarMembers: formData.cocamarMembers,
+          cocamarEngagement: formData.cocamarEngagement,
+          sicoobMembers: formData.sicoobMembers,
+          sicoobEngagement: formData.sicoobEngagement,
+          frisiaMembers: formData.frisiaMembers,
+          frisiaEngagement: formData.frisiaEngagement
+        })
+        .eq('id', (await supabase.auth.getUser()).data.user?.id);
+
+      if (error) throw error;
+      
       toast.success("Configurações atualizadas com sucesso!");
     } catch (error) {
       toast.error("Erro ao atualizar configurações");
