@@ -1,7 +1,5 @@
-import { Loader2 } from "lucide-react";
-import { QuestionnaireCard } from "@/components/QuestionnaireCard";
-import { useQuestionnaireData } from "@/hooks/useQuestionnaireData";
-import { useQuestionnaireMutations } from "@/hooks/useQuestionnaireMutations";
+import { Card } from "@/components/ui/card";
+import { QuestionnaireSection } from "./QuestionnaireSection";
 
 interface QuestionnaireListProps {
   questionnaires: any[];
@@ -25,33 +23,28 @@ export const QuestionnaireList = ({
   onToggleStatus,
   setEditingLine,
 }: QuestionnaireListProps) => {
-  if (!questionnaires) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const sections = [
+    { title: 'Pontos Fortes', type: 'strengths' as const, bgColor: 'bg-[#228B22]' },
+    { title: 'Desafios', type: 'challenges' as const, bgColor: 'bg-[#FFD700]' },
+    { title: 'Oportunidades', type: 'opportunities' as const, bgColor: 'bg-[#000080]' }
+  ];
 
   return (
-    <div className="space-y-6">
-      {questionnaires.map((questionnaire) => (
-        <QuestionnaireCard
-          key={questionnaire.id}
-          questionnaire={questionnaire}
-          onVote={(optionType, optionNumber) => 
-            onLineEdit(questionnaire.id, optionType, optionNumber, '')
-          }
-          isOptionSelected={(optionType, optionNumber) =>
-            editingLine?.questionnaireId === questionnaire.id &&
-            editingLine?.type === optionType &&
-            editingLine?.index === optionNumber
-          }
-          getSelectionCount={(optionType) =>
-            editingLine?.questionnaireId === questionnaire.id &&
-            editingLine?.type === optionType ? 1 : 0
-          }
-        />
+    <div className="space-y-8">
+      {sections.map(section => (
+        <Card key={section.type} className="p-6">
+          <QuestionnaireSection
+            title={section.title}
+            bgColor={section.bgColor}
+            questionnaires={questionnaires}
+            type={section.type}
+            editingLine={editingLine}
+            onLineEdit={onLineEdit}
+            onLineSave={onLineSave}
+            onToggleStatus={onToggleStatus}
+            setEditingLine={setEditingLine}
+          />
+        </Card>
       ))}
     </div>
   );
