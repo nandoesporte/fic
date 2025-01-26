@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Loader2, ClipboardList } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -78,11 +78,6 @@ export const QuestionnaireResponses = () => {
       const statuses = (questionnaire[`${type}_statuses`] || 'pending,pending,pending').split(',')
         .map((status, i) => i === index ? (status === 'active' ? 'pending' : 'active') : status);
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('Usuário não autenticado');
-      }
-
       const { error: updateError } = await supabase
         .from('fic_questionnaires')
         .update({ 
@@ -92,34 +87,6 @@ export const QuestionnaireResponses = () => {
         .eq('id', questionnaireId);
 
       if (updateError) throw updateError;
-
-      if (statuses[index] === 'active') {
-        const { error: voteError } = await supabase
-          .from('questionnaire_votes')
-          .insert({
-            questionnaire_id: questionnaire.id,
-            option_type: type,
-            option_number: index + 1,
-            vote_type: 'upvote',
-            user_id: user.id
-          });
-
-        if (voteError && voteError.code !== '23505') {
-          throw voteError;
-        }
-      } else {
-        const { error: deleteError } = await supabase
-          .from('questionnaire_votes')
-          .delete()
-          .match({
-            questionnaire_id: questionnaire.id,
-            option_type: type,
-            option_number: index + 1,
-            user_id: user.id
-          });
-
-        if (deleteError) throw deleteError;
-      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
