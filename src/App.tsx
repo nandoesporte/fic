@@ -14,6 +14,7 @@ import Users from "@/pages/Users";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { AppSidebar } from "@/components/AppSidebar";
 import { QuestionnaireResponses } from "@/components/QuestionnaireResponses";
+import { FICForm } from "@/components/FICForm";
 
 const queryClient = new QueryClient();
 
@@ -44,11 +45,11 @@ function App() {
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/formulario" element={<QuestionnaireForm />} />
-                <Route path="/respostas" element={
+                <Route path="/novo-questionario" element={
                   <ProtectedRoute>
                     <div className="space-y-8">
-                      <h1 className="text-2xl font-bold">Respostas dos Questionários</h1>
-                      <QuestionnaireResponses />
+                      <h1 className="text-2xl font-bold">Novo Questionário FIC</h1>
+                      <FICForm />
                     </div>
                   </ProtectedRoute>
                 } />

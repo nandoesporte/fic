@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sidebar } from "@/components/ui/sidebar";
-import { FileText, BarChart2, Database, FormInput, LayoutDashboard, Brain, Users, ClipboardList } from "lucide-react";
+import { FileText, BarChart2, Database, FormInput, LayoutDashboard, Brain, Users, ClipboardList, PlusCircle } from "lucide-react";
 
 export function AppSidebar() {
   const { pathname } = useLocation();
@@ -21,6 +21,15 @@ export function AppSidebar() {
                 >
                   <LayoutDashboard className="mr-2 h-4 w-4" />
                   <span>Dashboard</span>
+                </Button>
+              </Link>
+              <Link to="/novo-questionario">
+                <Button
+                  variant={pathname === "/novo-questionario" ? "secondary" : "ghost"}
+                  className="w-full justify-start text-sm"
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  <span>Novo Questionário</span>
                 </Button>
               </Link>
               <Link to="/respostas">
