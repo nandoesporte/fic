@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Download, FileSpreadsheet, FilePdf } from "lucide-react";
+import { Loader2, Download, FileSpreadsheet, FileText } from "lucide-react";
 import { toast } from "sonner";
 import {
   Table,
@@ -14,6 +14,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
+
+interface ReportMetrics {
+  total_votos: number;
+  pontos_fortes: number;
+  desafios: number;
+  oportunidades: number;
+}
 
 export default function AIReport() {
   const [selectedDimension, setSelectedDimension] = useState<string>("");
@@ -81,7 +88,7 @@ export default function AIReport() {
       dimensao: report.dimension,
       titulo: report.title,
       descricao: report.description,
-      metricas: report.metrics,
+      metricas: report.metrics as ReportMetrics,
       data_inicio: new Date(report.start_date).toLocaleDateString('pt-BR'),
       data_fim: new Date(report.end_date).toLocaleDateString('pt-BR'),
     }));
@@ -110,8 +117,6 @@ export default function AIReport() {
         document.body.removeChild(csvLink);
         break;
 
-      // Note: For PDF and Excel, in a real implementation you'd want to use libraries
-      // like jsPDF and xlsx, but for now we'll just show a toast
       case 'pdf':
       case 'excel':
         toast.info(`Exportação para ${format.toUpperCase()} será implementada em breve`);
@@ -208,7 +213,7 @@ export default function AIReport() {
                   size="sm"
                   onClick={() => handleExport('pdf')}
                 >
-                  <FilePdf className="h-4 w-4 mr-2" />
+                  <FileText className="h-4 w-4 mr-2" />
                   PDF
                 </Button>
               </div>
@@ -228,21 +233,24 @@ export default function AIReport() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {reports.map((report) => (
-                    <TableRow key={report.id}>
-                      <TableCell>{report.dimension}</TableCell>
-                      <TableCell>{report.metrics.total_votos}</TableCell>
-                      <TableCell>{report.metrics.pontos_fortes}</TableCell>
-                      <TableCell>{report.metrics.desafios}</TableCell>
-                      <TableCell>{report.metrics.oportunidades}</TableCell>
-                      <TableCell>
-                        {new Date(report.start_date).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(report.end_date).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {reports.map((report) => {
+                    const metrics = report.metrics as ReportMetrics;
+                    return (
+                      <TableRow key={report.id}>
+                        <TableCell>{report.dimension}</TableCell>
+                        <TableCell>{metrics.total_votos}</TableCell>
+                        <TableCell>{metrics.pontos_fortes}</TableCell>
+                        <TableCell>{metrics.desafios}</TableCell>
+                        <TableCell>{metrics.oportunidades}</TableCell>
+                        <TableCell>
+                          {new Date(report.start_date).toLocaleDateString('pt-BR')}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(report.end_date).toLocaleDateString('pt-BR')}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
