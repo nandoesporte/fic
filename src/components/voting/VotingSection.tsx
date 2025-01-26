@@ -3,7 +3,7 @@ import { Loader2 } from "lucide-react";
 
 interface VotingSectionProps {
   userEmail: string;
-  questionnaires: any[];
+  questionnaires: any[];  // Explicitly typing as array
   isLoading: boolean;
   selections: {
     [key: string]: {
@@ -18,7 +18,7 @@ interface VotingSectionProps {
 
 export const VotingSection = ({
   userEmail,
-  questionnaires,
+  questionnaires = [], // Provide default empty array
   isLoading,
   selections,
   onVote,
