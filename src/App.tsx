@@ -10,6 +10,7 @@ import QuestionnaireAnalytics from "@/pages/QuestionnaireAnalytics";
 import QuestionnaireForm from "@/pages/QuestionnaireForm";
 import ExportData from "@/pages/ExportData";
 import AIReport from "@/pages/AIReport";
+import Users from "@/pages/Users";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { AppSidebar } from "@/components/AppSidebar";
 
@@ -71,6 +72,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <AIReport />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/users"
+                  element={
+                    <ProtectedRoute>
+                      <Users />
                     </ProtectedRoute>
                   }
                 />
