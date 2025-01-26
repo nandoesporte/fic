@@ -85,7 +85,7 @@ export const QuestionnaireVoting = () => {
             .from('questionnaire_votes')
             .insert({
               questionnaire_id: questionnaireId,
-              user_id: null, // Permitindo votos sem usuário autenticado
+              user_id: null,
               vote_type: 'upvote',
               option_type: optionType,
               option_number: optionNumber,
