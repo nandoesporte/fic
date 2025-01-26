@@ -23,7 +23,7 @@ interface ReportMetrics {
   oportunidades: number;
 }
 
-function isReportMetrics(metrics: Json): metrics is ReportMetrics {
+function isReportMetrics(metrics: Json): metrics is { [key: string]: Json } & ReportMetrics {
   if (typeof metrics !== 'object' || metrics === null || Array.isArray(metrics)) {
     return false;
   }
