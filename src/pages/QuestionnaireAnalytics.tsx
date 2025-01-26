@@ -6,6 +6,7 @@ import { VotingResults } from "@/components/analytics/VotingResults";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
+import { useQuestionnaireVotes } from "@/hooks/useQuestionnaireVotes";
 
 const QuestionnaireAnalytics = () => {
   const [selectedDimension, setSelectedDimension] = useState("all");
@@ -26,31 +27,23 @@ const QuestionnaireAnalytics = () => {
     },
   });
 
-  const { data: analytics, isLoading } = useQuery({
-    queryKey: ['analytics', selectedDimension],
+  // Get total registered voters
+  const { data: registeredVoters } = useQuery({
+    queryKey: ['registered-voters'],
     queryFn: async () => {
-      console.log('Fetching analytics data for dimension:', selectedDimension);
-      
-      let query = supabase
-        .from('questionnaire_voting_report')
-        .select('*')
-        .order('total_votes', { ascending: false });
-
-      if (selectedDimension !== 'all') {
-        query = query.eq('dimension', selectedDimension);
-      }
-
-      const { data, error } = await query;
+      const { data, error } = await supabase
+        .from('registered_voters')
+        .select('*');
 
       if (error) {
-        toast.error('Erro ao carregar dados');
+        toast.error('Erro ao carregar votantes registrados');
         throw error;
       }
-
-      console.log('Analytics data fetched:', data);
       return data;
     },
   });
+
+  const { data: votingData, isLoading } = useQuestionnaireVotes(selectedDimension);
 
   if (isLoading) {
     return (
@@ -60,19 +53,16 @@ const QuestionnaireAnalytics = () => {
     );
   }
 
-  const processVotingData = (type: string) => {
-    return analytics
-      ?.filter(item => item.option_type === type)
-      .map(item => ({
-        optionNumber: String(item.option_number),
-        total: item.total_votes || 0,
-        text: item[type]?.split('\n\n')[item.option_number - 1] || '',
-      })) || [];
-  };
-
-  const totalVotes = analytics?.reduce((acc, curr) => acc + (curr.total_votes || 0), 0) || 0;
-  const totalVoters = Math.floor(totalVotes / 9); // Each participant must make 9 votes
-  const participationRate = totalVoters > 0 ? Math.round((totalVotes / (totalVoters * 9)) * 100) : 0;
+  const totalVoters = registeredVoters?.length || 0;
+  const totalVotes = Object.values(votingData || {}).reduce((acc: number, categoryVotes: any[]) => {
+    return acc + categoryVotes.reduce((sum, vote) => sum + vote.total, 0);
+  }, 0);
+  
+  const expectedVotesPerUser = 9; // Each user should make 9 votes
+  const expectedTotalVotes = totalVoters * expectedVotesPerUser;
+  const participationRate = expectedTotalVotes > 0 
+    ? Math.round((totalVotes / expectedTotalVotes) * 100) 
+    : 0;
 
   return (
     <div className="space-y-6 p-6">
@@ -93,9 +83,9 @@ const QuestionnaireAnalytics = () => {
       </div>
 
       <VotingResults
-        strengths={processVotingData('strengths')}
-        challenges={processVotingData('challenges')}
-        opportunities={processVotingData('opportunities')}
+        strengths={votingData?.strengths || []}
+        challenges={votingData?.challenges || []}
+        opportunities={votingData?.opportunities || []}
       />
     </div>
   );
