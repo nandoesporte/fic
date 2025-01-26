@@ -464,6 +464,7 @@ export type Database = {
           birth_date: string | null
           cocamarengagement: string | null
           cocamarmembers: string | null
+          cocamarname: string | null
           coins: number | null
           cpf: string
           created_at: string | null
@@ -471,12 +472,14 @@ export type Database = {
           fitness_level: string | null
           frisiaengagement: string | null
           frisiamembers: string | null
+          frisianame: string | null
           gender: string | null
           height: number | null
           id: string
           name: string | null
           sicoobengagement: string | null
           sicoobmembers: string | null
+          sicoobname: string | null
           steps: number | null
           updated_at: string | null
           weight: number | null
@@ -485,6 +488,7 @@ export type Database = {
           birth_date?: string | null
           cocamarengagement?: string | null
           cocamarmembers?: string | null
+          cocamarname?: string | null
           coins?: number | null
           cpf?: string
           created_at?: string | null
@@ -492,12 +496,14 @@ export type Database = {
           fitness_level?: string | null
           frisiaengagement?: string | null
           frisiamembers?: string | null
+          frisianame?: string | null
           gender?: string | null
           height?: number | null
           id: string
           name?: string | null
           sicoobengagement?: string | null
           sicoobmembers?: string | null
+          sicoobname?: string | null
           steps?: number | null
           updated_at?: string | null
           weight?: number | null
@@ -506,6 +512,7 @@ export type Database = {
           birth_date?: string | null
           cocamarengagement?: string | null
           cocamarmembers?: string | null
+          cocamarname?: string | null
           coins?: number | null
           cpf?: string
           created_at?: string | null
@@ -513,12 +520,14 @@ export type Database = {
           fitness_level?: string | null
           frisiaengagement?: string | null
           frisiamembers?: string | null
+          frisianame?: string | null
           gender?: string | null
           height?: number | null
           id?: string
           name?: string | null
           sicoobengagement?: string | null
           sicoobmembers?: string | null
+          sicoobname?: string | null
           steps?: number | null
           updated_at?: string | null
           weight?: number | null

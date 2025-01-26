@@ -36,10 +36,13 @@ export default function Settings() {
       const { error } = await supabase
         .from('profiles')
         .update({
+          cocamarname: formData.cocamarName,
           cocamarmembers: formData.cocamarMembers,
           cocamarengagement: formData.cocamarEngagement,
+          sicoobname: formData.sicoobName,
           sicoobmembers: formData.sicoobMembers,
           sicoobengagement: formData.sicoobEngagement,
+          frisianame: formData.frisiaName,
           frisiamembers: formData.frisiaMembers,
           frisiaengagement: formData.frisiaEngagement
         })
