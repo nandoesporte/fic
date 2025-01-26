@@ -8,6 +8,14 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { useQuestionnaireVotes } from "@/hooks/useQuestionnaireVotes";
 
+interface RegisteredVoter {
+  id: string;
+  email: string;
+  name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 const QuestionnaireAnalytics = () => {
   const [selectedDimension, setSelectedDimension] = useState("all");
 
@@ -27,8 +35,8 @@ const QuestionnaireAnalytics = () => {
     },
   });
 
-  // Get total registered voters
-  const { data: registeredVoters } = useQuery({
+  // Get total registered voters with proper typing
+  const { data: registeredVoters } = useQuery<RegisteredVoter[]>({
     queryKey: ['registered-voters'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -54,8 +62,10 @@ const QuestionnaireAnalytics = () => {
   }
 
   const totalVoters = registeredVoters?.length || 0;
+  
+  // Calculate total votes with proper type checking
   const totalVotes = Object.values(votingData || {}).reduce((acc: number, categoryVotes: any[]) => {
-    return acc + categoryVotes.reduce((sum, vote) => sum + vote.total, 0);
+    return acc + (Array.isArray(categoryVotes) ? categoryVotes.reduce((sum, vote) => sum + (vote.total || 0), 0) : 0);
   }, 0);
   
   const expectedVotesPerUser = 9; // Each user should make 9 votes
