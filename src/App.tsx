@@ -13,6 +13,7 @@ import AIReport from "@/pages/AIReport";
 import Users from "@/pages/Users";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { AppSidebar } from "@/components/AppSidebar";
+import { QuestionnaireResponses } from "@/components/QuestionnaireResponses";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,14 @@ function App() {
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/formulario" element={<QuestionnaireForm />} />
+                <Route path="/respostas" element={
+                  <ProtectedRoute>
+                    <div className="space-y-8">
+                      <h1 className="text-2xl font-bold">Respostas dos Questionários</h1>
+                      <QuestionnaireResponses />
+                    </div>
+                  </ProtectedRoute>
+                } />
                 <Route
                   path="/voting"
                   element={
