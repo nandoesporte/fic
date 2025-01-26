@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { EmailInput } from "@/components/EmailInput";
-import { Button } from "@/components/ui/button";
-import { VoteButtons } from "@/components/VoteButtons";
+import { EmailVerification } from "@/components/voting/EmailVerification";
+import { VotingSection } from "@/components/voting/VotingSection";
+import { ConfirmVoteButton } from "@/components/voting/ConfirmVoteButton";
 
 export const QuestionnaireVoting = () => {
   const [userEmail, setUserEmail] = useState("");
@@ -153,28 +152,17 @@ export const QuestionnaireVoting = () => {
     const currentSelections = selections[questionnaireId]?.[optionType] || [];
     const isSelected = currentSelections.includes(optionNumber);
 
-    if (isSelected) {
-      setSelections(prev => ({
-        ...prev,
-        [questionnaireId]: {
-          ...prev[questionnaireId],
-          [optionType]: currentSelections.filter(num => num !== optionNumber)
-        }
-      }));
-    } else {
-      if (currentSelections.length >= 3) {
-        toast.error('Você já selecionou 3 opções nesta seção. Remova uma seleção para escolher outra.');
-        return;
+    setSelections(prev => ({
+      ...prev,
+      [questionnaireId]: {
+        ...prev[questionnaireId],
+        [optionType]: isSelected
+          ? currentSelections.filter(num => num !== optionNumber)
+          : currentSelections.length >= 3
+            ? currentSelections
+            : [...currentSelections, optionNumber]
       }
-
-      setSelections(prev => ({
-        ...prev,
-        [questionnaireId]: {
-          ...prev[questionnaireId],
-          [optionType]: [...currentSelections, optionNumber]
-        }
-      }));
-    }
+    }));
   };
 
   const handleConfirmVotes = async (questionnaireId: string) => {
@@ -196,59 +184,31 @@ export const QuestionnaireVoting = () => {
     });
   };
 
-  const renderSection = (title: string, type: 'strengths' | 'challenges' | 'opportunities', bgColor: string) => {
-    if (!questionnaires || questionnaires.length === 0) return null;
+  if (!isEmailVerified) {
+    return (
+      <EmailVerification
+        email={userEmail}
+        onEmailChange={setUserEmail}
+        onVerify={verifyEmail}
+      />
+    );
+  }
 
-    const options = questionnaires.map(questionnaire => ({
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const processOptions = (questionnaires: any[], type: 'strengths' | 'challenges' | 'opportunities') => {
+    return questionnaires.map(questionnaire => ({
       id: questionnaire.id,
       text: questionnaire[type].split('\n\n').filter(Boolean),
       selections: selections[questionnaire.id]?.[type] || []
     }));
-
-    return (
-      <Card className="p-6 mb-4">
-        <h3 className={`font-medium p-2 rounded-lg ${bgColor} ${type === 'challenges' ? 'text-gray-900' : 'text-white'} mb-4`}>
-          {title}
-        </h3>
-        <div className="space-y-4">
-          {options.map((option) => (
-            <div key={option.id} className="space-y-2">
-              {option.text.map((text, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                  <p className="flex-1 text-sm">{text}</p>
-                  <VoteButtons
-                    isSelected={option.selections.includes(index + 1)}
-                    onVote={() => handleVote(option.id, type, index + 1)}
-                    disabled={option.selections.length >= 3 && !option.selections.includes(index + 1)}
-                  />
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      </Card>
-    );
   };
-
-  if (!isEmailVerified) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="w-full max-w-md space-y-6">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900">Sistema de Votação</h1>
-            <p className="mt-2 text-gray-500">Digite seu email cadastrado para acessar o sistema de votação</p>
-          </div>
-          <EmailInput email={userEmail} onChange={setUserEmail} />
-          <Button 
-            className="w-full" 
-            onClick={verifyEmail}
-          >
-            Acessar Sistema de Votação
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -259,36 +219,46 @@ export const QuestionnaireVoting = () => {
           <p className="text-sm text-gray-500 mt-2">Selecione exatamente 3 opções em cada seção</p>
         </div>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {renderSection("Pontos Fortes", 'strengths', 'bg-[#228B22]')}
-            {renderSection("Desafios", 'challenges', 'bg-[#FFD700]')}
-            {renderSection("Oportunidades", 'opportunities', 'bg-[#000080]')}
+        <div className="space-y-8">
+          <VotingSection
+            title="Pontos Fortes"
+            type="strengths"
+            bgColor="bg-[#228B22]"
+            options={processOptions(questionnaires || [], 'strengths')}
+            onVote={handleVote}
+          />
 
-            {questionnaires?.map((questionnaire) => {
-              const allSectionsComplete = 
-                (selections[questionnaire.id]?.strengths?.length === 3) &&
-                (selections[questionnaire.id]?.challenges?.length === 3) &&
-                (selections[questionnaire.id]?.opportunities?.length === 3);
+          <VotingSection
+            title="Desafios"
+            type="challenges"
+            bgColor="bg-[#FFD700]"
+            options={processOptions(questionnaires || [], 'challenges')}
+            onVote={handleVote}
+          />
 
-              return (
-                <div key={questionnaire.id} className="flex justify-end">
-                  <Button
-                    onClick={() => handleConfirmVotes(questionnaire.id)}
-                    disabled={!allSectionsComplete}
-                    className="bg-primary hover:bg-primary/90"
-                  >
-                    Confirmar Votos
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
-        )}
+          <VotingSection
+            title="Oportunidades"
+            type="opportunities"
+            bgColor="bg-[#000080]"
+            options={processOptions(questionnaires || [], 'opportunities')}
+            onVote={handleVote}
+          />
+
+          {questionnaires?.map((questionnaire) => {
+            const allSectionsComplete = 
+              (selections[questionnaire.id]?.strengths?.length === 3) &&
+              (selections[questionnaire.id]?.challenges?.length === 3) &&
+              (selections[questionnaire.id]?.opportunities?.length === 3);
+
+            return (
+              <ConfirmVoteButton
+                key={questionnaire.id}
+                onConfirm={() => handleConfirmVotes(questionnaire.id)}
+                disabled={!allSectionsComplete}
+              />
+            );
+          })}
+        </div>
       </div>
     </div>
   );
