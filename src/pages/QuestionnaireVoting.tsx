@@ -3,17 +3,18 @@ import { EmailVerification } from "@/components/questionnaire/EmailVerification"
 import { QuestionnaireList } from "@/components/questionnaire/QuestionnaireList";
 import { useVoteSelectionManager } from "@/components/questionnaire/VoteSelectionManager";
 import { useQuestionnaireData } from "@/hooks/useQuestionnaireData";
+import { QuestionnaireCard } from "@/components/QuestionnaireCard";
 
 export const QuestionnaireVoting = () => {
   const [userEmail, setUserEmail] = useState("");
   const [isEmailVerified, setIsEmailVerified] = useState(false);
-  const { data: questionnaires, isLoading } = useQuestionnaireData();
-  const [editingLine, setEditingLine] = useState<{
-    questionnaireId: string;
-    type: 'strengths' | 'challenges' | 'opportunities';
-    index: number;
-    value: string;
-  } | null>(null);
+  const { data: questionnaires } = useQuestionnaireData();
+  const { 
+    handleVote,
+    isOptionSelected,
+    getSelectionCount,
+    validateSelections
+  } = useVoteSelectionManager();
 
   if (!isEmailVerified) {
     return (
@@ -25,28 +26,6 @@ export const QuestionnaireVoting = () => {
     );
   }
 
-  const handleLineEdit = (
-    questionnaireId: string,
-    type: 'strengths' | 'challenges' | 'opportunities',
-    index: number,
-    value: string
-  ) => {
-    setEditingLine({ questionnaireId, type, index, value });
-  };
-
-  const handleLineSave = (questionnaire: any) => {
-    setEditingLine(null);
-  };
-
-  const handleToggleStatus = (
-    questionnaireId: string,
-    type: 'strengths' | 'challenges' | 'opportunities',
-    index: number,
-    currentStatus: string
-  ) => {
-    // Implementation for toggle status if needed
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
@@ -56,16 +35,28 @@ export const QuestionnaireVoting = () => {
           <p className="text-sm text-gray-500 mt-2">Selecione exatamente 3 opções em cada seção</p>
         </div>
 
-        {questionnaires && (
-          <QuestionnaireList
-            questionnaires={questionnaires}
-            editingLine={editingLine}
-            onLineEdit={handleLineEdit}
-            onLineSave={handleLineSave}
-            onToggleStatus={handleToggleStatus}
-            setEditingLine={setEditingLine}
-          />
-        )}
+        <div className="space-y-6">
+          {questionnaires?.map((questionnaire) => (
+            <QuestionnaireCard
+              key={questionnaire.id}
+              questionnaire={questionnaire}
+              onVote={(optionType, optionNumber) => 
+                handleVote(questionnaire.id, optionType, optionNumber)
+              }
+              isOptionSelected={(optionType, optionNumber) =>
+                isOptionSelected(questionnaire.id, optionType, optionNumber)
+              }
+              getSelectionCount={(optionType) =>
+                getSelectionCount(questionnaire.id, optionType)
+              }
+              onConfirmVotes={() => {
+                if (validateSelections(questionnaire.id)) {
+                  // Handle vote confirmation
+                }
+              }}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

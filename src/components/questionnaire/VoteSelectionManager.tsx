@@ -19,31 +19,39 @@ export const useVoteSelectionManager = () => {
     optionType: 'strengths' | 'challenges' | 'opportunities',
     optionNumber: number
   ) => {
-    const currentSelections = selections[questionnaireId]?.[optionType] || [];
-    const isSelected = currentSelections.includes(optionNumber);
+    setSelections(prev => {
+      const currentQuestionnaire = prev[questionnaireId] || {
+        strengths: [],
+        challenges: [],
+        opportunities: []
+      };
+      
+      const currentSelections = currentQuestionnaire[optionType];
+      const isSelected = currentSelections.includes(optionNumber);
 
-    if (isSelected) {
-      setSelections(prev => ({
-        ...prev,
-        [questionnaireId]: {
-          ...prev[questionnaireId],
-          [optionType]: currentSelections.filter(num => num !== optionNumber)
-        }
-      }));
-    } else {
-      if (currentSelections.length >= REQUIRED_VOTES) {
-        toast.error(`Você já selecionou ${REQUIRED_VOTES} opções nesta seção. Remova uma seleção para escolher outra.`);
-        return;
+      if (isSelected) {
+        return {
+          ...prev,
+          [questionnaireId]: {
+            ...currentQuestionnaire,
+            [optionType]: currentSelections.filter(num => num !== optionNumber)
+          }
+        };
       }
 
-      setSelections(prev => ({
+      if (currentSelections.length >= REQUIRED_VOTES) {
+        toast.error(`Você já selecionou ${REQUIRED_VOTES} opções nesta seção. Remova uma seleção para escolher outra.`);
+        return prev;
+      }
+
+      return {
         ...prev,
         [questionnaireId]: {
-          ...prev[questionnaireId],
+          ...currentQuestionnaire,
           [optionType]: [...currentSelections, optionNumber]
         }
-      }));
-    }
+      };
+    });
   };
 
   const isOptionSelected = (questionnaireId: string, optionType: string, optionNumber: number) => {
