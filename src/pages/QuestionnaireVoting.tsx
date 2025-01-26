@@ -95,7 +95,7 @@ export const QuestionnaireVoting = () => {
           const filtered_opportunities = opportunities_array.filter((_, index) => opportunities_statuses[index] === 'active');
 
           acc[curr.dimension] = {
-            id: curr.id, // Use the actual questionnaire ID
+            id: curr.id,
             dimension: curr.dimension,
             strengths: filtered_strengths.join('\n\n'),
             challenges: filtered_challenges.join('\n\n'),
