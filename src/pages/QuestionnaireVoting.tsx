@@ -95,7 +95,7 @@ export const QuestionnaireVoting = () => {
           const filtered_opportunities = opportunities_array.filter((_, index) => opportunities_statuses[index] === 'active');
 
           acc[curr.dimension] = {
-            id: curr.dimension,
+            id: curr.id, // Use the actual questionnaire ID
             dimension: curr.dimension,
             strengths: filtered_strengths.join('\n\n'),
             challenges: filtered_challenges.join('\n\n'),
@@ -105,28 +105,6 @@ export const QuestionnaireVoting = () => {
             challenges_statuses: curr.challenges_statuses,
             opportunities_statuses: curr.opportunities_statuses,
           };
-        } else {
-          const strengths_array = curr.strengths.split('\n\n');
-          const challenges_array = curr.challenges.split('\n\n');
-          const opportunities_array = curr.opportunities.split('\n\n');
-          
-          const strengths_statuses = (curr.strengths_statuses || 'pending,pending,pending').split(',');
-          const challenges_statuses = (curr.challenges_statuses || 'pending,pending,pending').split(',');
-          const opportunities_statuses = (curr.opportunities_statuses || 'pending,pending,pending').split(',');
-          
-          const filtered_strengths = strengths_array.filter((_, index) => strengths_statuses[index] === 'active');
-          const filtered_challenges = challenges_array.filter((_, index) => challenges_statuses[index] === 'active');
-          const filtered_opportunities = opportunities_array.filter((_, index) => opportunities_statuses[index] === 'active');
-
-          if (filtered_strengths.length > 0) {
-            acc[curr.dimension].strengths += '\n\n' + filtered_strengths.join('\n\n');
-          }
-          if (filtered_challenges.length > 0) {
-            acc[curr.dimension].challenges += '\n\n' + filtered_challenges.join('\n\n');
-          }
-          if (filtered_opportunities.length > 0) {
-            acc[curr.dimension].opportunities += '\n\n' + filtered_opportunities.join('\n\n');
-          }
         }
         return acc;
       }, {});
@@ -156,6 +134,8 @@ export const QuestionnaireVoting = () => {
       }[];
       dimension: string;
     }) => {
+      console.log('Submitting votes for questionnaire:', questionnaireId);
+      
       const hasVoted = await checkExistingVote(dimension);
       if (hasVoted) {
         throw new Error('Você já votou nesta dimensão');
