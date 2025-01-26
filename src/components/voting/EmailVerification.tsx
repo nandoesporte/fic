@@ -23,6 +23,8 @@ export const EmailVerification = ({ onVerified }: EmailVerificationProps) => {
 
     try {
       console.log('Verificando email:', userEmail);
+      
+      // Query the registered_voters table
       const { data: voter, error } = await supabase
         .from('registered_voters')
         .select('*')
@@ -31,20 +33,22 @@ export const EmailVerification = ({ onVerified }: EmailVerificationProps) => {
 
       if (error) {
         console.error('Erro ao verificar email:', error);
-        toast.error('Erro ao verificar email');
+        toast.error('Erro ao verificar email. Por favor, tente novamente.');
         return;
       }
 
       if (!voter) {
+        console.log('Email não encontrado:', userEmail);
         toast.error('Email não encontrado no sistema. Por favor, verifique se o email está correto.');
         return;
       }
 
+      console.log('Email verificado com sucesso:', voter);
       onVerified(userEmail);
       toast.success('Email verificado com sucesso!');
     } catch (error) {
-      console.error('Erro:', error);
-      toast.error('Erro ao verificar email');
+      console.error('Erro ao verificar email:', error);
+      toast.error('Erro ao verificar email. Por favor, tente novamente.');
     } finally {
       setIsVerifying(false);
     }
