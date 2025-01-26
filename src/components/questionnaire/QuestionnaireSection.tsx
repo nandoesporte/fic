@@ -2,7 +2,7 @@ import { VoteButtons } from "@/components/VoteButtons";
 
 interface QuestionnaireSectionProps {
   title: string;
-  content: string;
+  content?: string;
   type: 'strengths' | 'challenges' | 'opportunities';
   selectionCount: number;
   onVote: (type: 'strengths' | 'challenges' | 'opportunities', index: number) => void;
@@ -12,7 +12,7 @@ interface QuestionnaireSectionProps {
 
 export const QuestionnaireSection = ({
   title,
-  content,
+  content = '',
   type,
   selectionCount,
   onVote,
@@ -32,7 +32,7 @@ export const QuestionnaireSection = ({
     }
   };
 
-  const options = content.split('\n\n').filter(Boolean);
+  const options = content ? content.split('\n\n').filter(Boolean) : [];
   const bgColorClass = getBgColor(type);
 
   return (
