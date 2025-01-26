@@ -8,10 +8,27 @@ import { VotingResults } from './VotingResults';
 import { AnalyticsHeader } from './AnalyticsHeader';
 import { Loader2 } from 'lucide-react';
 
+interface RegisteredVoter {
+  id: string;
+  email: string;
+  name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Dimension {
+  id: string;
+  label: string;
+  identifier: string;
+  created_at: string;
+  updated_at: string;
+  background_color: string;
+}
+
 export const AnalyticsContainer = () => {
   const [selectedDimension, setSelectedDimension] = useState("all");
 
-  const { data: dimensions } = useQuery({
+  const { data: dimensions } = useQuery<Dimension[]>({
     queryKey: ['dimensions'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -26,7 +43,7 @@ export const AnalyticsContainer = () => {
     },
   });
 
-  const { data: registeredVoters } = useQuery({
+  const { data: registeredVoters } = useQuery<RegisteredVoter[]>({
     queryKey: ['registered-voters'],
     queryFn: async () => {
       const { data, error } = await supabase
