@@ -25,6 +25,12 @@ export const QuestionnaireCard = ({
     getSelectionCount('challenges') === MAX_SELECTIONS &&
     getSelectionCount('opportunities') === MAX_SELECTIONS;
 
+  const sections = [
+    { title: 'Pontos Fortes', type: 'strengths' as const, content: questionnaire.strengths },
+    { title: 'Desafios', type: 'challenges' as const, content: questionnaire.challenges },
+    { title: 'Oportunidades', type: 'opportunities' as const, content: questionnaire.opportunities }
+  ];
+
   return (
     <Card className="p-6">
       <div className="space-y-6">
@@ -42,32 +48,19 @@ export const QuestionnaireCard = ({
           </div>
         </div>
 
-        <QuestionnaireSection
-          title="Pontos Fortes"
-          content={questionnaire.strengths}
-          type="strengths"
-          isOptionSelected={isOptionSelected}
-          getSelectionCount={getSelectionCount}
-          onVote={onVote}
-        />
-
-        <QuestionnaireSection
-          title="Desafios"
-          content={questionnaire.challenges}
-          type="challenges"
-          isOptionSelected={isOptionSelected}
-          getSelectionCount={getSelectionCount}
-          onVote={onVote}
-        />
-
-        <QuestionnaireSection
-          title="Oportunidades"
-          content={questionnaire.opportunities}
-          type="opportunities"
-          isOptionSelected={isOptionSelected}
-          getSelectionCount={getSelectionCount}
-          onVote={onVote}
-        />
+        {sections.map(section => (
+          <QuestionnaireSection
+            key={section.type}
+            title={section.title}
+            questionnaires={[questionnaire]}
+            type={section.type}
+            editingLine={null}
+            onLineEdit={() => {}}
+            onLineSave={() => {}}
+            onToggleStatus={() => {}}
+            setEditingLine={() => {}}
+          />
+        ))}
 
         {onConfirmVotes && (
           <div className="flex justify-end mt-6">

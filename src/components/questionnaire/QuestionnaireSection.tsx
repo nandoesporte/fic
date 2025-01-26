@@ -1,6 +1,5 @@
 import { VoteButtons } from "@/components/VoteButtons";
 import { getBgColor } from "@/utils/questionnaireUtils";
-import { toast } from "sonner";
 
 interface QuestionnaireSectionProps {
   title: string;
