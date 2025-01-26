@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Heart, Users, BarChart2, TrendingUp } from "lucide-react";
+import { useFICMetrics } from "@/hooks/useFICMetrics";
 
 const StatCard = ({ 
   icon: Icon, 
@@ -27,30 +28,42 @@ const StatCard = ({
 );
 
 export const DashboardMetrics = () => {
+  const { data: metrics, isLoading } = useFICMetrics();
+
+  const currentFICIndex = metrics?.dailyMetrics[0]?.average_index || 0;
+  const previousFICIndex = metrics?.dailyMetrics[1]?.average_index || 0;
+  const indexChange = currentFICIndex - previousFICIndex;
+  const indexTrend = indexChange >= 0 ? "+" : "";
+
+  const topDimension = metrics?.dimensionMetrics[0]?.dimension || "N/A";
+  const topDimensionScore = metrics?.dimensionMetrics[0]?.score || 0;
+
+  const totalResponses = metrics?.dailyMetrics.length || 0;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <StatCard 
         icon={Heart} 
         label="Índice FIC" 
-        value="78%" 
-        description="Crescimento de 5% este mês"
+        value={`${currentFICIndex.toFixed(1)}%`} 
+        description={`${indexTrend}${indexChange.toFixed(1)}% em relação ao dia anterior`}
       />
       <StatCard 
         icon={Users} 
-        label="Total de Cooperados" 
-        value="1,234"
-        description="32 novos esta semana" 
+        label="Dimensão Destaque" 
+        value={topDimension}
+        description={`Score: ${topDimensionScore.toFixed(1)}%`} 
       />
       <StatCard 
         icon={BarChart2} 
-        label="Taxa de Participação" 
-        value="89%"
-        description="Acima da meta mensal" 
+        label="Total de Respostas" 
+        value={totalResponses.toString()}
+        description="Nos últimos 30 dias" 
       />
       <StatCard 
         icon={TrendingUp} 
-        label="Crescimento Mensal" 
-        value="+12%"
+        label="Tendência Mensal" 
+        value={`${indexTrend}${indexChange.toFixed(1)}%`}
         description="Comparado ao mês anterior" 
       />
     </div>

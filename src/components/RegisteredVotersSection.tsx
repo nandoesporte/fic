@@ -44,7 +44,11 @@ export const RegisteredVotersSection = () => {
 
     const { error } = await supabase
       .from("registered_voters")
-      .insert([{ email: newEmail, name: newName || null }]);
+      .insert([{ 
+        email: newEmail, 
+        name: newName || null,
+        id: crypto.randomUUID(), // Add the required ID field
+      }]);
 
     if (error) {
       toast({

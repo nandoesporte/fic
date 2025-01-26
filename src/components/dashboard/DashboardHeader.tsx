@@ -1,12 +1,6 @@
 import { Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
 
-interface DashboardHeaderProps {
-  onNewQuestionnaire: () => void;
-}
-
-export const DashboardHeader = ({ onNewQuestionnaire }: DashboardHeaderProps) => {
+export const DashboardHeader = () => {
   return (
     <div className="flex justify-between items-center bg-white rounded-lg shadow-sm p-8">
       <div>
@@ -18,13 +12,6 @@ export const DashboardHeader = ({ onNewQuestionnaire }: DashboardHeaderProps) =>
           Bem-vindo ao Sistema de Felicidade Interna do Cooperativismo
         </p>
       </div>
-      <Button 
-        className="bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all px-6"
-        onClick={onNewQuestionnaire}
-      >
-        <PlusCircle className="h-5 w-5 mr-3" />
-        Novo Questionário
-      </Button>
     </div>
   );
 };

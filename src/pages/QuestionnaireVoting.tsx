@@ -1,80 +1,62 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { EmailVerification } from "@/components/voting/EmailVerification";
-import { QuestionnaireSelectionManager } from "@/components/voting/QuestionnaireSelectionManager";
+import { EmailVerification } from "@/components/questionnaire/EmailVerification";
+import { QuestionnaireList } from "@/components/questionnaire/QuestionnaireList";
+import { useVoteSelectionManager } from "@/components/questionnaire/VoteSelectionManager";
+import { useQuestionnaireData } from "@/hooks/useQuestionnaireData";
+import { QuestionnaireCard } from "@/components/QuestionnaireCard";
 
 export const QuestionnaireVoting = () => {
   const [userEmail, setUserEmail] = useState("");
   const [isEmailVerified, setIsEmailVerified] = useState(false);
-  const queryClient = useQueryClient();
-
-  const verifyEmail = async () => {
-    try {
-      const { data: existingVoter } = await supabase
-        .from("registered_voters")
-        .select("*")
-        .eq("email", userEmail)
-        .single();
-
-      if (existingVoter) {
-        setIsEmailVerified(true);
-        return true;
-      }
-
-      const { error: insertError } = await supabase
-        .from("registered_voters")
-        .insert([{ email: userEmail }]);
-
-      if (insertError) throw insertError;
-
-      setIsEmailVerified(true);
-      return true;
-    } catch (error) {
-      console.error("Error verifying email:", error);
-      return false;
-    }
-  };
-
-  const { data: questionnaires } = useQuery({
-    queryKey: ["questionnaires"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("fic_questionnaires")
-        .select("*")
-        .eq("status", "pending");
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const handleVoteSubmitted = () => {
-    queryClient.invalidateQueries({ queryKey: ["questionnaires"] });
-  };
+  const { data: questionnaires } = useQuestionnaireData();
+  const { 
+    handleVote,
+    isOptionSelected,
+    getSelectionCount,
+    validateSelections
+  } = useVoteSelectionManager();
 
   if (!isEmailVerified) {
     return (
       <EmailVerification
         email={userEmail}
         onEmailChange={setUserEmail}
-        onVerify={verifyEmail}
+        onVerified={() => setIsEmailVerified(true)}
       />
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Votação</h1>
-      <div className="space-y-8">
-        {questionnaires?.map((questionnaire) => (
-          <QuestionnaireSelectionManager
-            key={questionnaire.id}
-            questionnaire={questionnaire}
-            userEmail={userEmail}
-            onVoteSubmitted={handleVoteSubmitted}
-          />
-        ))}
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Sistema de Votação</h1>
+          <p className="text-gray-500">Votando com o email: {userEmail}</p>
+          <p className="text-sm text-gray-500 mt-2">Selecione exatamente 3 opções em cada seção</p>
+        </div>
+
+        <div className="space-y-6">
+          {questionnaires?.map((questionnaire) => (
+            <QuestionnaireCard
+              key={questionnaire.id}
+              questionnaire={questionnaire}
+              onVote={(optionType, optionNumber) => 
+                handleVote(questionnaire.id, optionType, optionNumber)
+              }
+              isOptionSelected={(optionType, optionNumber) =>
+                isOptionSelected(questionnaire.id, optionType, optionNumber)
+              }
+              getSelectionCount={(optionType) =>
+                getSelectionCount(questionnaire.id, optionType)
+              }
+              onConfirmVotes={() => {
+                if (validateSelections(questionnaire.id)) {
+                  // Handle vote confirmation
+                }
+              }}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

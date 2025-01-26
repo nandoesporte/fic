@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Award, TrendingUp, Heart } from "lucide-react";
+import { useFICMetrics } from "@/hooks/useFICMetrics";
 
 const AchievementCard = ({ 
   title, 
@@ -24,22 +25,36 @@ const AchievementCard = ({
 );
 
 export const DashboardAchievements = () => {
+  const { data: metrics } = useFICMetrics();
+
+  const topDimensions = metrics?.dimensionMetrics
+    ?.sort((a, b) => b.score - a.score)
+    .slice(0, 3) || [];
+
+  const hasHighPerformer = topDimensions.some(d => d.score >= 80);
+  const hasImprovement = (metrics?.dailyMetrics[0]?.average_index || 0) > 
+    (metrics?.dailyMetrics[1]?.average_index || 0);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <AchievementCard 
-        icon={Award}
-        title="Participação 100%"
-        description="Todos os cooperados responderam o último questionário do mês, demonstrando alto engajamento."
-      />
-      <AchievementCard 
-        icon={TrendingUp}
-        title="Crescimento Constante"
-        description="3 meses consecutivos de melhoria no índice FIC, refletindo o comprometimento da equipe."
-      />
+      {hasHighPerformer && (
+        <AchievementCard 
+          icon={Award}
+          title="Dimensão Destaque"
+          description={`A dimensão ${topDimensions[0]?.dimension} alcançou ${topDimensions[0]?.score.toFixed(1)}% de satisfação.`}
+        />
+      )}
+      {hasImprovement && (
+        <AchievementCard 
+          icon={TrendingUp}
+          title="Crescimento Contínuo"
+          description="Melhoria no índice FIC em relação ao período anterior."
+        />
+      )}
       <AchievementCard 
         icon={Heart}
-        title="Bem-estar em Alta"
-        description="Índice de satisfação acima de 80%, indicando um ambiente de trabalho positivo."
+        title="Engajamento"
+        description={`${metrics?.dailyMetrics.length || 0} respostas registradas nos últimos 30 dias.`}
       />
     </div>
   );
