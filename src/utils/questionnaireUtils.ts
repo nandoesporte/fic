@@ -1,11 +1,11 @@
 export const getBgColor = (type: string) => {
   switch (type) {
     case 'strengths':
-      return 'bg-[#228B22] text-white';
+      return 'bg-[#228B22]';
     case 'challenges':
-      return 'bg-[#FFD700] text-gray-900';
+      return 'bg-[#FFD700]';
     case 'opportunities':
-      return 'bg-[#000080] text-white';
+      return 'bg-[#000080]';
     default:
       return '';
   }

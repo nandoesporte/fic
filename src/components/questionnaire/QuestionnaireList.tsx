@@ -24,9 +24,9 @@ export const QuestionnaireList = ({
   setEditingLine,
 }: QuestionnaireListProps) => {
   const sections = [
-    { title: 'Pontos Fortes', type: 'strengths' as const, bgColor: 'bg-[#228B22]' },
-    { title: 'Desafios', type: 'challenges' as const, bgColor: 'bg-[#FFD700]' },
-    { title: 'Oportunidades', type: 'opportunities' as const, bgColor: 'bg-[#000080]' }
+    { title: 'Pontos Fortes', type: 'strengths' as const },
+    { title: 'Desafios', type: 'challenges' as const },
+    { title: 'Oportunidades', type: 'opportunities' as const }
   ];
 
   return (
@@ -35,7 +35,6 @@ export const QuestionnaireList = ({
         <Card key={section.type} className="p-6">
           <QuestionnaireSection
             title={section.title}
-            bgColor={section.bgColor}
             questionnaires={questionnaires}
             type={section.type}
             editingLine={editingLine}
