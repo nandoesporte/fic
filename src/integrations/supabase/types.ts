@@ -161,7 +161,7 @@ export type Database = {
           data: Json
           description?: string | null
           filename: string
-          id?: string
+          id: string
           size_bytes?: number | null
           status?: string | null
           type: string
@@ -181,27 +181,27 @@ export type Database = {
       }
       dimension_performance: {
         Row: {
-          created_at: string | null
-          date: string
-          dimension: string
           id: string
+          dimension: string
           score: number
+          date: string
+          created_at: string | null
           updated_at: string | null
         }
         Insert: {
-          created_at?: string | null
-          date?: string
-          dimension: string
           id?: string
+          dimension: string
           score: number
+          date?: string
+          created_at?: string | null
           updated_at?: string | null
         }
         Update: {
-          created_at?: string | null
-          date?: string
-          dimension?: string
           id?: string
+          dimension?: string
           score?: number
+          date?: string
+          created_at?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -244,7 +244,7 @@ export type Database = {
           description?: string | null
           difficulty?: string | null
           duration?: number | null
-          id?: string
+          id: string
           thumbnail_url?: string | null
           title: string
           updated_at?: string | null
@@ -265,24 +265,24 @@ export type Database = {
       }
       fic_daily_metrics: {
         Row: {
+          id: string
+          date: string
           average_index: number
           created_at: string | null
-          date: string
-          id: string
           updated_at: string | null
         }
         Insert: {
+          id?: string
+          date?: string
           average_index: number
           created_at?: string | null
-          date?: string
-          id?: string
           updated_at?: string | null
         }
         Update: {
+          id?: string
+          date?: string
           average_index?: number
           created_at?: string | null
-          date?: string
-          id?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -429,8 +429,8 @@ export type Database = {
           created_at?: string | null
           current_value?: number | null
           end_date: string
-          id?: string
-          start_date?: string
+          id: string
+          start_date: string
           status?: string | null
           target_value: number
           type: string
@@ -499,7 +499,7 @@ export type Database = {
           fitness_level?: string | null
           gender?: string | null
           height?: number | null
-          id?: string
+          id: string
           name?: string | null
           steps?: number | null
           updated_at?: string | null
@@ -570,7 +570,7 @@ export type Database = {
         Insert: {
           created_at?: string
           email: string
-          id?: string
+          id: string
           name?: string | null
           updated_at?: string
         }
@@ -600,7 +600,7 @@ export type Database = {
           active?: boolean | null
           created_at?: string | null
           description?: string | null
-          id?: string
+          id: string
           image_url?: string | null
           name: string
           price_exxe: number
@@ -636,16 +636,16 @@ export type Database = {
           amount: number
           created_at?: string | null
           description?: string | null
-          id?: string
+          id: string
           receiver_id?: string | null
           sender_id?: string | null
-          status?: string
+          status: string
         }
         Update: {
           amount?: number
           created_at?: string | null
           description?: string | null
-          id?: string
+          id: string
           receiver_id?: string | null
           sender_id?: string | null
           status?: string
@@ -684,7 +684,7 @@ export type Database = {
           created_at?: string | null
           current?: number | null
           end_date: string
-          id?: string
+          id: string
           start_date: string
           status?: string | null
           target: number
@@ -696,7 +696,7 @@ export type Database = {
           created_at?: string | null
           current?: number | null
           end_date?: string
-          id?: string
+          id: string
           start_date?: string
           status?: string | null
           target?: number
@@ -727,7 +727,7 @@ export type Database = {
           amount?: number
           created_at?: string | null
           date: string
-          id?: string
+          id: string
           updated_at?: string | null
           user_id: string
         }
@@ -735,7 +735,7 @@ export type Database = {
           amount?: number
           created_at?: string | null
           date?: string
-          id?: string
+          id: string
           updated_at?: string | null
           user_id?: string
         }
@@ -862,7 +862,7 @@ export type Tables<
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
         Database[PublicTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never,
 > = PublicTableNameOrOptions extends { schema: keyof Database }
   ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
       Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
@@ -916,10 +916,10 @@ export type TablesUpdate<
     : never
   : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
     ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
+      Update: infer U
+    }
+    ? U
+    : never
     : never
 
 export type Enums<
