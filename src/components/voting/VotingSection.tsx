@@ -24,7 +24,7 @@ export const VotingSection = ({
   onVote,
   onConfirmVotes
 }: VotingSectionProps) => {
-  const groupQuestionnairesByDimension = (questionnaires: any[]) => {
+  const groupQuestionnairesByDimension = (questionnaires: any[]): { [key: string]: any[] } => {
     return questionnaires.reduce((acc, curr) => {
       const dimension = curr.dimension;
       if (!acc[dimension]) {
@@ -66,6 +66,12 @@ export const VotingSection = ({
               </div>
             ))}
           </div>
+        )}
+
+        {(!questionnaires || questionnaires.length === 0) && (
+          <p className="text-center text-gray-500 py-4">
+            Nenhum questionário encontrado.
+          </p>
         )}
       </div>
     </div>
