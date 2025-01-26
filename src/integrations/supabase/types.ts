@@ -330,7 +330,7 @@ export type Database = {
           strengths: string
           strengths_statuses: string | null
           updated_at: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           challenges: string
@@ -347,7 +347,7 @@ export type Database = {
           strengths: string
           strengths_statuses?: string | null
           updated_at?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           challenges?: string
@@ -364,7 +364,7 @@ export type Database = {
           strengths?: string
           strengths_statuses?: string | null
           updated_at?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {

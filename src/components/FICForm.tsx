@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { GroupSelect } from "./FICForm/GroupSelect";
 import { DimensionSelect } from "./FICForm/DimensionSelect";
 import { TextAreaSection } from "./FICForm/TextAreaSection";
@@ -37,7 +37,11 @@ export function FICForm() {
         strengths: [values.strengths1, values.strengths2, values.strengths3].join('\n\n'),
         challenges: [values.challenges1, values.challenges2, values.challenges3].join('\n\n'),
         opportunities: [values.opportunities1, values.opportunities2, values.opportunities3].join('\n\n'),
-        user_id: null, // Allow null user_id
+        user_id: null, // Explicitly set to null since we now allow anonymous submissions
+        strengths_statuses: 'pending,pending,pending',
+        challenges_statuses: 'pending,pending,pending',
+        opportunities_statuses: 'pending,pending,pending',
+        status: 'pending'
       });
 
       if (error) throw error;
