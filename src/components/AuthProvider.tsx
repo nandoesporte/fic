@@ -25,18 +25,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Initialize session
     const initializeSession = async () => {
       try {
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
         
-        if (error) {
-          console.error("Error fetching initial session:", error);
-          return;
-        }
-
         if (mounted) {
-          console.log("Initial session:", initialSession);
           setSession(initialSession);
           
-          // Only redirect to login if not on a public route
+          // Only redirect to login if not on a public route and no session exists
           if (!initialSession && !PUBLIC_ROUTES.includes(location.pathname)) {
             navigate('/login');
           }
@@ -53,29 +47,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeSession();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      console.log("Auth state changed:", event, currentSession);
-      
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
       if (!mounted) return;
 
-      switch (event) {
-        case 'SIGNED_IN':
-          setSession(currentSession);
+      console.log("Auth state changed:", event, currentSession);
+      
+      if (currentSession) {
+        setSession(currentSession);
+        if (location.pathname === '/login') {
           navigate('/');
-          break;
-        case 'SIGNED_OUT':
-          setSession(null);
-          // Only redirect to login if not on a public route
-          if (!PUBLIC_ROUTES.includes(location.pathname)) {
-            navigate('/login');
-          }
-          break;
-        case 'TOKEN_REFRESHED':
-          setSession(currentSession);
-          break;
-        case 'USER_UPDATED':
-          setSession(currentSession);
-          break;
+        }
+      } else {
+        setSession(null);
+        // Only redirect to login if not on a public route
+        if (!PUBLIC_ROUTES.includes(location.pathname)) {
+          navigate('/login');
+        }
       }
       
       setLoading(false);

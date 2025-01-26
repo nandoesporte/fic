@@ -39,7 +39,11 @@ export default function Settings() {
           .eq('id', session.user.id)
           .maybeSingle();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error loading settings:', error);
+          toast.error("Erro ao carregar configurações");
+          return;
+        }
 
         if (profile) {
           setFormData({
@@ -100,8 +104,8 @@ export default function Settings() {
       
       toast.success("Configurações atualizadas com sucesso!");
     } catch (error) {
-      toast.error("Erro ao atualizar configurações");
       console.error(error);
+      toast.error("Erro ao atualizar configurações");
     } finally {
       setLoading(false);
     }
