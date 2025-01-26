@@ -71,15 +71,17 @@ export const VotingSection = ({
     return (
       <Card className="p-6">
         <div className={`p-4 rounded-lg ${bgColor}`}>
-          <h3 className="font-semibold text-lg text-white mb-4">{title}</h3>
-          <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <h3 className="font-semibold text-lg text-white">{title}</h3>
+            <span className="text-sm text-white">
+              Seleções necessárias: {getSelectionCount(questionnaires[0]?.id || '', type)}/3
+            </span>
+          </div>
+          <div className="space-y-3 mt-4">
             {items.map((item, idx) => (
               <div key={`${item.questionnaireId}-${type}-${item.index}`} className="flex items-start justify-between gap-4 p-3 bg-white/90 rounded-lg">
                 <p className="flex-1 text-sm text-gray-900">{item.text}</p>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">
-                    {getSelectionCount(item.questionnaireId, type)}/3
-                  </span>
                   <button
                     onClick={() => {
                       const currentCount = getSelectionCount(item.questionnaireId, type);
