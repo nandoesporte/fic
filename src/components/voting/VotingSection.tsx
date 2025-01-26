@@ -1,6 +1,8 @@
 import { QuestionnaireCard } from "@/components/QuestionnaireCard";
 import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface VotingSectionProps {
   userEmail: string;
@@ -79,7 +81,14 @@ export const VotingSection = ({
                     {getSelectionCount(item.questionnaireId, type)}/3
                   </span>
                   <button
-                    onClick={() => onVote(item.questionnaireId, type, item.index)}
+                    onClick={() => {
+                      const currentCount = getSelectionCount(item.questionnaireId, type);
+                      if (currentCount < 3 || isOptionSelected(item.questionnaireId, type, item.index)) {
+                        onVote(item.questionnaireId, type, item.index);
+                      } else {
+                        toast.error('Você já selecionou 3 opções nesta seção');
+                      }
+                    }}
                     disabled={getSelectionCount(item.questionnaireId, type) >= 3 && !isOptionSelected(item.questionnaireId, type, item.index)}
                     className={`px-3 py-1 rounded-md text-sm ${
                       isOptionSelected(item.questionnaireId, type, item.index)
@@ -104,6 +113,12 @@ export const VotingSection = ({
 
   const groupedContent = groupContentByType(questionnaires || []);
 
+  const canSubmitVotes = (questionnaireId: string) => {
+    return getSelectionCount(questionnaireId, 'strengths') === 3 &&
+           getSelectionCount(questionnaireId, 'challenges') === 3 &&
+           getSelectionCount(questionnaireId, 'opportunities') === 3;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
@@ -123,28 +138,17 @@ export const VotingSection = ({
             {renderSection("Desafios", groupedContent.challenges, 'challenges', 'bg-[#FFD700]')}
             {renderSection("Oportunidades", groupedContent.opportunities, 'opportunities', 'bg-[#000080]')}
             
-            {questionnaires?.map((questionnaire) => {
-              const allSectionsComplete = 
-                getSelectionCount(questionnaire.id, 'strengths') === 3 &&
-                getSelectionCount(questionnaire.id, 'challenges') === 3 &&
-                getSelectionCount(questionnaire.id, 'opportunities') === 3;
-
-              return (
-                <div key={questionnaire.id} className="flex justify-end">
-                  <button
-                    onClick={() => onConfirmVotes(questionnaire.id)}
-                    disabled={!allSectionsComplete}
-                    className={`px-4 py-2 rounded-md text-white ${
-                      allSectionsComplete
-                        ? 'bg-primary hover:bg-primary/90'
-                        : 'bg-gray-300 cursor-not-allowed'
-                    }`}
-                  >
-                    Confirmar Votos
-                  </button>
-                </div>
-              );
-            })}
+            {questionnaires?.length > 0 && (
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => onConfirmVotes(questionnaires[0].id)}
+                  disabled={!canSubmitVotes(questionnaires[0].id)}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  Confirmar Votos
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
