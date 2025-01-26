@@ -33,12 +33,12 @@ export default function Settings() {
       const { error } = await supabase
         .from('profiles')
         .update({
-          cocamarMembers: formData.cocamarMembers,
-          cocamarEngagement: formData.cocamarEngagement,
-          sicoobMembers: formData.sicoobMembers,
-          sicoobEngagement: formData.sicoobEngagement,
-          frisiaMembers: formData.frisiaMembers,
-          frisiaEngagement: formData.frisiaEngagement
+          cocamarmembers: formData.cocamarMembers,
+          cocamarengagement: formData.cocamarEngagement,
+          sicoobmembers: formData.sicoobMembers,
+          sicoobengagement: formData.sicoobEngagement,
+          frisiamembers: formData.frisiaMembers,
+          frisiaengagement: formData.frisiaEngagement
         })
         .eq('id', (await supabase.auth.getUser()).data.user?.id);
 

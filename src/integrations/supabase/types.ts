@@ -462,45 +462,63 @@ export type Database = {
       profiles: {
         Row: {
           birth_date: string | null
+          cocamarengagement: string | null
+          cocamarmembers: string | null
           coins: number | null
           cpf: string
           created_at: string | null
           email: string
           fitness_level: string | null
+          frisiaengagement: string | null
+          frisiamembers: string | null
           gender: string | null
           height: number | null
           id: string
           name: string | null
+          sicoobengagement: string | null
+          sicoobmembers: string | null
           steps: number | null
           updated_at: string | null
           weight: number | null
         }
         Insert: {
           birth_date?: string | null
+          cocamarengagement?: string | null
+          cocamarmembers?: string | null
           coins?: number | null
           cpf?: string
           created_at?: string | null
           email: string
           fitness_level?: string | null
+          frisiaengagement?: string | null
+          frisiamembers?: string | null
           gender?: string | null
           height?: number | null
           id: string
           name?: string | null
+          sicoobengagement?: string | null
+          sicoobmembers?: string | null
           steps?: number | null
           updated_at?: string | null
           weight?: number | null
         }
         Update: {
           birth_date?: string | null
+          cocamarengagement?: string | null
+          cocamarmembers?: string | null
           coins?: number | null
           cpf?: string
           created_at?: string | null
           email?: string
           fitness_level?: string | null
+          frisiaengagement?: string | null
+          frisiamembers?: string | null
           gender?: string | null
           height?: number | null
           id?: string
           name?: string | null
+          sicoobengagement?: string | null
+          sicoobmembers?: string | null
           steps?: number | null
           updated_at?: string | null
           weight?: number | null

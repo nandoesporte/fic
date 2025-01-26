@@ -7,6 +7,28 @@ export type CooperativeData = {
   engagement: number;
 };
 
+type ProfileData = {
+  id: string;
+  email: string;
+  steps: number;
+  coins: number;
+  created_at: string;
+  updated_at: string;
+  cpf: string;
+  name: string;
+  weight: number;
+  height: number;
+  birth_date: string;
+  gender: string;
+  fitness_level: string;
+  cocamarmembers: string;
+  cocamarengagement: string;
+  sicoobmembers: string;
+  sicoobengagement: string;
+  frisiamembers: string;
+  frisiaengagement: string;
+};
+
 export const useCooperativeSettings = () => {
   const [cooperatives, setCooperatives] = useState<CooperativeData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,21 +41,22 @@ export const useCooperativeSettings = () => {
         .single();
 
       if (profiles) {
+        const profileData = profiles as ProfileData;
         setCooperatives([
           { 
             name: "Cocamar", 
-            members: parseInt(profiles.cocamarMembers || "15800"), 
-            engagement: parseInt(profiles.cocamarEngagement || "88") 
+            members: parseInt(profileData.cocamarmembers || "15800"), 
+            engagement: parseInt(profileData.cocamarengagement || "88") 
           },
           { 
             name: "Sicoob", 
-            members: parseInt(profiles.sicoobMembers || "25300"), 
-            engagement: parseInt(profiles.sicoobEngagement || "92") 
+            members: parseInt(profileData.sicoobmembers || "25300"), 
+            engagement: parseInt(profileData.sicoobengagement || "92") 
           },
           { 
             name: "Frísia", 
-            members: parseInt(profiles.frisiaMembers || "12400"), 
-            engagement: parseInt(profiles.frisiaEngagement || "85") 
+            members: parseInt(profileData.frisiamembers || "12400"), 
+            engagement: parseInt(profileData.frisiaengagement || "85") 
           }
         ]);
       }
