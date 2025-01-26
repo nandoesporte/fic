@@ -3,6 +3,7 @@ import { VoteButtons } from "@/components/VoteButtons";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface QuestionnaireCardProps {
   questionnaire: any;
@@ -34,6 +35,18 @@ export const QuestionnaireCard = ({
     }
   };
 
+  const handleVote = (type: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => {
+    const currentCount = getSelectionCount(type);
+    const isSelected = isOptionSelected(type, optionNumber);
+
+    if (!isSelected && currentCount >= MAX_SELECTIONS) {
+      toast.error(`Você já selecionou ${MAX_SELECTIONS} opções nesta seção. Remova uma seleção para escolher outra.`);
+      return;
+    }
+
+    onVote(type, optionNumber);
+  };
+
   const renderSection = (title: string, content: string, type: 'strengths' | 'challenges' | 'opportunities') => {
     const options = content.split('\n\n').filter(Boolean);
     const selectionCount = getSelectionCount(type);
@@ -45,7 +58,7 @@ export const QuestionnaireCard = ({
           <div className="flex justify-between items-center">
             <h3 className="font-semibold text-lg">{title}</h3>
             <span className="text-sm">
-              {selectionCount}/3 seleções
+              {selectionCount}/{MAX_SELECTIONS} seleções
             </span>
           </div>
           <div className="space-y-3 mt-4">
@@ -54,8 +67,8 @@ export const QuestionnaireCard = ({
                 <p className="flex-1 text-sm text-gray-900">{option}</p>
                 <VoteButtons
                   isSelected={isOptionSelected(type, index + 1)}
-                  onVote={() => onVote(type, index + 1)}
-                  disabled={selectionCount >= MAX_SELECTIONS && !isOptionSelected(type, index + 1)}
+                  onVote={() => handleVote(type, index + 1)}
+                  disabled={getSelectionCount(type) >= MAX_SELECTIONS && !isOptionSelected(type, index + 1)}
                 />
               </div>
             ))}
