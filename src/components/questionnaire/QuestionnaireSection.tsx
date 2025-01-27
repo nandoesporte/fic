@@ -59,6 +59,7 @@ export const QuestionnaireSection = ({
         <h3 className="text-lg font-semibold mb-4 text-white">{title}</h3>
         {questionnaires.map((questionnaire) => (
           <div key={questionnaire.id} className="space-y-2">
+            {/* Display questionnaire content based on type */}
             {questionnaire[type]?.split('\n\n').map((line: string, index: number) => (
               <div key={`${questionnaire.id}-${index}`} className="p-4 bg-gray-800 rounded-lg text-white">
                 {line}
