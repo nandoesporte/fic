@@ -37,18 +37,13 @@ export const QuestionnaireVoting = () => {
         throw questionnairesError;
       }
 
-      console.log('Questionnaires fetched:', questionnairesData);
-      
-      // Group questionnaires by dimension
-      const groupedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: any }, curr) => {
-        if (!acc[curr.dimension]) {
-          acc[curr.dimension] = [];
+      return questionnairesData?.reduce((acc: any[], curr) => {
+        const existingDimension = acc.find(q => q.dimension === curr.dimension);
+        if (!existingDimension) {
+          acc.push(curr);
         }
-        acc[curr.dimension].push(curr);
         return acc;
-      }, {});
-
-      return Object.values(groupedQuestionnaires).map((group: any) => group[0]);
+      }, []) || [];
     },
     enabled: isEmailVerified,
   });
@@ -76,40 +71,57 @@ export const QuestionnaireVoting = () => {
         throw new Error('Você já votou nesta dimensão');
       }
 
+      // Start a batch operation
+      const votePromises = [];
+
       // Register dimension vote
-      const { error: dimensionVoteError } = await supabase
-        .from('dimension_votes')
-        .insert({
-          email: userEmail.toLowerCase(),
-          dimension: dimension
-        });
-
-      if (dimensionVoteError) {
-        console.error('Error registering dimension vote:', dimensionVoteError);
-        throw dimensionVoteError;
-      }
-
-      // Register individual votes
-      const votePromises = votes.flatMap(({ optionType, optionNumbers }) =>
-        optionNumbers.map(optionNumber =>
-          supabase
-            .from('questionnaire_votes')
-            .insert({
-              questionnaire_id: questionnaireId,
-              vote_type: 'upvote',
-              option_type: optionType,
-              option_number: optionNumber,
-            })
-        )
+      votePromises.push(
+        supabase
+          .from('dimension_votes')
+          .insert({
+            email: userEmail.toLowerCase(),
+            dimension: dimension
+          })
       );
 
-      try {
-        await Promise.all(votePromises);
-        console.log('Votes submitted successfully');
-      } catch (error) {
-        console.error('Error submitting votes:', error);
-        throw error;
+      // Register individual votes
+      votes.forEach(({ optionType, optionNumbers }) => {
+        optionNumbers.forEach(optionNumber => {
+          votePromises.push(
+            supabase
+              .from('questionnaire_votes')
+              .insert({
+                questionnaire_id: questionnaireId,
+                vote_type: 'upvote',
+                option_type: optionType,
+                option_number: optionNumber,
+              })
+          );
+        });
+      });
+
+      // Execute all promises
+      const results = await Promise.all(votePromises);
+      
+      // Check for errors
+      const errors = results.filter(result => result.error);
+      if (errors.length > 0) {
+        console.error('Errors submitting votes:', errors);
+        throw new Error('Erro ao registrar alguns votos');
       }
+
+      // Update questionnaire status after successful vote submission
+      const { error: updateError } = await supabase
+        .from('fic_questionnaires')
+        .update({ status: 'voted' })
+        .eq('id', questionnaireId);
+
+      if (updateError) {
+        console.error('Error updating questionnaire status:', updateError);
+        throw updateError;
+      }
+
+      console.log('All votes submitted successfully');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['active-questionnaires'] });
