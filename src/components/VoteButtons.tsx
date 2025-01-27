@@ -16,8 +16,8 @@ export const VoteButtons = ({ isSelected, onVote, disabled }: VoteButtonsProps) 
       disabled={disabled}
       className={`${
         isSelected 
-          ? "bg-[#9b87f5] hover:bg-[#7E69AB] border-[#9b87f5]" 
-          : "hover:bg-[#9b87f5]/10 border-[#D6BCFA]"
+          ? "bg-[#9b87f5] hover:bg-[#7E69AB] border-[#9b87f5] text-white" 
+          : "hover:bg-[#9b87f5]/10 border-[#D6BCFA] text-black"
       } transition-colors`}
     >
       <CheckSquare className={`h-4 w-4 mr-1 ${
