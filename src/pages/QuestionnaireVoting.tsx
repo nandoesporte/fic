@@ -38,6 +38,7 @@ export const QuestionnaireVoting = () => {
         throw questionnairesError;
       }
 
+      // Group by dimension to show only one questionnaire per dimension
       return questionnairesData?.reduce((acc: any[], curr) => {
         const existingDimension = acc.find(q => q.dimension === curr.dimension);
         if (!existingDimension) {
