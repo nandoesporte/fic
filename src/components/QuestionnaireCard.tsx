@@ -25,11 +25,11 @@ export const QuestionnaireCard = ({
   const getBgColor = (type: string) => {
     switch (type) {
       case 'strengths':
-        return 'bg-[#228B22] text-white'; // Green for strengths
+        return 'bg-[#228B22] text-white';
       case 'challenges':
-        return 'bg-[#FFD700] text-gray-900'; // Strong yellow for challenges
+        return 'bg-[#FFD700] text-gray-900';
       case 'opportunities':
-        return 'bg-[#000080] text-white'; // Dark blue for opportunities
+        return 'bg-[#000080] text-white';
       default:
         return '';
     }
@@ -84,8 +84,8 @@ export const QuestionnaireCard = ({
         <div>
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h2 className="text-xl font-semibold text-[#6E59A5]">{questionnaire.dimension}</h2>
-              <p className="text-sm text-[#8E9196]">
+              <h2 className="text-xl font-semibold text-white">{questionnaire.dimension}</h2>
+              <p className="text-sm text-white">
                 Enviado {formatDistanceToNow(new Date(questionnaire.created_at), { 
                   addSuffix: true,
                   locale: ptBR 
@@ -104,7 +104,7 @@ export const QuestionnaireCard = ({
             <Button
               onClick={onConfirmVotes}
               disabled={!allSectionsComplete}
-              className="bg-[#F97316] hover:bg-[#EA580C] text-white" // Orange confirm button
+              className="bg-[#F97316] hover:bg-[#EA580C] text-white"
             >
               Confirmar Votos
             </Button>
