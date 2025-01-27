@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Session } from "@supabase/supabase-js";
+import { Session, AuthError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -21,7 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { toast } = useToast();
 
-  const handleAuthError = (error: any) => {
+  const handleAuthError = (error: AuthError | Error) => {
     console.error("Auth error:", error);
     setSession(null);
     if (!PUBLIC_ROUTES.includes(location.pathname)) {
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error("Error in session initialization:", error);
-        handleAuthError(error);
+        handleAuthError(error as Error);
       } finally {
         if (mounted) {
           setLoading(false);
@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (location.pathname === '/login') {
           navigate('/');
         }
-      } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+      } else if (event === 'SIGNED_OUT') {
         setSession(null);
         // Only redirect to login if not on a public route
         if (!PUBLIC_ROUTES.includes(location.pathname)) {
