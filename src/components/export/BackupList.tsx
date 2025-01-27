@@ -36,11 +36,11 @@ export const BackupList = ({ backups, onDownload, onDelete }: BackupListProps) =
               className="flex items-center justify-between p-4 bg-white rounded-lg border hover:shadow-md transition-shadow"
             >
               <div className="flex-1">
-                <h3 className="font-medium">
-                  {backup.description || backup.filename}
+                <h3 className="font-medium text-lg">
+                  {backup.filename}
                 </h3>
                 <p className="text-sm text-gray-500">
-                  {new Date(backup.created_at).toLocaleString('pt-BR')}
+                  {backup.description || `Backup criado em ${new Date(backup.created_at).toLocaleString('pt-BR')}`}
                 </p>
               </div>
               <div className="flex gap-2">
