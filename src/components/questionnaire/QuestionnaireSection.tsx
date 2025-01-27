@@ -3,10 +3,23 @@ import { QuestionnaireOption } from "./QuestionnaireOption";
 import { QuestionnaireSectionHeader } from "./QuestionnaireSectionHeader";
 import { EditingLine } from "@/components/QuestionnaireResponses";
 
+interface Questionnaire {
+  id: string;
+  dimension: string;
+  strengths: string;
+  challenges: string;
+  opportunities: string;
+  group: string;
+  strengths_statuses?: string;
+  challenges_statuses?: string;
+  opportunities_statuses?: string;
+  [key: string]: any;
+}
+
 interface QuestionnaireSectionProps {
   title: string;
   type: 'strengths' | 'challenges' | 'opportunities';
-  questionnaires?: any[];
+  questionnaires?: Questionnaire[];
   content?: string;
   statuses?: string[];
   selectionCount?: number;
@@ -54,7 +67,7 @@ export const QuestionnaireSection = ({
 
   if (questionnaires) {
     // Group questionnaires by their group property
-    const groupedQuestionnaires = questionnaires.reduce((acc, questionnaire) => {
+    const groupedQuestionnaires = questionnaires.reduce<Record<string, Questionnaire[]>>((acc, questionnaire) => {
       const group = questionnaire.group || 'Sem grupo';
       if (!acc[group]) {
         acc[group] = [];
@@ -73,7 +86,7 @@ export const QuestionnaireSection = ({
             <h4 className="text-md font-medium text-white bg-gray-700 p-2 rounded">
               Grupo: {group}
             </h4>
-            {groupQuestionnaires.map((questionnaire: any) => (
+            {groupQuestionnaires.map((questionnaire: Questionnaire) => (
               <div key={questionnaire.id} className="space-y-2">
                 {questionnaire[type]?.split('\n\n').map((line: string, index: number) => (
                   <div 
