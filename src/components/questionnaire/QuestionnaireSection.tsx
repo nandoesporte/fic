@@ -1,3 +1,4 @@
+import { Card } from "@/components/ui/card";
 import { QuestionnaireOption } from "./QuestionnaireOption";
 import { QuestionnaireSectionHeader } from "./QuestionnaireSectionHeader";
 import { EditingLine } from "@/components/QuestionnaireResponses";
@@ -52,65 +53,82 @@ export const QuestionnaireSection = ({
   const bgColorClass = getBgColor(type);
 
   if (questionnaires) {
+    // Group questionnaires by their group property
+    const groupedQuestionnaires = questionnaires.reduce((acc, questionnaire) => {
+      const group = questionnaire.group || 'Sem grupo';
+      if (!acc[group]) {
+        acc[group] = [];
+      }
+      acc[group].push(questionnaire);
+      return acc;
+    }, {});
+
     return (
-      <div className="space-y-4">
+      <div className="space-y-8">
         <h3 className={`text-lg font-semibold mb-4 ${type === 'challenges' ? 'text-gray-900' : 'text-white'}`}>
           {title}
         </h3>
-        {questionnaires.map((questionnaire) => (
-          <div key={questionnaire.id} className="space-y-2">
-            {questionnaire[type]?.split('\n\n').map((line: string, index: number) => (
-              <div 
-                key={`${questionnaire.id}-${index}`} 
-                className={`p-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ${bgColorClass}`}
-              >
-                {editingLine?.questionnaireId === questionnaire.id && 
-                 editingLine?.type === type && 
-                 editingLine?.index === index ? (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={editingLine.value}
-                      onChange={(e) => setEditingLine?.({
-                        ...editingLine,
-                        value: e.target.value
-                      })}
-                      className="flex-1 px-2 py-1 rounded border text-gray-900"
-                      autoFocus
-                    />
-                    <button
-                      onClick={() => onLineSave?.(questionnaire)}
-                      className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                    >
-                      Salvar
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="flex-1">{line}</span>
-                    {onLineEdit && onToggleStatus && (
-                      <div className="flex items-center gap-2">
+        {Object.entries(groupedQuestionnaires).map(([group, groupQuestionnaires]) => (
+          <div key={group} className="space-y-4">
+            <h4 className="text-md font-medium text-white bg-gray-700 p-2 rounded">
+              Grupo: {group}
+            </h4>
+            {groupQuestionnaires.map((questionnaire: any) => (
+              <div key={questionnaire.id} className="space-y-2">
+                {questionnaire[type]?.split('\n\n').map((line: string, index: number) => (
+                  <div 
+                    key={`${questionnaire.id}-${index}`} 
+                    className={`p-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ${bgColorClass}`}
+                  >
+                    {editingLine?.questionnaireId === questionnaire.id && 
+                     editingLine?.type === type && 
+                     editingLine?.index === index ? (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={editingLine.value}
+                          onChange={(e) => setEditingLine?.({
+                            ...editingLine,
+                            value: e.target.value
+                          })}
+                          className="flex-1 px-2 py-1 rounded border text-gray-900"
+                          autoFocus
+                        />
                         <button
-                          onClick={() => onLineEdit(questionnaire.id, type, index, line)}
-                          className="p-1 hover:bg-black/10 rounded"
+                          onClick={() => onLineSave?.(questionnaire)}
+                          className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
                         >
-                          Editar
+                          Salvar
                         </button>
-                        <button
-                          onClick={() => onToggleStatus(
-                            questionnaire.id,
-                            type,
-                            index,
-                            questionnaire[`${type}_statuses`]?.split(',')[index] || 'pending'
-                          )}
-                          className="p-1 hover:bg-black/10 rounded"
-                        >
-                          {questionnaire[`${type}_statuses`]?.split(',')[index] === 'active' ? 'Desativar' : 'Ativar'}
-                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="flex-1">{line}</span>
+                        {onLineEdit && onToggleStatus && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => onLineEdit(questionnaire.id, type, index, line)}
+                              className="p-1 hover:bg-black/10 rounded"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              onClick={() => onToggleStatus(
+                                questionnaire.id,
+                                type,
+                                index,
+                                questionnaire[`${type}_statuses`]?.split(',')[index] || 'pending'
+                              )}
+                              className="p-1 hover:bg-black/10 rounded"
+                            >
+                              {questionnaire[`${type}_statuses`]?.split(',')[index] === 'active' ? 'Desativar' : 'Ativar'}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
+                ))}
               </div>
             ))}
           </div>
@@ -121,29 +139,27 @@ export const QuestionnaireSection = ({
 
   return (
     <div className="space-y-4">
-      <div className={`p-4 rounded-lg ${bgColorClass}`}>
-        <QuestionnaireSectionHeader 
-          title={title}
-          selectionCount={selectionCount}
-        />
-        <div className="space-y-3 mt-4">
-          {options.map((option, index) => {
-            const isActive = statuses?.[index] === 'active';
-            const selected = isOptionSelected?.(type, index + 1);
-            
-            return (
-              <QuestionnaireOption
-                key={index}
-                option={option}
-                index={index}
-                isActive={isActive}
-                isSelected={selected}
-                onVote={() => onVote?.(type, index + 1)}
-                disabled={selectionCount >= 3 && !selected}
-              />
-            );
-          })}
-        </div>
+      <QuestionnaireSectionHeader 
+        title={title}
+        selectionCount={selectionCount}
+      />
+      <div className="space-y-3">
+        {options.map((option, index) => {
+          const isActive = statuses?.[index] === 'active';
+          const selected = isOptionSelected?.(type, index + 1);
+          
+          return (
+            <QuestionnaireOption
+              key={index}
+              option={option}
+              index={index}
+              isActive={isActive}
+              isSelected={selected}
+              onVote={() => onVote?.(type, index + 1)}
+              disabled={selectionCount >= 3 && !selected}
+            />
+          );
+        })}
       </div>
     </div>
   );
