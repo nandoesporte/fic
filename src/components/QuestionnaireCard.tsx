@@ -25,11 +25,11 @@ export const QuestionnaireCard = ({
   const getBgColor = (type: string) => {
     switch (type) {
       case 'strengths':
-        return 'bg-[#9b87f5] text-white';
+        return 'bg-[#228B22] text-white'; // Green for strengths
       case 'challenges':
-        return 'bg-[#9b87f5] text-white';
+        return 'bg-[#FFD700] text-gray-900'; // Strong yellow for challenges
       case 'opportunities':
-        return 'bg-[#9b87f5] text-white';
+        return 'bg-[#000080] text-white'; // Dark blue for opportunities
       default:
         return '';
     }
@@ -104,7 +104,7 @@ export const QuestionnaireCard = ({
             <Button
               onClick={onConfirmVotes}
               disabled={!allSectionsComplete}
-              className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white"
+              className="bg-[#F97316] hover:bg-[#EA580C] text-white" // Orange confirm button
             >
               Confirmar Votos
             </Button>
