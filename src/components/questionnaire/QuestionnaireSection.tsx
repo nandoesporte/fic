@@ -45,6 +45,19 @@ const getBgColor = (type: string) => {
   }
 };
 
+const getSectionTitle = (type: string) => {
+  switch (type) {
+    case 'strengths':
+      return 'Pontos Fortes';
+    case 'challenges':
+      return 'Desafios';
+    case 'opportunities':
+      return 'Oportunidades';
+    default:
+      return '';
+  }
+};
+
 export const QuestionnaireSection = ({
   title,
   content,
@@ -79,7 +92,7 @@ export const QuestionnaireSection = ({
     return (
       <div className="space-y-8">
         <h3 className={`text-lg font-semibold mb-4 ${type === 'challenges' ? 'text-gray-900' : 'text-white'}`}>
-          {title}
+          {getSectionTitle(type)}
         </h3>
         {Object.entries(groupedQuestionnaires).map(([group, groupQuestionnaires]) => (
           <div key={group} className="space-y-4">
@@ -88,6 +101,9 @@ export const QuestionnaireSection = ({
             </h4>
             {groupQuestionnaires.map((questionnaire: Questionnaire) => (
               <div key={questionnaire.id} className="space-y-2">
+                <div className="text-white text-sm mb-2">
+                  Dimensão: {questionnaire.dimension}
+                </div>
                 {questionnaire[type]?.split('\n\n').map((line: string, index: number) => (
                   <div 
                     key={`${questionnaire.id}-${index}`} 
