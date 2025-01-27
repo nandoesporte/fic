@@ -18,12 +18,10 @@ interface QuestionnaireSectionProps {
   setEditingLine?: (value: EditingLine) => void;
 }
 
-const MAX_SELECTIONS = 3;
-
 const getBgColor = (type: string) => {
   switch (type) {
     case 'strengths':
-      return 'bg-[#228B22] text-white';
+      return 'bg-[#2F855A] text-white';
     case 'challenges':
       return 'bg-[#FFD700] text-gray-900';
     case 'opportunities':
@@ -56,13 +54,63 @@ export const QuestionnaireSection = ({
   if (questionnaires) {
     return (
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold mb-4 text-white">{title}</h3>
+        <h3 className={`text-lg font-semibold mb-4 ${type === 'challenges' ? 'text-gray-900' : 'text-white'}`}>
+          {title}
+        </h3>
         {questionnaires.map((questionnaire) => (
           <div key={questionnaire.id} className="space-y-2">
-            {/* Display questionnaire content based on type */}
             {questionnaire[type]?.split('\n\n').map((line: string, index: number) => (
-              <div key={`${questionnaire.id}-${index}`} className="p-4 bg-gray-800 rounded-lg text-white">
-                {line}
+              <div 
+                key={`${questionnaire.id}-${index}`} 
+                className={`p-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ${bgColorClass}`}
+              >
+                {editingLine?.questionnaireId === questionnaire.id && 
+                 editingLine?.type === type && 
+                 editingLine?.index === index ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={editingLine.value}
+                      onChange={(e) => setEditingLine?.({
+                        ...editingLine,
+                        value: e.target.value
+                      })}
+                      className="flex-1 px-2 py-1 rounded border text-gray-900"
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => onLineSave?.(questionnaire)}
+                      className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                    >
+                      Salvar
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="flex-1">{line}</span>
+                    {onLineEdit && onToggleStatus && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => onLineEdit(questionnaire.id, type, index, line)}
+                          className="p-1 hover:bg-black/10 rounded"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => onToggleStatus(
+                            questionnaire.id,
+                            type,
+                            index,
+                            questionnaire[`${type}_statuses`]?.split(',')[index] || 'pending'
+                          )}
+                          className="p-1 hover:bg-black/10 rounded"
+                        >
+                          {questionnaire[`${type}_statuses`]?.split(',')[index] === 'active' ? 'Desativar' : 'Ativar'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -91,7 +139,7 @@ export const QuestionnaireSection = ({
                 isActive={isActive}
                 isSelected={selected}
                 onVote={() => onVote?.(type, index + 1)}
-                disabled={selectionCount >= MAX_SELECTIONS && !selected}
+                disabled={selectionCount >= 3 && !selected}
               />
             );
           })}
