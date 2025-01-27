@@ -79,7 +79,6 @@ export const QuestionnaireSection = ({
   const bgColorClass = getBgColor(type);
 
   if (questionnaires) {
-    // Group questionnaires by their group property
     const groupedQuestionnaires = questionnaires.reduce<Record<string, Questionnaire[]>>((acc, questionnaire) => {
       const group = questionnaire.group || 'Sem grupo';
       if (!acc[group]) {
