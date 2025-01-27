@@ -25,11 +25,11 @@ export const QuestionnaireCard = ({
   const getBgColor = (type: string) => {
     switch (type) {
       case 'strengths':
-        return 'bg-[#228B22] text-white';
+        return 'bg-primary text-primary-foreground';
       case 'challenges':
-        return 'bg-[#FFD700] text-gray-900';
+        return 'bg-secondary text-secondary-foreground';
       case 'opportunities':
-        return 'bg-[#000080] text-white';
+        return 'bg-accent text-accent-foreground';
       default:
         return '';
     }
