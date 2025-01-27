@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { EmailVerification } from "@/components/voting/EmailVerification";
 import { VotingSection } from "@/components/voting/VotingSection";
+import { submitVotes } from "@/components/voting/VotingLogic";
 
 type VoteSelection = {
   [key: string]: {
@@ -58,70 +59,7 @@ export const QuestionnaireVoting = () => {
       dimension: string;
     }) => {
       console.log('Submitting votes:', { questionnaireId, votes, dimension });
-
-      // Check if user has already voted on this dimension
-      const { data: existingVote } = await supabase
-        .from('dimension_votes')
-        .select('id')
-        .eq('email', userEmail.toLowerCase())
-        .eq('dimension', dimension)
-        .maybeSingle();
-
-      if (existingVote) {
-        throw new Error('Você já votou nesta dimensão');
-      }
-
-      // Start a batch operation
-      const votePromises = [];
-
-      // Register dimension vote
-      votePromises.push(
-        supabase
-          .from('dimension_votes')
-          .insert({
-            email: userEmail.toLowerCase(),
-            dimension: dimension
-          })
-      );
-
-      // Register individual votes
-      votes.forEach(({ optionType, optionNumbers }) => {
-        optionNumbers.forEach(optionNumber => {
-          votePromises.push(
-            supabase
-              .from('questionnaire_votes')
-              .insert({
-                questionnaire_id: questionnaireId,
-                vote_type: 'upvote',
-                option_type: optionType,
-                option_number: optionNumber,
-              })
-          );
-        });
-      });
-
-      // Execute all promises
-      const results = await Promise.all(votePromises);
-      
-      // Check for errors
-      const errors = results.filter(result => result.error);
-      if (errors.length > 0) {
-        console.error('Errors submitting votes:', errors);
-        throw new Error('Erro ao registrar alguns votos');
-      }
-
-      // Update questionnaire status after successful vote submission
-      const { error: updateError } = await supabase
-        .from('fic_questionnaires')
-        .update({ status: 'voted' })
-        .eq('id', questionnaireId);
-
-      if (updateError) {
-        console.error('Error updating questionnaire status:', updateError);
-        throw updateError;
-      }
-
-      console.log('All votes submitted successfully');
+      await submitVotes({ questionnaireId, votes, dimension, userEmail });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['active-questionnaires'] });
