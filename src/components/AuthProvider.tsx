@@ -21,6 +21,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { toast } = useToast();
 
+  const handleAuthError = (error: any) => {
+    console.error("Auth error:", error);
+    setSession(null);
+    if (!PUBLIC_ROUTES.includes(location.pathname)) {
+      navigate('/login');
+    }
+    toast({
+      variant: "destructive",
+      title: "Erro de autenticação",
+      description: "Por favor, faça login novamente.",
+    });
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -31,9 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (error) {
           console.error("Session initialization error:", error);
-          if (!PUBLIC_ROUTES.includes(location.pathname)) {
-            navigate('/login');
-          }
+          handleAuthError(error);
           return;
         }
 
@@ -47,11 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error("Error in session initialization:", error);
-        toast({
-          variant: "destructive",
-          title: "Erro de autenticação",
-          description: "Houve um problema ao inicializar sua sessão. Por favor, faça login novamente.",
-        });
+        handleAuthError(error);
       } finally {
         if (mounted) {
           setLoading(false);
@@ -68,13 +75,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("Auth state changed:", event, currentSession);
       
       if (event === 'TOKEN_REFRESHED') {
-        setSession(currentSession);
+        if (currentSession) {
+          setSession(currentSession);
+        } else {
+          handleAuthError(new Error('Token refresh failed'));
+        }
       } else if (event === 'SIGNED_IN') {
         setSession(currentSession);
         if (location.pathname === '/login') {
           navigate('/');
         }
-      } else if (event === 'SIGNED_OUT') {
+      } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
         setSession(null);
         // Only redirect to login if not on a public route
         if (!PUBLIC_ROUTES.includes(location.pathname)) {
