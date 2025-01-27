@@ -25,11 +25,11 @@ export const QuestionnaireCard = ({
   const getBgColor = (type: string) => {
     switch (type) {
       case 'strengths':
-        return 'bg-[#228B22] text-white';
+        return 'bg-[#9b87f5] text-white';
       case 'challenges':
-        return 'bg-[#FFD700] text-gray-900';
+        return 'bg-[#9b87f5] text-white';
       case 'opportunities':
-        return 'bg-[#000080] text-white';
+        return 'bg-[#9b87f5] text-white';
       default:
         return '';
     }
@@ -79,13 +79,13 @@ export const QuestionnaireCard = ({
     getSelectionCount('opportunities') === MAX_SELECTIONS;
 
   return (
-    <Card className="p-6">
+    <Card className="p-6 border-[#D6BCFA] hover:border-[#9b87f5] transition-colors">
       <div className="space-y-6">
         <div>
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h2 className="text-xl font-semibold">{questionnaire.dimension}</h2>
-              <p className="text-sm text-gray-500">
+              <h2 className="text-xl font-semibold text-[#6E59A5]">{questionnaire.dimension}</h2>
+              <p className="text-sm text-[#8E9196]">
                 Enviado {formatDistanceToNow(new Date(questionnaire.created_at), { 
                   addSuffix: true,
                   locale: ptBR 
@@ -104,7 +104,7 @@ export const QuestionnaireCard = ({
             <Button
               onClick={onConfirmVotes}
               disabled={!allSectionsComplete}
-              className="bg-primary hover:bg-primary/90"
+              className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white"
             >
               Confirmar Votos
             </Button>
