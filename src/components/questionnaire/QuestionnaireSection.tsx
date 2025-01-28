@@ -52,6 +52,7 @@ export const QuestionnaireSection = ({
   if (content) {
     const options = content.split('\n\n').filter(Boolean);
     const activeOptions = options.filter((_, index) => statuses[index] === 'active');
+    const activeIndices = statuses.map((status, index) => status === 'active' ? index : -1).filter(index => index !== -1);
 
     return (
       <div className="space-y-4">
@@ -62,7 +63,8 @@ export const QuestionnaireSection = ({
           />
           <div className="space-y-3 mt-4">
             {activeOptions.map((option, index) => {
-              const selected = isOptionSelected(index + 1);
+              const originalIndex = activeIndices[index];
+              const selected = isOptionSelected(originalIndex + 1);
               const isDisabled = selectionCount >= MAX_SELECTIONS && !selected;
               
               return (
@@ -72,7 +74,7 @@ export const QuestionnaireSection = ({
                   index={index}
                   isActive={true}
                   isSelected={selected}
-                  onVote={() => onVote(index + 1)}
+                  onVote={() => onVote(originalIndex + 1)}
                   disabled={isDisabled}
                 />
               );
