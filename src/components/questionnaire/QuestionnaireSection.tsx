@@ -40,6 +40,10 @@ export const QuestionnaireSection = ({
 
   const bgColorClass = getBgColor(type);
 
+  // Filter out inactive options for the voting page
+  const activeOptions = options.filter((_, index) => statuses[index] === 'active');
+  const activeStatuses = statuses.filter(status => status === 'active');
+
   return (
     <div className="space-y-4">
       <div className={`p-4 rounded-lg ${bgColorClass}`}>
@@ -48,17 +52,16 @@ export const QuestionnaireSection = ({
           selectionCount={selectionCount}
         />
         <div className="space-y-3 mt-4">
-          {options.map((option, index) => {
-            const isActive = statuses[index] === 'active';
+          {activeOptions.map((option, index) => {
             const selected = isOptionSelected(index + 1);
-            const isDisabled = !isActive || (selectionCount >= MAX_SELECTIONS && !selected);
+            const isDisabled = selectionCount >= MAX_SELECTIONS && !selected;
             
             return (
               <QuestionnaireOption
                 key={index}
                 option={option}
                 index={index}
-                isActive={isActive}
+                isActive={true} // Since we're only showing active options
                 isSelected={selected}
                 onVote={() => onVote(index + 1)}
                 disabled={isDisabled}
