@@ -38,13 +38,7 @@ export const QuestionnaireVoting = () => {
         throw questionnairesError;
       }
 
-      return questionnairesData?.reduce((acc: any[], curr) => {
-        const existingDimension = acc.find(q => q.dimension === curr.dimension);
-        if (!existingDimension) {
-          acc.push(curr);
-        }
-        return acc;
-      }, []) || [];
+      return questionnairesData || [];
     },
     enabled: isEmailVerified,
   });
