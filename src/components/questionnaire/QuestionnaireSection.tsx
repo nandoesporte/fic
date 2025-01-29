@@ -42,6 +42,7 @@ export const QuestionnaireSection = ({
 
   // Filter out inactive options for the voting page
   const activeOptions = options.filter((_, index) => statuses[index] === 'active');
+  const activeStatuses = statuses.filter(status => status === 'active');
 
   return (
     <div className="space-y-4">
