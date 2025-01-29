@@ -27,6 +27,6 @@ export const useQuestionnaireData = () => {
         status: q.status || 'pending'
       }));
     },
-    refetchInterval: 5000,
+    refetchInterval: 5000, // Refresh every 5 seconds to get updates
   });
 };

@@ -6,21 +6,14 @@ import { useNavigate } from "react-router-dom";
 import { EmailVerification } from "@/components/voting/EmailVerification";
 import { VotingSection } from "@/components/voting/VotingSection";
 import { submitVotes } from "@/components/voting/VotingLogic";
-
-type VoteSelection = {
-  [key: string]: {
-    strengths: number[];
-    challenges: number[];
-    opportunities: number[];
-  };
-};
+import { useQuestionnaireSelections } from "@/hooks/questionnaire/useQuestionnaireSelections";
 
 export const QuestionnaireVoting = () => {
   const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState("");
   const [isEmailVerified, setIsEmailVerified] = useState(false);
-  const [selections, setSelections] = useState<VoteSelection>({});
   const queryClient = useQueryClient();
+  const { selections, handleVote, setSelections } = useQuestionnaireSelections();
 
   const { data: questionnaires, isLoading } = useQuery({
     queryKey: ['active-questionnaires'],
@@ -38,7 +31,14 @@ export const QuestionnaireVoting = () => {
         throw questionnairesError;
       }
 
-      return questionnairesData || [];
+      // Group by dimension to show only one questionnaire per dimension
+      return questionnairesData?.reduce((acc: any[], curr) => {
+        const existingDimension = acc.find(q => q.dimension === curr.dimension);
+        if (!existingDimension) {
+          acc.push(curr);
+        }
+        return acc;
+      }, []) || [];
     },
     enabled: isEmailVerified,
   });
@@ -66,41 +66,6 @@ export const QuestionnaireVoting = () => {
       toast.error(`Erro ao registrar votos: ${error.message}`);
     },
   });
-
-  const handleVote = (questionnaireId: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => {
-    if (!userEmail) {
-      toast.error('Por favor, insira seu email para votar');
-      return;
-    }
-
-    setSelections(prev => {
-      const currentSelections = prev[questionnaireId]?.[optionType] || [];
-      const isSelected = currentSelections.includes(optionNumber);
-
-      if (isSelected) {
-        return {
-          ...prev,
-          [questionnaireId]: {
-            ...prev[questionnaireId],
-            [optionType]: currentSelections.filter(num => num !== optionNumber)
-          }
-        };
-      }
-
-      if (currentSelections.length >= 3) {
-        toast.error('Você já selecionou 3 opções nesta seção');
-        return prev;
-      }
-
-      return {
-        ...prev,
-        [questionnaireId]: {
-          ...prev[questionnaireId],
-          [optionType]: [...currentSelections, optionNumber]
-        }
-      };
-    });
-  };
 
   const handleConfirmVotes = async (questionnaireId: string) => {
     const questionnaire = questionnaires?.find(q => q.id === questionnaireId);

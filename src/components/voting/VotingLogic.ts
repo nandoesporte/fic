@@ -48,7 +48,6 @@ export const submitVotes = async ({
             vote_type: 'upvote',
             option_type: optionType,
             option_number: optionNumber,
-            email: userEmail.toLowerCase()
           })
       );
     });
