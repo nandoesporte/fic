@@ -537,7 +537,6 @@ export type Database = {
       questionnaire_votes: {
         Row: {
           created_at: string | null
-          email: string
           id: string
           option_number: number
           option_type: string
@@ -547,7 +546,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          email: string
           id?: string
           option_number: number
           option_type: string
@@ -557,7 +555,6 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          email?: string
           id?: string
           option_number?: number
           option_type?: string
@@ -566,13 +563,6 @@ export type Database = {
           vote_type?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "questionnaire_votes_email_fkey"
-            columns: ["email"]
-            isOneToOne: false
-            referencedRelation: "registered_voters"
-            referencedColumns: ["email"]
-          },
           {
             foreignKeyName: "questionnaire_votes_questionnaire_id_fkey"
             columns: ["questionnaire_id"]
@@ -824,34 +814,9 @@ export type Database = {
       }
     }
     Functions: {
-      check_vote_eligibility:
-        | {
-            Args: {
-              p_questionnaire_id: string
-              p_option_type: string
-              p_option_number: number
-            }
-            Returns: boolean
-          }
-        | {
-            Args: {
-              p_questionnaire_id: string
-              p_option_type: string
-              p_option_number: number
-              p_email: string
-            }
-            Returns: boolean
-          }
       clean_questionnaire_votes: {
         Args: Record<PropertyKey, never>
         Returns: undefined
-      }
-      count_user_votes: {
-        Args: {
-          p_questionnaire_id: string
-          p_option_type: string
-        }
-        Returns: number
       }
       update_fic_metrics: {
         Args: Record<PropertyKey, never>
