@@ -10,6 +10,7 @@ interface Questionnaire {
   strengths_statuses?: string;
   challenges_statuses?: string;
   opportunities_statuses?: string;
+  created_at?: string;
 }
 
 interface GroupedQuestionnaireListProps {
@@ -42,6 +43,7 @@ export const GroupedQuestionnaireList = ({
       strengths_statuses: acc.strengths_statuses + ',' + (curr.strengths_statuses || 'pending,pending,pending'),
       challenges_statuses: acc.challenges_statuses + ',' + (curr.challenges_statuses || 'pending,pending,pending'),
       opportunities_statuses: acc.opportunities_statuses + ',' + (curr.opportunities_statuses || 'pending,pending,pending'),
+      created_at: new Date().toISOString(), // Add current date as created_at
     };
   }, {
     id: 'merged',
@@ -52,6 +54,7 @@ export const GroupedQuestionnaireList = ({
     strengths_statuses: '',
     challenges_statuses: '',
     opportunities_statuses: '',
+    created_at: new Date().toISOString(),
   });
 
   // Clean up the initial empty strings and extra commas

@@ -84,6 +84,19 @@ export const QuestionnaireCard = ({
     getSelectionCount('challenges') === MAX_SELECTIONS &&
     getSelectionCount('opportunities') === MAX_SELECTIONS;
 
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '';
+    try {
+      return formatDistanceToNow(new Date(dateString), { 
+        addSuffix: true,
+        locale: ptBR 
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return '';
+    }
+  };
+
   return (
     <Card className="p-6 border-[#D6BCFA] hover:border-[#9b87f5] transition-colors">
       <div className="space-y-6">
@@ -91,12 +104,11 @@ export const QuestionnaireCard = ({
           <div className="flex justify-between items-start mb-4">
             <div>
               <h2 className="text-xl font-semibold text-[#6E59A5]">{questionnaire.dimension}</h2>
-              <p className="text-sm text-[#8E9196]">
-                Enviado {formatDistanceToNow(new Date(questionnaire.created_at), { 
-                  addSuffix: true,
-                  locale: ptBR 
-                })}
-              </p>
+              {questionnaire.created_at && (
+                <p className="text-sm text-[#8E9196]">
+                  Enviado {formatDate(questionnaire.created_at)}
+                </p>
+              )}
             </div>
           </div>
         </div>
