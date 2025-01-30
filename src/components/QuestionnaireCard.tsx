@@ -25,11 +25,11 @@ export const QuestionnaireCard = ({
   const getBgColor = (type: string) => {
     switch (type) {
       case 'strengths':
-        return 'bg-[#228B22] text-white'; // Green for strengths
+        return 'bg-[#228B22] text-white';
       case 'challenges':
-        return 'bg-[#FFD700] text-gray-900'; // Strong yellow for challenges
+        return 'bg-[#FFD700] text-gray-900';
       case 'opportunities':
-        return 'bg-[#000080] text-white'; // Dark blue for opportunities
+        return 'bg-[#000080] text-white';
       default:
         return '';
     }
@@ -42,6 +42,12 @@ export const QuestionnaireCard = ({
     const selectionCount = getSelectionCount(type);
     const bgColorClass = getBgColor(type);
     const statuses = (questionnaire[`${type}_statuses`] || 'pending,pending,pending').split(',');
+    
+    // Filter options to only show active ones
+    const activeOptions = options.filter((_, index) => statuses[index] === 'active');
+    const activeIndices = options.map((_, index) => statuses[index] === 'active' ? index : -1).filter(i => i !== -1);
+
+    if (activeOptions.length === 0) return null;
 
     return (
       <div className="space-y-4">
@@ -51,18 +57,18 @@ export const QuestionnaireCard = ({
             selectionCount={selectionCount}
           />
           <div className="space-y-3 mt-4">
-            {options.map((option, index) => {
-              const isActive = statuses[index] === 'active';
-              const selected = isOptionSelected(type, index + 1);
+            {activeOptions.map((option, idx) => {
+              const originalIndex = activeIndices[idx];
+              const selected = isOptionSelected(type, originalIndex + 1);
               
               return (
                 <QuestionnaireOption
-                  key={index}
+                  key={idx}
                   option={option}
-                  index={index}
-                  isActive={isActive}
+                  index={idx}
+                  isActive={true}
                   isSelected={selected}
-                  onVote={() => onVote(type, index + 1)}
+                  onVote={() => onVote(type, originalIndex + 1)}
                   disabled={selectionCount >= MAX_SELECTIONS && !selected}
                 />
               );
@@ -104,7 +110,7 @@ export const QuestionnaireCard = ({
             <Button
               onClick={onConfirmVotes}
               disabled={!allSectionsComplete}
-              className="bg-[#F97316] hover:bg-[#EA580C] text-white" // Orange confirm button
+              className="bg-[#F97316] hover:bg-[#EA580C] text-white"
             >
               Confirmar Votos
             </Button>

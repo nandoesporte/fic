@@ -466,6 +466,9 @@ export type Database = {
           cocamarmembers: string | null
           cocamarname: string | null
           coins: number | null
+          company_description: string | null
+          company_logo: string | null
+          company_name: string | null
           cpf: string
           created_at: string | null
           email: string
@@ -483,6 +486,8 @@ export type Database = {
           steps: number | null
           updated_at: string | null
           weight: number | null
+          welcome_description: string | null
+          welcome_message: string | null
         }
         Insert: {
           birth_date?: string | null
@@ -490,6 +495,9 @@ export type Database = {
           cocamarmembers?: string | null
           cocamarname?: string | null
           coins?: number | null
+          company_description?: string | null
+          company_logo?: string | null
+          company_name?: string | null
           cpf?: string
           created_at?: string | null
           email: string
@@ -507,6 +515,8 @@ export type Database = {
           steps?: number | null
           updated_at?: string | null
           weight?: number | null
+          welcome_description?: string | null
+          welcome_message?: string | null
         }
         Update: {
           birth_date?: string | null
@@ -514,6 +524,9 @@ export type Database = {
           cocamarmembers?: string | null
           cocamarname?: string | null
           coins?: number | null
+          company_description?: string | null
+          company_logo?: string | null
+          company_name?: string | null
           cpf?: string
           created_at?: string | null
           email?: string
@@ -531,6 +544,8 @@ export type Database = {
           steps?: number | null
           updated_at?: string | null
           weight?: number | null
+          welcome_description?: string | null
+          welcome_message?: string | null
         }
         Relationships: []
       }
