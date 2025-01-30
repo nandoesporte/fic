@@ -36,20 +36,22 @@ export const GroupedQuestionnaireList = ({
   const primaryQuestionnaireId = questionnaires[0]?.id;
 
   // Combine all questionnaires into a single object with merged sections
-  const mergedQuestionnaire = questionnaires.reduce<Questionnaire>((acc, curr) => {
+  const mergedQuestionnaire = questionnaires.reduce<Questionnaire>((acc, curr, index) => {
+    const baseIndex = index * 3; // Each questionnaire has 3 options per section
+    
     return {
-      id: primaryQuestionnaireId, // Use the first questionnaire's ID
+      id: primaryQuestionnaireId,
       dimension: 'Todas as Dimensões',
-      strengths: acc.strengths + '\n\n' + curr.strengths,
-      challenges: acc.challenges + '\n\n' + curr.challenges,
-      opportunities: acc.opportunities + '\n\n' + curr.opportunities,
-      strengths_statuses: acc.strengths_statuses + ',' + (curr.strengths_statuses || 'pending,pending,pending'),
-      challenges_statuses: acc.challenges_statuses + ',' + (curr.challenges_statuses || 'pending,pending,pending'),
-      opportunities_statuses: acc.opportunities_statuses + ',' + (curr.opportunities_statuses || 'pending,pending,pending'),
+      strengths: acc.strengths + (index > 0 ? '\n\n' : '') + curr.strengths,
+      challenges: acc.challenges + (index > 0 ? '\n\n' : '') + curr.challenges,
+      opportunities: acc.opportunities + (index > 0 ? '\n\n' : '') + curr.opportunities,
+      strengths_statuses: acc.strengths_statuses + (index > 0 ? ',' : '') + (curr.strengths_statuses || 'pending,pending,pending'),
+      challenges_statuses: acc.challenges_statuses + (index > 0 ? ',' : '') + (curr.challenges_statuses || 'pending,pending,pending'),
+      opportunities_statuses: acc.opportunities_statuses + (index > 0 ? ',' : '') + (curr.opportunities_statuses || 'pending,pending,pending'),
       created_at: new Date().toISOString(),
     };
   }, {
-    id: primaryQuestionnaireId, // Use the first questionnaire's ID
+    id: primaryQuestionnaireId,
     dimension: 'Todas as Dimensões',
     strengths: '',
     challenges: '',
