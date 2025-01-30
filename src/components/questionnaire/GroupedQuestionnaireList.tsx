@@ -32,10 +32,13 @@ export const GroupedQuestionnaireList = ({
   onVote,
   onConfirmVotes,
 }: GroupedQuestionnaireListProps) => {
+  // Get the first questionnaire's ID to use for voting
+  const primaryQuestionnaireId = questionnaires[0]?.id;
+
   // Combine all questionnaires into a single object with merged sections
   const mergedQuestionnaire = questionnaires.reduce<Questionnaire>((acc, curr) => {
     return {
-      id: 'merged',
+      id: primaryQuestionnaireId, // Use the first questionnaire's ID
       dimension: 'Todas as Dimensões',
       strengths: acc.strengths + '\n\n' + curr.strengths,
       challenges: acc.challenges + '\n\n' + curr.challenges,
@@ -43,10 +46,10 @@ export const GroupedQuestionnaireList = ({
       strengths_statuses: acc.strengths_statuses + ',' + (curr.strengths_statuses || 'pending,pending,pending'),
       challenges_statuses: acc.challenges_statuses + ',' + (curr.challenges_statuses || 'pending,pending,pending'),
       opportunities_statuses: acc.opportunities_statuses + ',' + (curr.opportunities_statuses || 'pending,pending,pending'),
-      created_at: new Date().toISOString(), // Add current date as created_at
+      created_at: new Date().toISOString(),
     };
   }, {
-    id: 'merged',
+    id: primaryQuestionnaireId, // Use the first questionnaire's ID
     dimension: 'Todas as Dimensões',
     strengths: '',
     challenges: '',
@@ -73,6 +76,10 @@ export const GroupedQuestionnaireList = ({
     return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.length || 0;
   };
 
+  if (!primaryQuestionnaireId) {
+    return null;
+  }
+
   return (
     <div className="space-y-8">
       <div className="space-y-4">
@@ -83,15 +90,15 @@ export const GroupedQuestionnaireList = ({
           <QuestionnaireCard
             questionnaire={mergedQuestionnaire}
             onVote={(optionType, optionNumber) =>
-              onVote(mergedQuestionnaire.id, optionType, optionNumber)
+              onVote(primaryQuestionnaireId, optionType, optionNumber)
             }
             isOptionSelected={(optionType, optionNumber) =>
-              isOptionSelected(mergedQuestionnaire.id, optionType, optionNumber)
+              isOptionSelected(primaryQuestionnaireId, optionType, optionNumber)
             }
             getSelectionCount={(optionType) =>
-              getSelectionCount(mergedQuestionnaire.id, optionType)
+              getSelectionCount(primaryQuestionnaireId, optionType)
             }
-            onConfirmVotes={() => onConfirmVotes(mergedQuestionnaire.id)}
+            onConfirmVotes={() => onConfirmVotes(primaryQuestionnaireId)}
           />
         </div>
       </div>
