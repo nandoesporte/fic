@@ -31,8 +31,8 @@ export const QuestionnaireList = ({
         <Card key={section.type} className="p-6">
           <QuestionnaireSection
             title={section.title}
-            questionnaires={questionnaires}
             type={section.type}
+            questionnaires={questionnaires}
             editingLine={editingLine}
             onLineEdit={onLineEdit}
             onLineSave={onLineSave}

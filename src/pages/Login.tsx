@@ -17,6 +17,9 @@ export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false);
 
   useEffect(() => {
+    // Clear any existing session data on component mount
+    localStorage.removeItem('supabase.auth.token');
+    
     const checkSession = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) {
@@ -35,15 +38,7 @@ export default function Login() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, session);
       if (event === "SIGNED_IN" && session) {
-        // Ensure we have a valid session before navigating
-        const { data: currentSession, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) {
-          console.error("Session validation error:", sessionError);
-          return;
-        }
-        if (currentSession?.session) {
-          navigate("/");
-        }
+        navigate("/");
       }
     });
 
@@ -71,6 +66,9 @@ export default function Login() {
           description: "Por favor, verifique seu email para confirmar o cadastro.",
         });
       } else {
+        // For login, first sign out to clear any existing session
+        await supabase.auth.signOut();
+        
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -85,6 +83,8 @@ export default function Login() {
         if (!sessionData.session) {
           throw new Error("No session created after login");
         }
+
+        navigate("/");
       }
     } catch (error: any) {
       console.error("Authentication error:", error);
