@@ -17,67 +17,53 @@ export const GroupedQuestionnaireList = ({
   questionnaires,
   selections,
   onVote,
-  onConfirmVotes
+  onConfirmVotes,
 }: GroupedQuestionnaireListProps) => {
-  const groupResponsesByType = (questionnaires: any[]) => {
-    const grouped = {
-      strengths: [] as string[],
-      challenges: [] as string[],
-      opportunities: [] as string[]
-    };
-
-    questionnaires.forEach(questionnaire => {
-      const strengthsLines = (questionnaire.strengths || '').split('\n\n').filter(Boolean);
-      const challengesLines = (questionnaire.challenges || '').split('\n\n').filter(Boolean);
-      const opportunitiesLines = (questionnaire.opportunities || '').split('\n\n').filter(Boolean);
-
-      grouped.strengths.push(...strengthsLines);
-      grouped.challenges.push(...challengesLines);
-      grouped.opportunities.push(...opportunitiesLines);
-    });
-
-    return grouped;
-  };
+  // Group questionnaires by their group property
+  const groupedQuestionnaires = questionnaires.reduce((acc: { [key: string]: any[] }, curr) => {
+    const group = curr.group || 'Sem grupo';
+    if (!acc[group]) {
+      acc[group] = [];
+    }
+    acc[group].push(curr);
+    return acc;
+  }, {});
 
   const isOptionSelected = (questionnaireId: string, optionType: string, optionNumber: number) => {
-    const questionnaireSelections = selections[questionnaireId];
-    if (!questionnaireSelections) return false;
-    
-    const typeSelections = questionnaireSelections[optionType as keyof typeof questionnaireSelections];
-    return Array.isArray(typeSelections) && typeSelections.includes(optionNumber);
+    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.includes(optionNumber) || false;
   };
 
   const getSelectionCount = (questionnaireId: string, optionType: string) => {
-    const questionnaireSelections = selections[questionnaireId];
-    if (!questionnaireSelections) return 0;
-    
-    const typeSelections = questionnaireSelections[optionType as keyof typeof questionnaireSelections];
-    return Array.isArray(typeSelections) ? typeSelections.length : 0;
+    return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.length || 0;
   };
 
-  const groupedResponses = groupResponsesByType(questionnaires);
-  const firstQuestionnaire = questionnaires[0];
-
-  if (!firstQuestionnaire) return null;
-
   return (
-    <div className="space-y-6">
-      <QuestionnaireCard
-        questionnaire={{
-          ...firstQuestionnaire,
-          strengths: groupedResponses.strengths.join('\n\n'),
-          challenges: groupedResponses.challenges.join('\n\n'),
-          opportunities: groupedResponses.opportunities.join('\n\n')
-        }}
-        onVote={(optionType, optionNumber) => onVote(firstQuestionnaire.id, optionType, optionNumber)}
-        isOptionSelected={(optionType, optionNumber) => 
-          isOptionSelected(firstQuestionnaire.id, optionType, optionNumber)
-        }
-        getSelectionCount={(optionType) => 
-          getSelectionCount(firstQuestionnaire.id, optionType)
-        }
-        onConfirmVotes={() => onConfirmVotes(firstQuestionnaire.id)}
-      />
+    <div className="space-y-8">
+      {Object.entries(groupedQuestionnaires).map(([group, groupQuestionnaires]) => (
+        <div key={group} className="space-y-4">
+          <h2 className="text-xl font-semibold text-[#6E59A5] capitalize">
+            {group.replace(/-/g, ' ')}
+          </h2>
+          <div className="grid gap-4">
+            {groupQuestionnaires.map((questionnaire) => (
+              <QuestionnaireCard
+                key={questionnaire.id}
+                questionnaire={questionnaire}
+                onVote={(optionType, optionNumber) =>
+                  onVote(questionnaire.id, optionType, optionNumber)
+                }
+                isOptionSelected={(optionType, optionNumber) =>
+                  isOptionSelected(questionnaire.id, optionType, optionNumber)
+                }
+                getSelectionCount={(optionType) =>
+                  getSelectionCount(questionnaire.id, optionType)
+                }
+                onConfirmVotes={() => onConfirmVotes(questionnaire.id)}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 };
