@@ -1,7 +1,19 @@
 import { QuestionnaireCard } from "@/components/QuestionnaireCard";
 
+interface Questionnaire {
+  id: string;
+  dimension: string;
+  strengths: string;
+  challenges: string;
+  opportunities: string;
+  group?: string;
+  strengths_statuses?: string;
+  challenges_statuses?: string;
+  opportunities_statuses?: string;
+}
+
 interface GroupedQuestionnaireListProps {
-  questionnaires: any[];
+  questionnaires: Questionnaire[];
   selections: {
     [key: string]: {
       strengths: number[];
@@ -19,8 +31,8 @@ export const GroupedQuestionnaireList = ({
   onVote,
   onConfirmVotes,
 }: GroupedQuestionnaireListProps) => {
-  // Group questionnaires by their group property
-  const groupedQuestionnaires = questionnaires.reduce((acc: { [key: string]: any[] }, curr) => {
+  // Group questionnaires by their group property with proper typing
+  const groupedQuestionnaires = questionnaires.reduce<{ [key: string]: Questionnaire[] }>((acc, curr) => {
     const group = curr.group || 'Sem grupo';
     if (!acc[group]) {
       acc[group] = [];
