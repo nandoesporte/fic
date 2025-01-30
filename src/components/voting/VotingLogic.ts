@@ -53,17 +53,31 @@ export const submitVotes = async ({
         .maybeSingle();
 
       if (!existingVote) {
-        votePromises.push(
-          supabase
-            .from('questionnaire_votes')
-            .insert({
-              questionnaire_id: questionnaireId,
-              vote_type: 'upvote',
-              option_type: optionType,
-              option_number: optionNumber,
-              email: userEmail.toLowerCase()
-            })
-        );
+        // Validate option number before inserting
+        const { data: isValid } = await supabase
+          .rpc('check_vote_eligibility', {
+            p_questionnaire_id: questionnaireId,
+            p_option_type: optionType,
+            p_option_number: optionNumber,
+            p_email: userEmail.toLowerCase()
+          });
+
+        if (isValid) {
+          votePromises.push(
+            supabase
+              .from('questionnaire_votes')
+              .insert({
+                questionnaire_id: questionnaireId,
+                vote_type: 'upvote',
+                option_type: optionType,
+                option_number: optionNumber,
+                email: userEmail.toLowerCase()
+              })
+          );
+        } else {
+          console.error('Invalid vote:', { optionType, optionNumber });
+          throw new Error(`Voto inválido para ${optionType} opção ${optionNumber}`);
+        }
       }
     }
   }
