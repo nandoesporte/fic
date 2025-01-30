@@ -10,8 +10,8 @@ export const QuestionnaireHeader = ({ dimension, createdAt }: QuestionnaireHeade
   return (
     <div className="flex justify-between items-start mb-4">
       <div>
-        <h2 className="text-xl font-semibold text-[#6E59A5]">{dimension}</h2>
-        <p className="text-sm text-[#8E9196]">
+        <h2 className="text-xl font-semibold text-white">{dimension}</h2>
+        <p className="text-sm text-white">
           Enviado {formatDistanceToNow(new Date(createdAt), { 
             addSuffix: true,
             locale: ptBR 
