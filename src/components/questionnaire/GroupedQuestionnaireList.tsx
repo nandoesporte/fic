@@ -37,8 +37,6 @@ export const GroupedQuestionnaireList = ({
 
   // Combine all questionnaires into a single object with merged sections
   const mergedQuestionnaire = questionnaires.reduce<Questionnaire>((acc, curr, index) => {
-    const baseIndex = index * 3; // Each questionnaire has 3 options per section
-    
     return {
       id: primaryQuestionnaireId,
       dimension: 'Todas as Dimensões',

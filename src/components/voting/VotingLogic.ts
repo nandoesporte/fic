@@ -12,6 +12,8 @@ export const submitVotes = async ({
   dimension: string;
   userEmail: string;
 }) => {
+  console.log('Submitting votes:', { questionnaireId, votes, dimension });
+
   // Check if user has already voted on this dimension
   const { data: existingVote } = await supabase
     .from('dimension_votes')
@@ -38,21 +40,33 @@ export const submitVotes = async ({
   );
 
   // Register individual votes
-  votes.forEach(({ optionType, optionNumbers }) => {
-    optionNumbers.forEach(optionNumber => {
-      votePromises.push(
-        supabase
-          .from('questionnaire_votes')
-          .insert({
-            questionnaire_id: questionnaireId,
-            vote_type: 'upvote',
-            option_type: optionType,
-            option_number: optionNumber,
-            email: userEmail.toLowerCase() // Add the email field here
-          })
-      );
-    });
-  });
+  for (const { optionType, optionNumbers } of votes) {
+    for (const optionNumber of optionNumbers) {
+      // Check if vote already exists
+      const { data: existingVote } = await supabase
+        .from('questionnaire_votes')
+        .select('id')
+        .eq('questionnaire_id', questionnaireId)
+        .eq('email', userEmail.toLowerCase())
+        .eq('option_type', optionType)
+        .eq('option_number', optionNumber)
+        .maybeSingle();
+
+      if (!existingVote) {
+        votePromises.push(
+          supabase
+            .from('questionnaire_votes')
+            .insert({
+              questionnaire_id: questionnaireId,
+              vote_type: 'upvote',
+              option_type: optionType,
+              option_number: optionNumber,
+              email: userEmail.toLowerCase()
+            })
+        );
+      }
+    }
+  }
 
   // Execute all promises
   const results = await Promise.all(votePromises);
