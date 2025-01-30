@@ -31,15 +31,36 @@ export const GroupedQuestionnaireList = ({
   onVote,
   onConfirmVotes,
 }: GroupedQuestionnaireListProps) => {
-  // Group questionnaires by their group property with proper typing
-  const groupedQuestionnaires = questionnaires.reduce<{ [key: string]: Questionnaire[] }>((acc, curr) => {
-    const group = curr.group || 'Sem grupo';
-    if (!acc[group]) {
-      acc[group] = [];
-    }
-    acc[group].push(curr);
-    return acc;
-  }, {});
+  // Combine all questionnaires into a single object with merged sections
+  const mergedQuestionnaire = questionnaires.reduce<Questionnaire>((acc, curr) => {
+    return {
+      id: 'merged',
+      dimension: 'Todas as Dimensões',
+      strengths: acc.strengths + '\n\n' + curr.strengths,
+      challenges: acc.challenges + '\n\n' + curr.challenges,
+      opportunities: acc.opportunities + '\n\n' + curr.opportunities,
+      strengths_statuses: acc.strengths_statuses + ',' + (curr.strengths_statuses || 'pending,pending,pending'),
+      challenges_statuses: acc.challenges_statuses + ',' + (curr.challenges_statuses || 'pending,pending,pending'),
+      opportunities_statuses: acc.opportunities_statuses + ',' + (curr.opportunities_statuses || 'pending,pending,pending'),
+    };
+  }, {
+    id: 'merged',
+    dimension: 'Todas as Dimensões',
+    strengths: '',
+    challenges: '',
+    opportunities: '',
+    strengths_statuses: '',
+    challenges_statuses: '',
+    opportunities_statuses: '',
+  });
+
+  // Clean up the initial empty strings and extra commas
+  mergedQuestionnaire.strengths = mergedQuestionnaire.strengths.replace(/^\n\n/, '');
+  mergedQuestionnaire.challenges = mergedQuestionnaire.challenges.replace(/^\n\n/, '');
+  mergedQuestionnaire.opportunities = mergedQuestionnaire.opportunities.replace(/^\n\n/, '');
+  mergedQuestionnaire.strengths_statuses = mergedQuestionnaire.strengths_statuses.replace(/^,/, '');
+  mergedQuestionnaire.challenges_statuses = mergedQuestionnaire.challenges_statuses.replace(/^,/, '');
+  mergedQuestionnaire.opportunities_statuses = mergedQuestionnaire.opportunities_statuses.replace(/^,/, '');
 
   const isOptionSelected = (questionnaireId: string, optionType: string, optionNumber: number) => {
     return selections[questionnaireId]?.[optionType as keyof typeof selections[string]]?.includes(optionNumber) || false;
@@ -51,31 +72,26 @@ export const GroupedQuestionnaireList = ({
 
   return (
     <div className="space-y-8">
-      {Object.entries(groupedQuestionnaires).map(([group, groupQuestionnaires]) => (
-        <div key={group} className="space-y-4">
-          <h2 className="text-xl font-semibold text-[#6E59A5] capitalize">
-            {group.replace(/-/g, ' ')}
-          </h2>
-          <div className="grid gap-4">
-            {groupQuestionnaires.map((questionnaire) => (
-              <QuestionnaireCard
-                key={questionnaire.id}
-                questionnaire={questionnaire}
-                onVote={(optionType, optionNumber) =>
-                  onVote(questionnaire.id, optionType, optionNumber)
-                }
-                isOptionSelected={(optionType, optionNumber) =>
-                  isOptionSelected(questionnaire.id, optionType, optionNumber)
-                }
-                getSelectionCount={(optionType) =>
-                  getSelectionCount(questionnaire.id, optionType)
-                }
-                onConfirmVotes={() => onConfirmVotes(questionnaire.id)}
-              />
-            ))}
-          </div>
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold text-[#6E59A5]">
+          {mergedQuestionnaire.dimension}
+        </h2>
+        <div className="grid gap-4">
+          <QuestionnaireCard
+            questionnaire={mergedQuestionnaire}
+            onVote={(optionType, optionNumber) =>
+              onVote(mergedQuestionnaire.id, optionType, optionNumber)
+            }
+            isOptionSelected={(optionType, optionNumber) =>
+              isOptionSelected(mergedQuestionnaire.id, optionType, optionNumber)
+            }
+            getSelectionCount={(optionType) =>
+              getSelectionCount(mergedQuestionnaire.id, optionType)
+            }
+            onConfirmVotes={() => onConfirmVotes(mergedQuestionnaire.id)}
+          />
         </div>
-      ))}
+      </div>
     </div>
   );
 };
