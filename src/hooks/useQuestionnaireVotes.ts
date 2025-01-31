@@ -8,10 +8,16 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
       console.log("Fetching vote data for dimension:", selectedDimension);
       
       // Get questionnaires based on dimension
-      const { data: questionnaires, error: questionnaireError } = await supabase
+      let query = supabase
         .from('fic_questionnaires')
-        .select('*')
-        .eq('dimension', selectedDimension === 'all' ? undefined : selectedDimension);
+        .select('*');
+        
+      // Only apply dimension filter if not "all"
+      if (selectedDimension !== 'all') {
+        query = query.eq('dimension', selectedDimension);
+      }
+
+      const { data: questionnaires, error: questionnaireError } = await query;
 
       if (questionnaireError) {
         console.error("Error fetching questionnaires:", questionnaireError);
