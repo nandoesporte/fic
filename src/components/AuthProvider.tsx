@@ -34,6 +34,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const handleTokenRefreshError = async () => {
+    console.log("Token refresh failed, signing out...");
+    await supabase.auth.signOut();
+    setSession(null);
+    if (!PUBLIC_ROUTES.includes(location.pathname)) {
+      navigate('/login');
+    }
+    toast({
+      variant: "destructive",
+      title: "Sessão expirada",
+      description: "Por favor, faça login novamente.",
+    });
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -78,14 +92,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (currentSession) {
           setSession(currentSession);
         } else {
-          handleAuthError(new Error('Token refresh failed'));
+          await handleTokenRefreshError();
         }
       } else if (event === 'SIGNED_IN') {
         setSession(currentSession);
         if (location.pathname === '/login') {
           navigate('/');
         }
-      } else if (event === 'SIGNED_OUT') {
+      } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
         setSession(null);
         // Only redirect to login if not on a public route
         if (!PUBLIC_ROUTES.includes(location.pathname)) {
