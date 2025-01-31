@@ -5,7 +5,6 @@ import { VotingMetrics } from './VotingMetrics';
 import { VotingResults } from './VotingResults';
 import { AnalyticsHeader } from './AnalyticsHeader';
 import { Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 
 export const AnalyticsContainer = () => {
   const [selectedDimension, setSelectedDimension] = useState("all");
@@ -15,15 +14,6 @@ export const AnalyticsContainer = () => {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!votingData) {
-    toast.error("Erro ao carregar dados de votação");
-    return (
-      <div className="flex items-center justify-center p-8">
-        <p className="text-gray-500">Nenhum dado disponível</p>
       </div>
     );
   }
@@ -65,9 +55,9 @@ export const AnalyticsContainer = () => {
       </div>
 
       <VotingResults
-        strengths={votingData.strengths || []}
-        challenges={votingData.challenges || []}
-        opportunities={votingData.opportunities || []}
+        strengths={votingData?.strengths || []}
+        challenges={votingData?.challenges || []}
+        opportunities={votingData?.opportunities || []}
       />
     </div>
   );
