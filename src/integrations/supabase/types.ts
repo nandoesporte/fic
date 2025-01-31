@@ -596,6 +596,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "questionnaire_votes_questionnaire_id_fkey"
+            columns: ["questionnaire_id"]
+            isOneToOne: false
+            referencedRelation: "vote_tracking"
+            referencedColumns: ["questionnaire_id"]
+          },
+          {
             foreignKeyName: "questionnaire_votes_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -822,6 +829,13 @@ export type Database = {
             referencedRelation: "fic_questionnaires"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "questionnaire_votes_questionnaire_id_fkey"
+            columns: ["questionnaire_id"]
+            isOneToOne: false
+            referencedRelation: "vote_tracking"
+            referencedColumns: ["questionnaire_id"]
+          },
         ]
       }
       questionnaire_voting_report: {
@@ -834,6 +848,31 @@ export type Database = {
           option_type: string | null
           strengths: string | null
           total_votes: number | null
+        }
+        Relationships: []
+      }
+      vote_analytics_summary: {
+        Row: {
+          dimension: string | null
+          option_number: number | null
+          option_text: string | null
+          option_type: string | null
+          vote_count: number | null
+        }
+        Relationships: []
+      }
+      vote_tracking: {
+        Row: {
+          challenges_statuses: string | null
+          dimension: string | null
+          group: string | null
+          opportunities_statuses: string | null
+          option_number: number | null
+          option_text: string | null
+          option_type: string | null
+          questionnaire_id: string | null
+          strengths_statuses: string | null
+          vote_count: number | null
         }
         Relationships: []
       }
@@ -867,6 +906,49 @@ export type Database = {
           p_option_type: string
         }
         Returns: number
+      }
+      get_active_options: {
+        Args: {
+          p_questionnaire_id: string
+          p_type: string
+        }
+        Returns: {
+          option_number: number
+          option_text: string
+          vote_count: number
+          is_active: boolean
+        }[]
+      }
+      get_dimension_stats: {
+        Args: {
+          p_dimension?: string
+        }
+        Returns: {
+          dimension: string
+          total_votes: number
+          active_voters: number
+          participation_rate: number
+        }[]
+      }
+      get_vote_statistics: {
+        Args: {
+          p_dimension?: string
+        }
+        Returns: {
+          dimension: string
+          total_votes: number
+          strengths_votes: number
+          challenges_votes: number
+          opportunities_votes: number
+        }[]
+      }
+      register_votes: {
+        Args: {
+          p_questionnaire_id: string
+          p_email: string
+          p_votes: Json
+        }
+        Returns: undefined
       }
       update_fic_metrics: {
         Args: Record<PropertyKey, never>

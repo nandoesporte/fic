@@ -16,12 +16,17 @@ export const submitVotes = async ({
 
   try {
     // Check if user has already voted on this dimension first
-    const { data: existingDimensionVote } = await supabase
+    const { data: existingDimensionVote, error: dimensionCheckError } = await supabase
       .from('dimension_votes')
       .select('id')
       .eq('email', userEmail.toLowerCase())
       .eq('dimension', dimension)
       .maybeSingle();
+
+    if (dimensionCheckError) {
+      console.error('Error checking dimension votes:', dimensionCheckError);
+      throw new Error('Erro ao verificar votos existentes');
+    }
 
     if (existingDimensionVote) {
       throw new Error('Você já votou nesta dimensão. Cada pessoa pode votar apenas uma vez por dimensão.');
@@ -35,6 +40,7 @@ export const submitVotes = async ({
       .single();
 
     if (questionnaireError || !questionnaire) {
+      console.error('Error fetching questionnaire:', questionnaireError);
       throw new Error('Questionário não encontrado');
     }
 
@@ -47,6 +53,7 @@ export const submitVotes = async ({
       });
 
     if (dimensionVoteError) {
+      console.error('Error registering dimension vote:', dimensionVoteError);
       throw dimensionVoteError;
     }
 
@@ -65,10 +72,6 @@ export const submitVotes = async ({
 
           if (validationError) {
             console.error('Validation error:', validationError);
-            // If it's the "already voted" error, throw a more user-friendly message
-            if (validationError.message.includes('já votou')) {
-              throw new Error('Você já registrou seus votos para esta dimensão. Cada pessoa pode votar apenas uma vez por dimensão.');
-            }
             throw new Error(`Erro ao validar voto: ${validationError.message}`);
           }
 
@@ -89,17 +92,10 @@ export const submitVotes = async ({
             });
 
           if (voteError) {
-            if (voteError.code === '23505') {
-              console.error('Duplicate vote:', voteError);
-              throw new Error('Esta opção já foi votada');
-            }
+            console.error('Error inserting vote:', voteError);
             throw voteError;
           }
         } catch (error: any) {
-          // If it's our custom error for already voted, throw it up
-          if (error.message.includes('já votou')) {
-            throw error;
-          }
           console.error('Error submitting vote:', error);
           throw new Error(`Erro ao registrar voto: ${error.message}`);
         }
@@ -113,16 +109,13 @@ export const submitVotes = async ({
       .eq('id', questionnaireId);
 
     if (updateError) {
+      console.error('Error updating questionnaire status:', updateError);
       throw updateError;
     }
 
     return true;
   } catch (error: any) {
     console.error('Error submitting votes:', error);
-    // If it's our custom error message, throw it directly
-    if (error.message.includes('já votou')) {
-      throw error;
-    }
     throw new Error(error.message || 'Erro ao registrar votos');
   }
 };
