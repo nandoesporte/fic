@@ -30,6 +30,11 @@ export const useBackupOperations = () => {
   };
 
   const handleExportAndClear = async (backupName: string) => {
+    if (!backupName.trim()) {
+      toast.error('Nome do backup é obrigatório');
+      return;
+    }
+
     setIsExporting(true);
     try {
       // First, fetch all questionnaire data
@@ -39,6 +44,9 @@ export const useBackupOperations = () => {
 
       if (fetchError) throw fetchError;
 
+      const currentDate = new Date().toLocaleDateString('pt-BR');
+      const description = `Backup ${backupName} - Criado em ${currentDate}`;
+
       // Create backup record
       const { error: backupError } = await supabase
         .from('data_backups')
@@ -46,22 +54,25 @@ export const useBackupOperations = () => {
           filename: backupName,
           data: questionnaires,
           type: 'questionnaire_export',
-          description: `Backup created on ${new Date().toLocaleDateString()}`
+          description: description
         });
 
       if (backupError) throw backupError;
 
-      // Call the clean_questionnaire_votes function
+      // Call the clean_questionnaire_votes function using RPC
       const { error: cleanError } = await supabase
         .rpc('clean_questionnaire_votes');
 
-      if (cleanError) throw cleanError;
+      if (cleanError) {
+        console.error('Error during clean operation:', cleanError);
+        throw new Error('Erro ao limpar dados');
+      }
 
       toast.success('Dados exportados e limpos com sucesso');
       await fetchBackups();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error during export and clear:', error);
-      toast.error('Erro ao exportar e limpar dados');
+      toast.error(error.message || 'Erro ao exportar e limpar dados');
     } finally {
       setIsExporting(false);
     }

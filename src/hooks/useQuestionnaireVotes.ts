@@ -7,99 +7,90 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
     queryFn: async () => {
       console.log("Fetching vote data for dimension:", selectedDimension);
       
-      // First, get all questionnaires for the selected dimension
-      let query = supabase
-        .from("fic_questionnaires")
-        .select(`
-          id,
-          dimension,
-          strengths,
-          challenges,
-          opportunities,
-          questionnaire_votes (
-            option_type,
-            option_number,
-            vote_type
-          )
-        `);
-
-      if (selectedDimension !== "all") {
-        query = query.eq("dimension", selectedDimension);
-      }
-
-      const { data: questionnaires, error: questionnairesError } = await query;
-
-      if (questionnairesError) {
-        console.error("Error fetching questionnaires:", questionnairesError);
-        throw questionnairesError;
-      }
-
-      // Initialize vote counters
-      const voteCounters: Record<string, Record<number, number>> = {
-        strengths: {},
-        challenges: {},
-        opportunities: {}
-      };
-
-      // Process each questionnaire and its votes
-      questionnaires?.forEach(questionnaire => {
-        const processVotes = (optionType: string, options: string) => {
-          const optionsArray = options.split('\n\n');
+      try {
+        // Get questionnaires based on dimension
+        let query = supabase
+          .from('fic_questionnaires')
+          .select('*');
           
-          // Get votes for this questionnaire and option type
-          const votes = questionnaire.questionnaire_votes?.filter(
-            vote => vote.option_type === optionType && vote.vote_type === 'upvote'
-          ) || [];
+        // Only apply dimension filter if not "all"
+        if (selectedDimension !== 'all') {
+          query = query.eq('dimension', selectedDimension);
+        }
 
-          // Count votes for each option
-          votes.forEach(vote => {
-            if (!voteCounters[optionType][vote.option_number]) {
-              voteCounters[optionType][vote.option_number] = 0;
-            }
-            voteCounters[optionType][vote.option_number]++;
-          });
+        const { data: questionnaires, error: questionnaireError } = await query;
 
-          // Return formatted results
-          return Object.entries(voteCounters[optionType]).map(([optionNumber, total]) => ({
-            optionNumber: optionNumber,
-            total,
-            text: optionsArray[parseInt(optionNumber) - 1] || ""
-          }));
+        if (questionnaireError) {
+          console.error("Error fetching questionnaires:", questionnaireError);
+          throw questionnaireError;
+        }
+
+        if (!questionnaires || questionnaires.length === 0) {
+          console.log("No questionnaires found for dimension:", selectedDimension);
+          return {
+            strengths: [],
+            challenges: [],
+            opportunities: []
+          };
+        }
+
+        // Get all questionnaire IDs
+        const questionnaireIds = questionnaires.map(q => q.id);
+
+        // Get votes for all questionnaires
+        const { data: votes, error: votesError } = await supabase
+          .from('questionnaire_votes')
+          .select('*')
+          .in('questionnaire_id', questionnaireIds);
+
+        if (votesError) {
+          console.error("Error fetching votes:", votesError);
+          throw votesError;
+        }
+
+        // Process votes into counters
+        const voteCounters: Record<string, Record<string, number>> = {
+          strengths: {},
+          challenges: {},
+          opportunities: {}
         };
 
-        // Process votes for each category
-        if (questionnaire.strengths) {
-          processVotes('strengths', questionnaire.strengths);
-        }
-        if (questionnaire.challenges) {
-          processVotes('challenges', questionnaire.challenges);
-        }
-        if (questionnaire.opportunities) {
-          processVotes('opportunities', questionnaire.opportunities);
-        }
-      });
+        votes?.forEach(vote => {
+          const { option_type, option_number } = vote;
+          if (!voteCounters[option_type][option_number]) {
+            voteCounters[option_type][option_number] = 0;
+          }
+          voteCounters[option_type][option_number]++;
+        });
 
-      // Format final results
-      const results = {
-        strengths: Object.entries(voteCounters.strengths).map(([optionNumber, total]) => ({
-          optionNumber: String(optionNumber),
-          total,
-          text: questionnaires?.[0]?.strengths?.split('\n\n')[parseInt(optionNumber) - 1] || ""
-        })),
-        challenges: Object.entries(voteCounters.challenges).map(([optionNumber, total]) => ({
-          optionNumber: String(optionNumber),
-          total,
-          text: questionnaires?.[0]?.challenges?.split('\n\n')[parseInt(optionNumber) - 1] || ""
-        })),
-        opportunities: Object.entries(voteCounters.opportunities).map(([optionNumber, total]) => ({
-          optionNumber: String(optionNumber),
-          total,
-          text: questionnaires?.[0]?.opportunities?.split('\n\n')[parseInt(optionNumber) - 1] || ""
-        }))
-      };
+        // Get the first questionnaire for text content (or combine them if needed)
+        const questionnaire = questionnaires[0];
 
-      console.log("Processed vote data:", results);
-      return results;
+        // Format results with text content
+        const formatResults = (type: 'strengths' | 'challenges' | 'opportunities') => {
+          return Object.entries(voteCounters[type]).map(([optionNumber, total]) => {
+            const options = questionnaire[type]?.split('\n\n') || [];
+            const text = options[parseInt(optionNumber) - 1] || `Option ${optionNumber}`;
+            return {
+              optionNumber: String(optionNumber),
+              total,
+              text
+            };
+          }).sort((a, b) => b.total - a.total); // Sort by total votes in descending order
+        };
+
+        const results = {
+          strengths: formatResults('strengths'),
+          challenges: formatResults('challenges'),
+          opportunities: formatResults('opportunities')
+        };
+
+        console.log("Processed vote data:", results);
+        return results;
+      } catch (error) {
+        console.error("Error in useQuestionnaireVotes:", error);
+        throw error;
+      }
     },
   });
 };

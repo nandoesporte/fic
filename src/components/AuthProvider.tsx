@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Session } from "@supabase/supabase-js";
+import { Session, AuthError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -21,6 +21,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { toast } = useToast();
 
+  const handleAuthError = (error: AuthError | Error) => {
+    console.error("Auth error:", error);
+    setSession(null);
+
+    let errorMessage = "Por favor, faça login novamente.";
+    if (error instanceof Error) {
+      if (error.message.includes("invalid_credentials")) {
+        errorMessage = "Credenciais inválidas. Por favor, verifique seu email e senha.";
+      } else if (error.message.includes("refresh_token_not_found")) {
+        errorMessage = "Sua sessão expirou. Por favor, faça login novamente.";
+      }
+    }
+
+    if (!PUBLIC_ROUTES.includes(location.pathname)) {
+      navigate('/login');
+    }
+
+    toast({
+      variant: "destructive",
+      title: "Erro de autenticação",
+      description: errorMessage,
+    });
+  };
+
+  const handleTokenRefreshError = async () => {
+    console.log("Token refresh failed, signing out...");
+    try {
+      await supabase.auth.signOut();
+      setSession(null);
+      if (!PUBLIC_ROUTES.includes(location.pathname)) {
+        navigate('/login');
+      }
+      toast({
+        variant: "destructive",
+        title: "Sessão expirada",
+        description: "Por favor, faça login novamente.",
+      });
+    } catch (error) {
+      console.error("Error during sign out:", error);
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -31,9 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (error) {
           console.error("Session initialization error:", error);
-          if (!PUBLIC_ROUTES.includes(location.pathname)) {
-            navigate('/login');
-          }
+          handleAuthError(error);
           return;
         }
 
@@ -47,11 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error("Error in session initialization:", error);
-        toast({
-          variant: "destructive",
-          title: "Erro de autenticação",
-          description: "Houve um problema ao inicializar sua sessão. Por favor, faça login novamente.",
-        });
+        handleAuthError(error as Error);
       } finally {
         if (mounted) {
           setLoading(false);
@@ -67,19 +103,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log("Auth state changed:", event, currentSession);
       
-      if (event === 'TOKEN_REFRESHED') {
-        setSession(currentSession);
-      } else if (event === 'SIGNED_IN') {
-        setSession(currentSession);
-        if (location.pathname === '/login') {
-          navigate('/');
-        }
-      } else if (event === 'SIGNED_OUT') {
-        setSession(null);
-        // Only redirect to login if not on a public route
-        if (!PUBLIC_ROUTES.includes(location.pathname)) {
-          navigate('/login');
-        }
+      switch (event) {
+        case 'TOKEN_REFRESHED':
+          if (currentSession) {
+            setSession(currentSession);
+          } else {
+            await handleTokenRefreshError();
+          }
+          break;
+        case 'SIGNED_IN':
+          setSession(currentSession);
+          if (location.pathname === '/login') {
+            navigate('/');
+          }
+          break;
+        case 'SIGNED_OUT':
+          setSession(null);
+          if (!PUBLIC_ROUTES.includes(location.pathname)) {
+            navigate('/login');
+          }
+          break;
       }
       
       setLoading(false);
