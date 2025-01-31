@@ -94,11 +94,7 @@ export const useAnalyticsData = (selectedDimension: string) => {
         return processedData;
       } catch (error) {
         console.error("Error in useAnalyticsData:", error);
-        return {
-          strengths: [],
-          challenges: [],
-          opportunities: []
-        };
+        throw error;
       }
     },
   });
