@@ -466,9 +466,6 @@ export type Database = {
           cocamarmembers: string | null
           cocamarname: string | null
           coins: number | null
-          company_description: string | null
-          company_logo: string | null
-          company_name: string | null
           cpf: string
           created_at: string | null
           email: string
@@ -486,8 +483,6 @@ export type Database = {
           steps: number | null
           updated_at: string | null
           weight: number | null
-          welcome_description: string | null
-          welcome_message: string | null
         }
         Insert: {
           birth_date?: string | null
@@ -495,9 +490,6 @@ export type Database = {
           cocamarmembers?: string | null
           cocamarname?: string | null
           coins?: number | null
-          company_description?: string | null
-          company_logo?: string | null
-          company_name?: string | null
           cpf?: string
           created_at?: string | null
           email: string
@@ -515,8 +507,6 @@ export type Database = {
           steps?: number | null
           updated_at?: string | null
           weight?: number | null
-          welcome_description?: string | null
-          welcome_message?: string | null
         }
         Update: {
           birth_date?: string | null
@@ -524,9 +514,6 @@ export type Database = {
           cocamarmembers?: string | null
           cocamarname?: string | null
           coins?: number | null
-          company_description?: string | null
-          company_logo?: string | null
-          company_name?: string | null
           cpf?: string
           created_at?: string | null
           email?: string
@@ -544,15 +531,12 @@ export type Database = {
           steps?: number | null
           updated_at?: string | null
           weight?: number | null
-          welcome_description?: string | null
-          welcome_message?: string | null
         }
         Relationships: []
       }
       questionnaire_votes: {
         Row: {
           created_at: string | null
-          email: string
           id: string
           option_number: number
           option_type: string
@@ -562,7 +546,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          email: string
           id?: string
           option_number: number
           option_type: string
@@ -572,7 +555,6 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          email?: string
           id?: string
           option_number?: number
           option_type?: string
@@ -582,11 +564,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "questionnaire_votes_email_fkey"
-            columns: ["email"]
+            foreignKeyName: "questionnaire_votes_questionnaire_id_fkey"
+            columns: ["questionnaire_id"]
             isOneToOne: false
-            referencedRelation: "registered_voters"
-            referencedColumns: ["email"]
+            referencedRelation: "active_questionnaire_responses"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "questionnaire_votes_questionnaire_id_fkey"
@@ -594,13 +576,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "fic_questionnaires"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "questionnaire_votes_questionnaire_id_fkey"
-            columns: ["questionnaire_id"]
-            isOneToOne: false
-            referencedRelation: "vote_tracking"
-            referencedColumns: ["questionnaire_id"]
           },
           {
             foreignKeyName: "questionnaire_votes_user_id_fkey"
@@ -803,6 +778,40 @@ export type Database = {
       }
     }
     Views: {
+      active_questionnaire_responses: {
+        Row: {
+          challenge: string | null
+          challenge_status: string | null
+          challenges: string | null
+          challenges_statuses: string | null
+          created_at: string | null
+          dimension: string | null
+          group: string | null
+          group_name: string | null
+          id: string | null
+          opportunities: string | null
+          opportunities_statuses: string | null
+          opportunity: string | null
+          opportunity_status: string | null
+          satisfaction: number | null
+          status: string | null
+          strength: string | null
+          strength_status: string | null
+          strengths: string | null
+          strengths_statuses: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fic_questionnaires_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fic_questionnaire_analytics: {
         Row: {
           avg_satisfaction: number | null
@@ -826,15 +835,15 @@ export type Database = {
             foreignKeyName: "questionnaire_votes_questionnaire_id_fkey"
             columns: ["questionnaire_id"]
             isOneToOne: false
-            referencedRelation: "fic_questionnaires"
+            referencedRelation: "active_questionnaire_responses"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "questionnaire_votes_questionnaire_id_fkey"
             columns: ["questionnaire_id"]
             isOneToOne: false
-            referencedRelation: "vote_tracking"
-            referencedColumns: ["questionnaire_id"]
+            referencedRelation: "fic_questionnaires"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -851,103 +860,10 @@ export type Database = {
         }
         Relationships: []
       }
-      vote_analytics_summary: {
-        Row: {
-          dimension: string | null
-          option_number: number | null
-          option_text: string | null
-          option_type: string | null
-          vote_count: number | null
-        }
-        Relationships: []
-      }
-      vote_tracking: {
-        Row: {
-          challenges_statuses: string | null
-          dimension: string | null
-          group: string | null
-          opportunities_statuses: string | null
-          option_number: number | null
-          option_text: string | null
-          option_type: string | null
-          questionnaire_id: string | null
-          strengths_statuses: string | null
-          vote_count: number | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
-      check_vote_eligibility:
-        | {
-            Args: {
-              p_questionnaire_id: string
-              p_option_type: string
-              p_option_number: number
-            }
-            Returns: boolean
-          }
-        | {
-            Args: {
-              p_questionnaire_id: string
-              p_option_type: string
-              p_option_number: number
-              p_email: string
-            }
-            Returns: boolean
-          }
       clean_questionnaire_votes: {
         Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      count_user_votes: {
-        Args: {
-          p_questionnaire_id: string
-          p_option_type: string
-        }
-        Returns: number
-      }
-      get_active_options: {
-        Args: {
-          p_questionnaire_id: string
-          p_type: string
-        }
-        Returns: {
-          option_number: number
-          option_text: string
-          vote_count: number
-          is_active: boolean
-        }[]
-      }
-      get_dimension_stats: {
-        Args: {
-          p_dimension?: string
-        }
-        Returns: {
-          dimension: string
-          total_votes: number
-          active_voters: number
-          participation_rate: number
-        }[]
-      }
-      get_vote_statistics: {
-        Args: {
-          p_dimension?: string
-        }
-        Returns: {
-          dimension: string
-          total_votes: number
-          strengths_votes: number
-          challenges_votes: number
-          opportunities_votes: number
-        }[]
-      }
-      register_votes: {
-        Args: {
-          p_questionnaire_id: string
-          p_email: string
-          p_votes: Json
-        }
         Returns: undefined
       }
       update_fic_metrics: {

@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { EmailVerification } from "@/components/voting/EmailVerification";
 import { VotingSection } from "@/components/voting/VotingSection";
-import { submitVotes } from "@/components/voting/VotingLogic";
 
 type VoteSelection = {
   [key: string]: {
@@ -23,9 +22,9 @@ export const QuestionnaireVoting = () => {
   const queryClient = useQueryClient();
 
   const { data: questionnaires, isLoading } = useQuery({
-    queryKey: ['active-questionnaires'],
+    queryKey: ['questionnaires'],
     queryFn: async () => {
-      console.log('Fetching active questionnaires...');
+      console.log('Fetching questionnaires data...');
       const { data: questionnairesData, error: questionnairesError } = await supabase
         .from('fic_questionnaires')
         .select('*')
@@ -33,12 +32,32 @@ export const QuestionnaireVoting = () => {
         .order('created_at', { ascending: false });
 
       if (questionnairesError) {
-        console.error('Error fetching questionnaires:', questionnairesError);
         toast.error('Erro ao carregar questionários');
         throw questionnairesError;
       }
 
-      return questionnairesData || [];
+      console.log('Questionnaires data fetched:', questionnairesData);
+      
+      // Consolidate questionnaires by group
+      const consolidatedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: any }, curr) => {
+        if (curr.group) {
+          acc[curr.group] = {
+            id: curr.id,
+            dimension: curr.dimension,
+            strengths: curr.strengths,
+            challenges: curr.challenges,
+            opportunities: curr.opportunities,
+            created_at: curr.created_at,
+            strengths_statuses: curr.strengths_statuses,
+            challenges_statuses: curr.challenges_statuses,
+            opportunities_statuses: curr.opportunities_statuses,
+            group: curr.group
+          };
+        }
+        return acc;
+      }, {});
+
+      return Object.values(consolidatedQuestionnaires);
     },
     enabled: isEmailVerified,
   });
@@ -52,19 +71,52 @@ export const QuestionnaireVoting = () => {
       }[];
       dimension: string;
     }) => {
-      await submitVotes({ questionnaireId, votes, dimension, userEmail });
+      // Verificar se já votou nesta dimensão
+      const { data: existingVote } = await supabase
+        .from('dimension_votes')
+        .select('id')
+        .eq('email', userEmail.toLowerCase())
+        .eq('dimension', dimension)
+        .maybeSingle();
+
+      if (existingVote) {
+        throw new Error('Você já votou nesta dimensão');
+      }
+
+      // Registrar o voto na dimensão
+      await supabase
+        .from('dimension_votes')
+        .insert({
+          email: userEmail.toLowerCase(),
+          dimension: dimension
+        });
+
+      // Registrar os votos individuais
+      const votePromises = votes.flatMap(({ optionType, optionNumbers }) =>
+        optionNumbers.map(optionNumber =>
+          supabase
+            .from('questionnaire_votes')
+            .insert({
+              questionnaire_id: questionnaireId,
+              vote_type: 'upvote',
+              option_type: optionType,
+              option_number: optionNumber,
+            })
+        )
+      );
+
+      await Promise.all(votePromises);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['active-questionnaires'] });
+      queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
+      queryClient.invalidateQueries({ queryKey: ['questionnaire-votes'] });
+      toast.success('Votos registrados com sucesso!');
       setSelections({});
       navigate('/vote-success');
     },
-    onError: (error: Error) => {
-      console.error('Error in vote submission:', error);
-      // If it's an "already voted" error, clear the selections
-      if (error.message.includes('já votou nesta dimensão')) {
-        setSelections({});
-      }
+    onError: (error) => {
+      console.error('Error submitting votes:', error);
+      toast.error('Erro ao registrar votos: ' + error.message);
     },
   });
 
@@ -74,62 +126,50 @@ export const QuestionnaireVoting = () => {
       return;
     }
 
-    setSelections(prev => {
-      const currentSelections = prev[questionnaireId]?.[optionType] || [];
-      const isSelected = currentSelections.includes(optionNumber);
+    const currentSelections = selections[questionnaireId]?.[optionType] || [];
+    const isSelected = currentSelections.includes(optionNumber);
 
-      if (isSelected) {
-        return {
-          ...prev,
-          [questionnaireId]: {
-            ...prev[questionnaireId],
-            [optionType]: currentSelections.filter(num => num !== optionNumber)
-          }
-        };
-      }
-
+    if (isSelected) {
+      setSelections(prev => ({
+        ...prev,
+        [questionnaireId]: {
+          ...prev[questionnaireId],
+          [optionType]: currentSelections.filter(num => num !== optionNumber)
+        }
+      }));
+    } else {
       if (currentSelections.length >= 3) {
-        toast.error('Você já selecionou 3 opções nesta seção');
-        return prev;
+        toast.error('Você já selecionou 3 opções nesta seção. Remova uma seleção para escolher outra.');
+        return;
       }
 
-      return {
+      setSelections(prev => ({
         ...prev,
         [questionnaireId]: {
           ...prev[questionnaireId],
           [optionType]: [...currentSelections, optionNumber]
         }
-      };
-    });
+      }));
+    }
   };
 
   const handleConfirmVotes = async (questionnaireId: string) => {
     const questionnaire = questionnaires?.find(q => q.id === questionnaireId);
-    if (!questionnaire) {
-      toast.error('Questionário não encontrado');
-      return;
-    }
+    if (!questionnaire) return;
 
     const questionnaireSelections = selections[questionnaireId];
-    if (!questionnaireSelections) {
-      toast.error('Nenhuma seleção encontrada');
-      return;
-    }
+    if (!questionnaireSelections) return;
 
     const votes = Object.entries(questionnaireSelections).map(([optionType, optionNumbers]) => ({
       optionType,
       optionNumbers,
     }));
 
-    try {
-      await submitVotesMutation.mutateAsync({ 
-        questionnaireId, 
-        votes,
-        dimension: questionnaire.dimension 
-      });
-    } catch (error) {
-      console.error('Error confirming votes:', error);
-    }
+    await submitVotesMutation.mutate({ 
+      questionnaireId, 
+      votes,
+      dimension: questionnaire.dimension 
+    });
   };
 
   const handleEmailVerified = (email: string) => {

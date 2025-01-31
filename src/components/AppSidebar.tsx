@@ -15,22 +15,14 @@ export function AppSidebar() {
   const handleLogout = async () => {
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Erro ao fazer logout",
-          description: error.message || "Ocorreu um erro ao tentar desconectar.",
-        });
-        return;
-      }
+      if (error) throw error;
       
+      navigate("/login");
       toast({
         title: "Logout realizado com sucesso",
         description: "Você foi desconectado do sistema.",
       });
-      navigate("/login", { replace: true });
     } catch (error: any) {
-      console.error("Logout error:", error);
       toast({
         variant: "destructive",
         title: "Erro ao fazer logout",

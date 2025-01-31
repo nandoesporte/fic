@@ -1,15 +1,75 @@
 import React, { useState } from 'react';
-import { useAnalyticsData } from '@/hooks/useAnalyticsData';
+import { useQuestionnaireVotes } from '@/hooks/useQuestionnaireVotes';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { DimensionFilter } from './DimensionFilter';
 import { VotingMetrics } from './VotingMetrics';
 import { VotingResults } from './VotingResults';
 import { AnalyticsHeader } from './AnalyticsHeader';
 import { Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+
+interface RegisteredVoter {
+  id: string;
+  email: string;
+  name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Dimension {
+  id: string;
+  label: string;
+  identifier: string;
+  created_at: string;
+  updated_at: string;
+  background_color: string;
+}
+
+interface VoteOption {
+  optionNumber: string;
+  total: number;
+  text: string;
+}
+
+interface VotingData {
+  strengths: VoteOption[];
+  challenges: VoteOption[];
+  opportunities: VoteOption[];
+}
 
 export const AnalyticsContainer = () => {
   const [selectedDimension, setSelectedDimension] = useState("all");
-  const { dimensions, registeredVoters, votingData, isLoading } = useAnalyticsData(selectedDimension);
+
+  const { data: dimensions } = useQuery<Dimension[]>({
+    queryKey: ['dimensions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('fic_dimensions')
+        .select('*')
+        .order('label');
+
+      if (error) {
+        throw error;
+      }
+      return data;
+    },
+  });
+
+  const { data: registeredVoters } = useQuery<RegisteredVoter[]>({
+    queryKey: ['registered-voters'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('registered_voters')
+        .select('*');
+
+      if (error) {
+        throw error;
+      }
+      return data;
+    },
+  });
+
+  const { data: votingData, isLoading } = useQuestionnaireVotes(selectedDimension);
 
   if (isLoading) {
     return (
@@ -19,23 +79,14 @@ export const AnalyticsContainer = () => {
     );
   }
 
-  if (!votingData) {
-    toast.error("Erro ao carregar dados de votação");
-    return (
-      <div className="flex items-center justify-center p-8">
-        <p className="text-gray-500">Nenhum dado disponível</p>
-      </div>
-    );
-  }
-
   const totalVoters = registeredVoters?.length || 0;
   
-  const calculateTotalVotes = (data: typeof votingData): number => {
+  const calculateTotalVotes = (data: VotingData | undefined): number => {
     if (!data) return 0;
     
-    return Object.values(data).reduce((acc: number, categoryVotes) => {
+    return Object.values(data).reduce((acc: number, categoryVotes: VoteOption[]) => {
       if (!Array.isArray(categoryVotes)) return acc;
-      return acc + categoryVotes.reduce((sum: number, vote) => sum + (vote.total || 0), 0);
+      return acc + categoryVotes.reduce((sum: number, vote: VoteOption) => sum + (vote.total || 0), 0);
     }, 0);
   };
 
@@ -65,9 +116,9 @@ export const AnalyticsContainer = () => {
       </div>
 
       <VotingResults
-        strengths={votingData.strengths || []}
-        challenges={votingData.challenges || []}
-        opportunities={votingData.opportunities || []}
+        strengths={votingData?.strengths || []}
+        challenges={votingData?.challenges || []}
+        opportunities={votingData?.opportunities || []}
       />
     </div>
   );
