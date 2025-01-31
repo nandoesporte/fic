@@ -71,6 +71,10 @@ export const QuestionnaireVoting = () => {
       }[];
       dimension: string;
     }) => {
+      if (!userEmail) {
+        throw new Error('Email não fornecido');
+      }
+
       // Verificar se já votou nesta dimensão
       const { data: existingVote } = await supabase
         .from('dimension_votes')
@@ -98,6 +102,7 @@ export const QuestionnaireVoting = () => {
             .from('questionnaire_votes')
             .insert({
               questionnaire_id: questionnaireId,
+              email: userEmail.toLowerCase(), // Garantindo que o email seja passado
               vote_type: 'upvote',
               option_type: optionType,
               option_number: optionNumber,
