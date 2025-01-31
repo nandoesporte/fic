@@ -7,19 +7,19 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
     queryFn: async () => {
       console.log("Fetching vote data for dimension:", selectedDimension);
       
-      // First, get the questionnaire for the selected dimension
-      const { data: questionnaire, error: questionnaireError } = await supabase
+      // Get questionnaires based on dimension
+      const { data: questionnaires, error: questionnaireError } = await supabase
         .from('fic_questionnaires')
         .select('*')
-        .eq('dimension', selectedDimension)
-        .single();
+        .eq('dimension', selectedDimension === 'all' ? undefined : selectedDimension);
 
       if (questionnaireError) {
-        console.error("Error fetching questionnaire:", questionnaireError);
+        console.error("Error fetching questionnaires:", questionnaireError);
         throw questionnaireError;
       }
 
-      if (!questionnaire) {
+      if (!questionnaires || questionnaires.length === 0) {
+        console.log("No questionnaires found for dimension:", selectedDimension);
         return {
           strengths: [],
           challenges: [],
@@ -27,11 +27,14 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
         };
       }
 
-      // Then get all votes for this questionnaire
+      // Get all questionnaire IDs
+      const questionnaireIds = questionnaires.map(q => q.id);
+
+      // Get votes for all questionnaires
       const { data: votes, error: votesError } = await supabase
         .from('questionnaire_votes')
         .select('*')
-        .eq('questionnaire_id', questionnaire.id);
+        .in('questionnaire_id', questionnaireIds);
 
       if (votesError) {
         console.error("Error fetching votes:", votesError);
@@ -52,6 +55,9 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
         }
         voteCounters[option_type][option_number]++;
       });
+
+      // Get the first questionnaire for text content (or combine them if needed)
+      const questionnaire = questionnaires[0];
 
       // Format results with text content
       const formatResults = (type: 'strengths' | 'challenges' | 'opportunities') => {
