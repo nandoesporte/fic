@@ -7,33 +7,31 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
     queryFn: async () => {
       console.log("Fetching vote data for dimension:", selectedDimension);
       
-      // First, get all votes with their corresponding questionnaire data
+      // First, get all questionnaires for the selected dimension
       let query = supabase
-        .from('questionnaire_votes')
+        .from("fic_questionnaires")
         .select(`
           id,
-          questionnaire_id,
-          vote_type,
-          option_type,
-          option_number,
-          fic_questionnaires!inner (
-            dimension,
-            strengths,
-            challenges,
-            opportunities
+          dimension,
+          strengths,
+          challenges,
+          opportunities,
+          questionnaire_votes (
+            option_type,
+            option_number,
+            vote_type
           )
         `);
 
-      // Apply dimension filter if not "all"
       if (selectedDimension !== "all") {
-        query = query.eq('fic_questionnaires.dimension', selectedDimension);
+        query = query.eq("dimension", selectedDimension);
       }
 
-      const { data: votes, error } = await query;
+      const { data: questionnaires, error: questionnairesError } = await query;
 
-      if (error) {
-        console.error("Error fetching votes:", error);
-        throw error;
+      if (questionnairesError) {
+        console.error("Error fetching questionnaires:", questionnairesError);
+        throw questionnairesError;
       }
 
       // Initialize vote counters
@@ -43,41 +41,61 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
         opportunities: {}
       };
 
-      // Process votes
-      votes?.forEach(vote => {
-        const questionnaire = vote.fic_questionnaires;
-        if (!questionnaire) return;
+      // Process each questionnaire and its votes
+      questionnaires?.forEach(questionnaire => {
+        const processVotes = (optionType: string, options: string) => {
+          const optionsArray = options.split('\n\n');
+          
+          // Get votes for this questionnaire and option type
+          const votes = questionnaire.questionnaire_votes?.filter(
+            vote => vote.option_type === optionType && vote.vote_type === 'upvote'
+          ) || [];
 
-        const { option_type, option_number } = vote;
-        
-        if (!voteCounters[option_type]) {
-          voteCounters[option_type] = {};
+          // Count votes for each option
+          votes.forEach(vote => {
+            if (!voteCounters[optionType][vote.option_number]) {
+              voteCounters[optionType][vote.option_number] = 0;
+            }
+            voteCounters[optionType][vote.option_number]++;
+          });
+
+          // Return formatted results
+          return Object.entries(voteCounters[optionType]).map(([optionNumber, total]) => ({
+            optionNumber: optionNumber,
+            total,
+            text: optionsArray[parseInt(optionNumber) - 1] || ""
+          }));
+        };
+
+        // Process votes for each category
+        if (questionnaire.strengths) {
+          processVotes('strengths', questionnaire.strengths);
         }
-        
-        if (!voteCounters[option_type][option_number]) {
-          voteCounters[option_type][option_number] = 0;
+        if (questionnaire.challenges) {
+          processVotes('challenges', questionnaire.challenges);
         }
-        
-        voteCounters[option_type][option_number]++;
+        if (questionnaire.opportunities) {
+          processVotes('opportunities', questionnaire.opportunities);
+        }
       });
 
-      // Get the text content for each option from any questionnaire (they should all have the same content)
-      const sampleQuestionnaire = votes?.[0]?.fic_questionnaires;
-      
-      // Format results
-      const formatResults = (type: 'strengths' | 'challenges' | 'opportunities') => {
-        const options = sampleQuestionnaire?.[type]?.split('\n\n') || [];
-        return Object.entries(voteCounters[type]).map(([optionNumber, total]) => ({
+      // Format final results
+      const results = {
+        strengths: Object.entries(voteCounters.strengths).map(([optionNumber, total]) => ({
           optionNumber: String(optionNumber),
           total,
-          text: options[parseInt(optionNumber) - 1] || ""
-        }));
-      };
-
-      const results = {
-        strengths: formatResults('strengths'),
-        challenges: formatResults('challenges'),
-        opportunities: formatResults('opportunities')
+          text: questionnaires?.[0]?.strengths?.split('\n\n')[parseInt(optionNumber) - 1] || ""
+        })),
+        challenges: Object.entries(voteCounters.challenges).map(([optionNumber, total]) => ({
+          optionNumber: String(optionNumber),
+          total,
+          text: questionnaires?.[0]?.challenges?.split('\n\n')[parseInt(optionNumber) - 1] || ""
+        })),
+        opportunities: Object.entries(voteCounters.opportunities).map(([optionNumber, total]) => ({
+          optionNumber: String(optionNumber),
+          total,
+          text: questionnaires?.[0]?.opportunities?.split('\n\n')[parseInt(optionNumber) - 1] || ""
+        }))
       };
 
       console.log("Processed vote data:", results);
