@@ -7,70 +7,63 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
     queryFn: async () => {
       console.log("Fetching vote data for dimension:", selectedDimension);
       
-      // Primeiro, obter todos os questionários com seus votos
-      let query = supabase
+      // First, get the questionnaire for the selected dimension
+      const { data: questionnaire, error: questionnaireError } = await supabase
+        .from('fic_questionnaires')
+        .select('*')
+        .eq('dimension', selectedDimension)
+        .single();
+
+      if (questionnaireError) {
+        console.error("Error fetching questionnaire:", questionnaireError);
+        throw questionnaireError;
+      }
+
+      if (!questionnaire) {
+        return {
+          strengths: [],
+          challenges: [],
+          opportunities: []
+        };
+      }
+
+      // Then get all votes for this questionnaire
+      const { data: votes, error: votesError } = await supabase
         .from('questionnaire_votes')
-        .select(`
-          id,
-          questionnaire_id,
-          vote_type,
-          option_type,
-          option_number,
-          fic_questionnaires!inner (
-            dimension,
-            strengths,
-            challenges,
-            opportunities
-          )
-        `);
+        .select('*')
+        .eq('questionnaire_id', questionnaire.id);
 
-      // Aplicar filtro de dimensão se não for "all"
-      if (selectedDimension !== "all") {
-        query = query.eq('fic_questionnaires.dimension', selectedDimension);
+      if (votesError) {
+        console.error("Error fetching votes:", votesError);
+        throw votesError;
       }
 
-      const { data: votes, error } = await query;
-
-      if (error) {
-        console.error("Error fetching votes:", error);
-        throw error;
-      }
-
-      console.log("Raw votes data:", votes);
-
-      // Inicializar contadores de votos para cada categoria
-      const voteCounters: Record<string, Record<number, number>> = {
+      // Process votes into counters
+      const voteCounters: Record<string, Record<string, number>> = {
         strengths: {},
         challenges: {},
         opportunities: {}
       };
 
-      // Contar votos para cada opção
       votes?.forEach(vote => {
         const { option_type, option_number } = vote;
-        
         if (!voteCounters[option_type][option_number]) {
           voteCounters[option_type][option_number] = 0;
         }
-        
         voteCounters[option_type][option_number]++;
       });
 
-      console.log("Vote counters:", voteCounters);
-
-      // Obter o texto do conteúdo de cada opção do primeiro questionário
-      const sampleQuestionnaire = votes?.[0]?.fic_questionnaires;
-      
-      // Formatar resultados com o texto do conteúdo
+      // Format results with text content
       const formatResults = (type: 'strengths' | 'challenges' | 'opportunities') => {
         return Object.entries(voteCounters[type]).map(([optionNumber, total]) => {
-          const options = sampleQuestionnaire?.[type]?.split('\n\n') || [];
+          const options = questionnaire[type]?.split('\n\n') || [];
+          const text = options[parseInt(optionNumber) - 1] || `Option ${optionNumber}`;
           return {
             optionNumber: String(optionNumber),
             total,
-            text: options[parseInt(optionNumber) - 1] || `Opção ${optionNumber}`
+            text
           };
-        });
+        }).sort((a, b) => b.total - a.total); // Sort by total votes in descending order
       };
 
       const results = {
