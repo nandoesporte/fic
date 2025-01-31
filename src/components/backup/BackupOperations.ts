@@ -59,17 +59,20 @@ export const useBackupOperations = () => {
 
       if (backupError) throw backupError;
 
-      // Call the clean_questionnaire_votes function
+      // Call the clean_questionnaire_votes function using RPC
       const { error: cleanError } = await supabase
         .rpc('clean_questionnaire_votes');
 
-      if (cleanError) throw cleanError;
+      if (cleanError) {
+        console.error('Error during clean operation:', cleanError);
+        throw new Error('Erro ao limpar dados');
+      }
 
       toast.success('Dados exportados e limpos com sucesso');
       await fetchBackups();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error during export and clear:', error);
-      toast.error('Erro ao exportar e limpar dados');
+      toast.error(error.message || 'Erro ao exportar e limpar dados');
     } finally {
       setIsExporting(false);
     }
