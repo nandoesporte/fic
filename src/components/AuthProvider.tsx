@@ -118,7 +118,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
           break;
         case 'SIGNED_OUT':
-        case 'USER_DELETED':
           setSession(null);
           if (!PUBLIC_ROUTES.includes(location.pathname)) {
             navigate('/login');
