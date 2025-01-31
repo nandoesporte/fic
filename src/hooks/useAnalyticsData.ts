@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuestionnaireVotes } from "./useQuestionnaireVotes";
 
 interface Dimension {
   id: string;
@@ -57,12 +56,10 @@ export const useAnalyticsData = (selectedDimension: string) => {
       console.log("Fetching vote data for dimension:", selectedDimension);
       
       try {
-        // Build the query based on whether we want all dimensions or a specific one
         let query = supabase
           .from('questionnaire_voting_report')
           .select('*');
         
-        // Only apply the dimension filter if not "all"
         if (selectedDimension !== "all") {
           query = query.eq('dimension', selectedDimension);
         }
@@ -96,8 +93,12 @@ export const useAnalyticsData = (selectedDimension: string) => {
         console.log("Processed vote data:", processedData);
         return processedData;
       } catch (error) {
-        console.error("Error in useQuestionnaireVotes:", error);
-        throw error;
+        console.error("Error in useAnalyticsData:", error);
+        return {
+          strengths: [],
+          challenges: [],
+          opportunities: []
+        };
       }
     },
   });
