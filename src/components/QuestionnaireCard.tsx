@@ -42,12 +42,6 @@ export const QuestionnaireCard = ({
     const selectionCount = getSelectionCount(type);
     const bgColorClass = getBgColor(type);
     const statuses = (questionnaire[`${type}_statuses`] || 'pending,pending,pending').split(',');
-    
-    // Filter options to only show active ones
-    const activeOptions = options.filter((_, index) => statuses[index] === 'active');
-    const activeIndices = options.map((_, index) => statuses[index] === 'active' ? index : -1).filter(i => i !== -1);
-
-    if (activeOptions.length === 0) return null;
 
     return (
       <div className="space-y-4">
@@ -57,18 +51,18 @@ export const QuestionnaireCard = ({
             selectionCount={selectionCount}
           />
           <div className="space-y-3 mt-4">
-            {activeOptions.map((option, idx) => {
-              const originalIndex = activeIndices[idx];
-              const selected = isOptionSelected(type, originalIndex + 1);
+            {options.map((option, index) => {
+              const isActive = statuses[index] === 'active';
+              const selected = isOptionSelected(type, index + 1);
               
               return (
                 <QuestionnaireOption
-                  key={idx}
+                  key={index}
                   option={option}
-                  index={idx}
-                  isActive={true}
+                  index={index}
+                  isActive={isActive}
                   isSelected={selected}
-                  onVote={() => onVote(type, originalIndex + 1)}
+                  onVote={() => onVote(type, index + 1)}
                   disabled={selectionCount >= MAX_SELECTIONS && !selected}
                 />
               );
@@ -84,31 +78,19 @@ export const QuestionnaireCard = ({
     getSelectionCount('challenges') === MAX_SELECTIONS &&
     getSelectionCount('opportunities') === MAX_SELECTIONS;
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '';
-    try {
-      return formatDistanceToNow(new Date(dateString), { 
-        addSuffix: true,
-        locale: ptBR 
-      });
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return '';
-    }
-  };
-
   return (
-    <Card className="p-6 border-[#D6BCFA] hover:border-[#9b87f5] transition-colors">
+    <Card className="p-6">
       <div className="space-y-6">
         <div>
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h2 className="text-xl font-semibold text-[#6E59A5]">{questionnaire.dimension}</h2>
-              {questionnaire.created_at && (
-                <p className="text-sm text-[#8E9196]">
-                  Enviado {formatDate(questionnaire.created_at)}
-                </p>
-              )}
+              <h2 className="text-xl font-semibold">{questionnaire.dimension}</h2>
+              <p className="text-sm text-gray-500">
+                Enviado {formatDistanceToNow(new Date(questionnaire.created_at), { 
+                  addSuffix: true,
+                  locale: ptBR 
+                })}
+              </p>
             </div>
           </div>
         </div>
@@ -122,7 +104,7 @@ export const QuestionnaireCard = ({
             <Button
               onClick={onConfirmVotes}
               disabled={!allSectionsComplete}
-              className="bg-[#F97316] hover:bg-[#EA580C] text-white"
+              className="bg-primary hover:bg-primary/90"
             >
               Confirmar Votos
             </Button>

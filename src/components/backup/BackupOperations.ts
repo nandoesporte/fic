@@ -30,11 +30,6 @@ export const useBackupOperations = () => {
   };
 
   const handleExportAndClear = async (backupName: string) => {
-    if (!backupName.trim()) {
-      toast.error('Nome do backup é obrigatório');
-      return;
-    }
-
     setIsExporting(true);
     try {
       // First, fetch all questionnaire data
@@ -44,9 +39,6 @@ export const useBackupOperations = () => {
 
       if (fetchError) throw fetchError;
 
-      const currentDate = new Date().toLocaleDateString('pt-BR');
-      const description = `Backup ${backupName} - Criado em ${currentDate}`;
-
       // Create backup record
       const { error: backupError } = await supabase
         .from('data_backups')
@@ -54,7 +46,7 @@ export const useBackupOperations = () => {
           filename: backupName,
           data: questionnaires,
           type: 'questionnaire_export',
-          description: description
+          description: `Backup created on ${new Date().toLocaleDateString()}`
         });
 
       if (backupError) throw backupError;
