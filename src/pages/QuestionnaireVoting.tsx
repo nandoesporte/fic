@@ -52,18 +52,19 @@ export const QuestionnaireVoting = () => {
       }[];
       dimension: string;
     }) => {
-      console.log('Submitting votes:', { questionnaireId, votes, dimension });
       await submitVotes({ questionnaireId, votes, dimension, userEmail });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['active-questionnaires'] });
-      toast.success('Votos registrados com sucesso!');
       setSelections({});
       navigate('/vote-success');
     },
     onError: (error: Error) => {
       console.error('Error in vote submission:', error);
-      toast.error(`Erro ao registrar votos: ${error.message}`);
+      // If it's an "already voted" error, clear the selections
+      if (error.message.includes('já votou nesta dimensão')) {
+        setSelections({});
+      }
     },
   });
 

@@ -15,40 +15,43 @@ export const submitVotes = async ({
   console.log('Submitting votes:', { questionnaireId, votes, dimension });
 
   try {
-    // Check if user has already voted on this dimension first
-    const { data: existingDimensionVote, error: dimensionCheckError } = await supabase
+    // First check if user has already voted on this dimension
+    const { data: existingVote, error: checkError } = await supabase
       .from('dimension_votes')
-      .select('id')
-      .eq('email', userEmail.toLowerCase())
+      .select('*')
+      .eq('email', userEmail)
       .eq('dimension', dimension)
       .maybeSingle();
 
-    if (dimensionCheckError) {
-      console.error('Error checking dimension votes:', dimensionCheckError);
-      throw new Error('Erro ao verificar votos existentes');
-    }
-
-    if (existingDimensionVote) {
+    if (existingVote) {
       throw new Error('Você já votou nesta dimensão. Cada pessoa pode votar apenas uma vez por dimensão.');
     }
 
-    // Get questionnaire to validate options
-    const { data: questionnaire, error: questionnaireError } = await supabase
-      .from('fic_questionnaires')
-      .select('*')
-      .eq('id', questionnaireId)
-      .single();
-
-    if (questionnaireError || !questionnaire) {
-      console.error('Error fetching questionnaire:', questionnaireError);
-      throw new Error('Questionário não encontrado');
+    if (checkError) {
+      console.error('Error checking existing votes:', checkError);
+      throw new Error('Erro ao verificar votos existentes');
     }
 
-    // Register dimension vote first
+    // If no existing vote, proceed with vote submission
+    const { error: voteError } = await supabase.rpc('register_votes', {
+      p_questionnaire_id: questionnaireId,
+      p_email: userEmail,
+      p_votes: votes
+    });
+
+    if (voteError) {
+      console.error('Error submitting vote:', voteError);
+      if (voteError.message.includes('já votou nesta dimensão')) {
+        throw new Error('Você já votou nesta dimensão. Cada pessoa pode votar apenas uma vez por dimensão.');
+      }
+      throw new Error(`Erro ao registrar voto: ${voteError.message}`);
+    }
+
+    // Register dimension vote
     const { error: dimensionVoteError } = await supabase
       .from('dimension_votes')
       .insert({
-        email: userEmail.toLowerCase(),
+        email: userEmail,
         dimension: dimension
       });
 
@@ -57,65 +60,17 @@ export const submitVotes = async ({
       throw dimensionVoteError;
     }
 
-    // Register individual votes
-    for (const { optionType, optionNumbers } of votes) {
-      for (const optionNumber of optionNumbers) {
-        try {
-          // Validate option number before inserting
-          const { data: isValid, error: validationError } = await supabase
-            .rpc('check_vote_eligibility', {
-              p_questionnaire_id: questionnaireId,
-              p_option_type: optionType,
-              p_option_number: optionNumber,
-              p_email: userEmail.toLowerCase()
-            });
-
-          if (validationError) {
-            console.error('Validation error:', validationError);
-            throw new Error(`Erro ao validar voto: ${validationError.message}`);
-          }
-
-          if (!isValid) {
-            console.error('Invalid vote:', { optionType, optionNumber });
-            throw new Error(`Voto inválido para ${optionType} opção ${optionNumber}`);
-          }
-
-          // Insert vote if validation passed
-          const { error: voteError } = await supabase
-            .from('questionnaire_votes')
-            .insert({
-              questionnaire_id: questionnaireId,
-              vote_type: 'upvote',
-              option_type: optionType,
-              option_number: optionNumber,
-              email: userEmail.toLowerCase()
-            });
-
-          if (voteError) {
-            console.error('Error inserting vote:', voteError);
-            throw voteError;
-          }
-        } catch (error: any) {
-          console.error('Error submitting vote:', error);
-          throw new Error(`Erro ao registrar voto: ${error.message}`);
-        }
-      }
-    }
-
-    // Update questionnaire status
-    const { error: updateError } = await supabase
-      .from('fic_questionnaires')
-      .update({ status: 'voted' })
-      .eq('id', questionnaireId);
-
-    if (updateError) {
-      console.error('Error updating questionnaire status:', updateError);
-      throw updateError;
-    }
-
-    return true;
+    toast.success('Votos registrados com sucesso!');
   } catch (error: any) {
     console.error('Error submitting votes:', error);
-    throw new Error(error.message || 'Erro ao registrar votos');
+    
+    // Check if it's our known "already voted" error
+    if (error.message.includes('já votou nesta dimensão')) {
+      toast.error('Você já votou nesta dimensão. Cada pessoa pode votar apenas uma vez por dimensão.');
+    } else {
+      toast.error(`Erro ao registrar votos: ${error.message}`);
+    }
+    
+    throw error;
   }
 };
