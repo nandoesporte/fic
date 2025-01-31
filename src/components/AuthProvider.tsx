@@ -24,28 +24,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const handleAuthError = (error: AuthError | Error) => {
     console.error("Auth error:", error);
     setSession(null);
+
+    let errorMessage = "Por favor, faça login novamente.";
+    if (error instanceof Error) {
+      if (error.message.includes("invalid_credentials")) {
+        errorMessage = "Credenciais inválidas. Por favor, verifique seu email e senha.";
+      } else if (error.message.includes("refresh_token_not_found")) {
+        errorMessage = "Sua sessão expirou. Por favor, faça login novamente.";
+      }
+    }
+
     if (!PUBLIC_ROUTES.includes(location.pathname)) {
       navigate('/login');
     }
+
     toast({
       variant: "destructive",
       title: "Erro de autenticação",
-      description: "Por favor, faça login novamente.",
+      description: errorMessage,
     });
   };
 
   const handleTokenRefreshError = async () => {
     console.log("Token refresh failed, signing out...");
-    await supabase.auth.signOut();
-    setSession(null);
-    if (!PUBLIC_ROUTES.includes(location.pathname)) {
-      navigate('/login');
+    try {
+      await supabase.auth.signOut();
+      setSession(null);
+      if (!PUBLIC_ROUTES.includes(location.pathname)) {
+        navigate('/login');
+      }
+      toast({
+        variant: "destructive",
+        title: "Sessão expirada",
+        description: "Por favor, faça login novamente.",
+      });
+    } catch (error) {
+      console.error("Error during sign out:", error);
     }
-    toast({
-      variant: "destructive",
-      title: "Sessão expirada",
-      description: "Por favor, faça login novamente.",
-    });
   };
 
   useEffect(() => {
@@ -88,23 +103,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log("Auth state changed:", event, currentSession);
       
-      if (event === 'TOKEN_REFRESHED') {
-        if (currentSession) {
+      switch (event) {
+        case 'TOKEN_REFRESHED':
+          if (currentSession) {
+            setSession(currentSession);
+          } else {
+            await handleTokenRefreshError();
+          }
+          break;
+        case 'SIGNED_IN':
           setSession(currentSession);
-        } else {
-          await handleTokenRefreshError();
-        }
-      } else if (event === 'SIGNED_IN') {
-        setSession(currentSession);
-        if (location.pathname === '/login') {
-          navigate('/');
-        }
-      } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
-        setSession(null);
-        // Only redirect to login if not on a public route
-        if (!PUBLIC_ROUTES.includes(location.pathname)) {
-          navigate('/login');
-        }
+          if (location.pathname === '/login') {
+            navigate('/');
+          }
+          break;
+        case 'SIGNED_OUT':
+        case 'USER_DELETED':
+          setSession(null);
+          if (!PUBLIC_ROUTES.includes(location.pathname)) {
+            navigate('/login');
+          }
+          break;
       }
       
       setLoading(false);
