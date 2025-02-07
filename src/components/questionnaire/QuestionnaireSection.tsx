@@ -44,17 +44,12 @@ export const QuestionnaireSection = ({
                      editingLine?.index === index;
 
     const statusesKey = `${type}_statuses`;
-    // Initialize statuses array safely
-    let statuses: string[];
+    const defaultStatuses = ['pending', 'pending', 'pending'];
     
-    // Handle both string and array formats for statuses
-    if (Array.isArray(questionnaire[statusesKey])) {
-      statuses = questionnaire[statusesKey];
-    } else if (typeof questionnaire[statusesKey] === 'string') {
-      statuses = questionnaire[statusesKey].split(',');
-    } else {
-      statuses = ['pending', 'pending', 'pending'];
-    }
+    // Get statuses safely, ensuring we always have an array
+    const statuses = Array.isArray(questionnaire[statusesKey]) 
+      ? questionnaire[statusesKey]
+      : defaultStatuses;
     
     const currentStatus = statuses[index] || 'pending';
 
@@ -121,15 +116,11 @@ export const QuestionnaireSection = ({
       </h3>
       <div className="space-y-6">
         {questionnaires.map((questionnaire) => {
-          // Safely handle content
-          let content = questionnaire[type];
-          let lines: string[] = [];
-          
-          if (typeof content === 'string') {
-            lines = content.split('\n\n').filter(line => line.trim() !== '');
-          } else if (Array.isArray(content)) {
-            lines = content.filter(line => line && typeof line === 'string' && line.trim() !== '');
-          }
+          // Get content and ensure it's a string
+          const content = questionnaire[type] || '';
+          const lines = typeof content === 'string'
+            ? content.split('\n\n').filter(line => line.trim() !== '')
+            : [];
           
           return (
             <div key={questionnaire.id} className="border-b pb-4">
