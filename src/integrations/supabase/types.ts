@@ -9,140 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      admin_users: {
-        Row: {
-          created_at: string | null
-          id: string
-          role: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          role: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          role?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      challenge_completions: {
-        Row: {
-          challenge_id: string | null
-          completed_at: string | null
-          id: string
-          user_id: string | null
-        }
-        Insert: {
-          challenge_id?: string | null
-          completed_at?: string | null
-          id?: string
-          user_id?: string | null
-        }
-        Update: {
-          challenge_id?: string | null
-          completed_at?: string | null
-          id?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "challenge_completions_challenge_id_fkey"
-            columns: ["challenge_id"]
-            isOneToOne: false
-            referencedRelation: "daily_challenges"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "challenge_completions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      class_attendance: {
-        Row: {
-          class_id: string
-          class_name: string
-          created_at: string | null
-          id: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          class_id: string
-          class_name: string
-          created_at?: string | null
-          id?: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          class_id?: string
-          class_name?: string
-          created_at?: string | null
-          id?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "class_attendance_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      daily_challenges: {
-        Row: {
-          created_at: string | null
-          day_number: number
-          description: string
-          exercise_coins: number
-          health_coins: number
-          id: string
-          image_url: string | null
-          month: number
-          title: string
-          updated_at: string | null
-          year: number
-        }
-        Insert: {
-          created_at?: string | null
-          day_number: number
-          description: string
-          exercise_coins: number
-          health_coins: number
-          id?: string
-          image_url?: string | null
-          month: number
-          title: string
-          updated_at?: string | null
-          year: number
-        }
-        Update: {
-          created_at?: string | null
-          day_number?: number
-          description?: string
-          exercise_coins?: number
-          health_coins?: number
-          id?: string
-          image_url?: string | null
-          month?: number
-          title?: string
-          updated_at?: string | null
-          year?: number
-        }
-        Relationships: []
-      }
       data_backups: {
         Row: {
           created_at: string | null
@@ -151,7 +17,6 @@ export type Database = {
           description: string | null
           filename: string
           id: string
-          size_bytes: number | null
           status: string | null
           type: string
         }
@@ -162,7 +27,6 @@ export type Database = {
           description?: string | null
           filename: string
           id?: string
-          size_bytes?: number | null
           status?: string | null
           type: string
         }
@@ -173,7 +37,6 @@ export type Database = {
           description?: string | null
           filename?: string
           id?: string
-          size_bytes?: number | null
           status?: string | null
           type?: string
         }
@@ -204,64 +67,15 @@ export type Database = {
           score?: number
           updated_at?: string | null
         }
-        Relationships: []
-      }
-      dimension_votes: {
-        Row: {
-          created_at: string
-          dimension: string
-          email: string
-          id: string
-        }
-        Insert: {
-          created_at?: string
-          dimension: string
-          email: string
-          id?: string
-        }
-        Update: {
-          created_at?: string
-          dimension?: string
-          email?: string
-          id?: string
-        }
-        Relationships: []
-      }
-      exercise_library: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          difficulty: string | null
-          duration: number | null
-          id: string
-          thumbnail_url: string | null
-          title: string
-          updated_at: string | null
-          video_url: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          difficulty?: string | null
-          duration?: number | null
-          id?: string
-          thumbnail_url?: string | null
-          title: string
-          updated_at?: string | null
-          video_url?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          difficulty?: string | null
-          duration?: number | null
-          id?: string
-          thumbnail_url?: string | null
-          title?: string
-          updated_at?: string | null
-          video_url?: string | null
-        }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "dimension_performance_dimension_fkey"
+            columns: ["dimension"]
+            isOneToOne: false
+            referencedRelation: "fic_dimensions"
+            referencedColumns: ["identifier"]
+          },
+        ]
       }
       fic_daily_metrics: {
         Row: {
@@ -316,647 +130,284 @@ export type Database = {
       }
       fic_questionnaires: {
         Row: {
-          challenges: string
-          challenges_statuses: string | null
+          challenges: string | null
+          challenges_statuses: string[] | null
           created_at: string | null
           dimension: string
-          group: string | null
+          group_code: string | null
           group_name: string | null
           id: string
-          opportunities: string
-          opportunities_statuses: string | null
+          opportunities: string | null
+          opportunities_statuses: string[] | null
           satisfaction: number | null
-          status: string | null
-          strengths: string
-          strengths_statuses: string | null
+          status: Database["public"]["Enums"]["questionnaire_status"] | null
+          strengths: string | null
+          strengths_statuses: string[] | null
           updated_at: string | null
           user_id: string | null
         }
         Insert: {
-          challenges: string
-          challenges_statuses?: string | null
+          challenges?: string | null
+          challenges_statuses?: string[] | null
           created_at?: string | null
           dimension: string
-          group?: string | null
+          group_code?: string | null
           group_name?: string | null
           id?: string
-          opportunities: string
-          opportunities_statuses?: string | null
+          opportunities?: string | null
+          opportunities_statuses?: string[] | null
           satisfaction?: number | null
-          status?: string | null
-          strengths: string
-          strengths_statuses?: string | null
+          status?: Database["public"]["Enums"]["questionnaire_status"] | null
+          strengths?: string | null
+          strengths_statuses?: string[] | null
           updated_at?: string | null
           user_id?: string | null
         }
         Update: {
-          challenges?: string
-          challenges_statuses?: string | null
+          challenges?: string | null
+          challenges_statuses?: string[] | null
           created_at?: string | null
           dimension?: string
-          group?: string | null
+          group_code?: string | null
           group_name?: string | null
           id?: string
-          opportunities?: string
-          opportunities_statuses?: string | null
+          opportunities?: string | null
+          opportunities_statuses?: string[] | null
           satisfaction?: number | null
-          status?: string | null
-          strengths?: string
-          strengths_statuses?: string | null
+          status?: Database["public"]["Enums"]["questionnaire_status"] | null
+          strengths?: string | null
+          strengths_statuses?: string[] | null
           updated_at?: string | null
           user_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "fic_questionnaires_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "fic_questionnaires_dimension_fkey"
+            columns: ["dimension"]
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      fic_reports: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          dimension: string | null
-          end_date: string
-          id: string
-          metrics: Json
-          start_date: string
-          title: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          dimension?: string | null
-          end_date: string
-          id?: string
-          metrics?: Json
-          start_date: string
-          title: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          dimension?: string | null
-          end_date?: string
-          id?: string
-          metrics?: Json
-          start_date?: string
-          title?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      profile_goals: {
-        Row: {
-          created_at: string | null
-          current_value: number | null
-          end_date: string
-          id: string
-          start_date: string
-          status: string | null
-          target_value: number
-          type: string
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          current_value?: number | null
-          end_date: string
-          id?: string
-          start_date?: string
-          status?: string | null
-          target_value: number
-          type: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          current_value?: number | null
-          end_date?: string
-          id?: string
-          start_date?: string
-          status?: string | null
-          target_value?: number
-          type?: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profile_goals_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: "fic_dimensions"
+            referencedColumns: ["identifier"]
           },
         ]
       }
       profiles: {
         Row: {
-          birth_date: string | null
           cocamarengagement: string | null
           cocamarmembers: string | null
           cocamarname: string | null
-          coins: number | null
           company_description: string | null
           company_logo: string | null
           company_name: string | null
-          cpf: string
           created_at: string | null
           email: string
-          fitness_level: string | null
           frisiaengagement: string | null
           frisiamembers: string | null
           frisianame: string | null
-          gender: string | null
-          height: number | null
           id: string
-          name: string | null
           sicoobengagement: string | null
           sicoobmembers: string | null
           sicoobname: string | null
-          steps: number | null
           updated_at: string | null
-          weight: number | null
           welcome_description: string | null
           welcome_message: string | null
         }
         Insert: {
-          birth_date?: string | null
           cocamarengagement?: string | null
           cocamarmembers?: string | null
           cocamarname?: string | null
-          coins?: number | null
           company_description?: string | null
           company_logo?: string | null
           company_name?: string | null
-          cpf?: string
           created_at?: string | null
           email: string
-          fitness_level?: string | null
           frisiaengagement?: string | null
           frisiamembers?: string | null
           frisianame?: string | null
-          gender?: string | null
-          height?: number | null
           id: string
-          name?: string | null
           sicoobengagement?: string | null
           sicoobmembers?: string | null
           sicoobname?: string | null
-          steps?: number | null
           updated_at?: string | null
-          weight?: number | null
           welcome_description?: string | null
           welcome_message?: string | null
         }
         Update: {
-          birth_date?: string | null
           cocamarengagement?: string | null
           cocamarmembers?: string | null
           cocamarname?: string | null
-          coins?: number | null
           company_description?: string | null
           company_logo?: string | null
           company_name?: string | null
-          cpf?: string
           created_at?: string | null
           email?: string
-          fitness_level?: string | null
           frisiaengagement?: string | null
           frisiamembers?: string | null
           frisianame?: string | null
-          gender?: string | null
-          height?: number | null
           id?: string
-          name?: string | null
           sicoobengagement?: string | null
           sicoobmembers?: string | null
           sicoobname?: string | null
-          steps?: number | null
           updated_at?: string | null
-          weight?: number | null
           welcome_description?: string | null
           welcome_message?: string | null
         }
         Relationships: []
       }
-      questionnaire_votes: {
+      registered_voters: {
         Row: {
           created_at: string | null
           email: string
           id: string
-          option_number: number
-          option_type: string
-          questionnaire_id: string
-          user_id: string | null
-          vote_type: string
+          name: string | null
+          updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           email: string
           id?: string
-          option_number: number
-          option_type: string
-          questionnaire_id: string
-          user_id?: string | null
-          vote_type: string
+          name?: string | null
+          updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           email?: string
           id?: string
-          option_number?: number
-          option_type?: string
+          name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      vote_tracking: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          questionnaire_id: string
+          section_type: string
+          updated_at: string | null
+          vote_count: number
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          questionnaire_id: string
+          section_type: string
+          updated_at?: string | null
+          vote_count?: number
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
           questionnaire_id?: string
-          user_id?: string | null
-          vote_type?: string
+          section_type?: string
+          updated_at?: string | null
+          vote_count?: number
         }
         Relationships: [
           {
-            foreignKeyName: "questionnaire_votes_email_fkey"
+            foreignKeyName: "vote_tracking_email_fkey"
             columns: ["email"]
             isOneToOne: false
             referencedRelation: "registered_voters"
             referencedColumns: ["email"]
           },
           {
-            foreignKeyName: "questionnaire_votes_questionnaire_id_fkey"
+            foreignKeyName: "vote_tracking_questionnaire_id_fkey"
             columns: ["questionnaire_id"]
             isOneToOne: false
             referencedRelation: "fic_questionnaires"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "questionnaire_votes_questionnaire_id_fkey"
-            columns: ["questionnaire_id"]
-            isOneToOne: false
-            referencedRelation: "vote_tracking"
-            referencedColumns: ["questionnaire_id"]
-          },
-          {
-            foreignKeyName: "questionnaire_votes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
-      registered_voters: {
+      votes: {
         Row: {
-          created_at: string
+          created_at: string | null
           email: string
           id: string
-          name: string | null
-          updated_at: string
+          option_number: number
+          option_type: Database["public"]["Enums"]["vote_type"]
+          questionnaire_id: string
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           email: string
           id?: string
-          name?: string | null
-          updated_at?: string
+          option_number: number
+          option_type: Database["public"]["Enums"]["vote_type"]
+          questionnaire_id: string
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           email?: string
           id?: string
-          name?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      store_products: {
-        Row: {
-          active: boolean | null
-          created_at: string | null
-          description: string | null
-          id: string
-          image_url: string | null
-          name: string
-          price_exxe: number
-          price_money: number
-          stock: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          active?: boolean | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          image_url?: string | null
-          name: string
-          price_exxe: number
-          price_money: number
-          stock?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          active?: boolean | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          image_url?: string | null
-          name?: string
-          price_exxe?: number
-          price_money?: number
-          stock?: number | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      transactions: {
-        Row: {
-          amount: number
-          created_at: string | null
-          description: string | null
-          id: string
-          receiver_id: string | null
-          sender_id: string | null
-          status: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          receiver_id?: string | null
-          sender_id?: string | null
-          status?: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          receiver_id?: string | null
-          sender_id?: string | null
-          status?: string
+          option_number?: number
+          option_type?: Database["public"]["Enums"]["vote_type"]
+          questionnaire_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "transactions_receiver_id_fkey"
-            columns: ["receiver_id"]
+            foreignKeyName: "votes_email_fkey"
+            columns: ["email"]
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: "registered_voters"
+            referencedColumns: ["email"]
           },
           {
-            foreignKeyName: "transactions_sender_id_fkey"
-            columns: ["sender_id"]
+            foreignKeyName: "votes_questionnaire_id_fkey"
+            columns: ["questionnaire_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_goals: {
-        Row: {
-          created_at: string | null
-          current: number | null
-          end_date: string
-          id: string
-          start_date: string
-          status: string | null
-          target: number
-          type: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          current?: number | null
-          end_date: string
-          id?: string
-          start_date: string
-          status?: string | null
-          target: number
-          type: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          current?: number | null
-          end_date?: string
-          id?: string
-          start_date?: string
-          status?: string | null
-          target?: number
-          type?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_goals_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      water_consumption: {
-        Row: {
-          amount: number
-          created_at: string | null
-          date: string
-          id: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          amount?: number
-          created_at?: string | null
-          date: string
-          id?: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string | null
-          date?: string
-          id?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "water_consumption_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "fic_questionnaires"
             referencedColumns: ["id"]
           },
         ]
       }
     }
     Views: {
-      fic_questionnaire_analytics: {
+      vote_analytics: {
         Row: {
-          avg_satisfaction: number | null
+          created_at: string | null
           dimension: string | null
-          first_response: string | null
-          last_response: string | null
-          total_responses: number | null
-        }
-        Relationships: []
-      }
-      questionnaire_vote_counts: {
-        Row: {
-          downvotes: number | null
           option_number: number | null
-          option_type: string | null
+          option_text: string | null
+          option_type: Database["public"]["Enums"]["vote_type"] | null
           questionnaire_id: string | null
-          upvotes: number | null
+          vote_count: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "questionnaire_votes_questionnaire_id_fkey"
+            foreignKeyName: "fic_questionnaires_dimension_fkey"
+            columns: ["dimension"]
+            isOneToOne: false
+            referencedRelation: "fic_dimensions"
+            referencedColumns: ["identifier"]
+          },
+          {
+            foreignKeyName: "votes_questionnaire_id_fkey"
             columns: ["questionnaire_id"]
             isOneToOne: false
             referencedRelation: "fic_questionnaires"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "questionnaire_votes_questionnaire_id_fkey"
-            columns: ["questionnaire_id"]
-            isOneToOne: false
-            referencedRelation: "vote_tracking"
-            referencedColumns: ["questionnaire_id"]
-          },
         ]
-      }
-      questionnaire_voting_report: {
-        Row: {
-          challenges: string | null
-          dimension: string | null
-          group: string | null
-          opportunities: string | null
-          option_number: number | null
-          option_type: string | null
-          strengths: string | null
-          total_votes: number | null
-        }
-        Relationships: []
-      }
-      vote_analytics_summary: {
-        Row: {
-          dimension: string | null
-          option_number: number | null
-          option_text: string | null
-          option_type: string | null
-          vote_count: number | null
-        }
-        Relationships: []
-      }
-      vote_tracking: {
-        Row: {
-          challenges_statuses: string | null
-          dimension: string | null
-          group: string | null
-          opportunities_statuses: string | null
-          option_number: number | null
-          option_text: string | null
-          option_type: string | null
-          questionnaire_id: string | null
-          strengths_statuses: string | null
-          vote_count: number | null
-        }
-        Relationships: []
       }
     }
     Functions: {
-      check_vote_eligibility:
-        | {
-            Args: {
-              p_questionnaire_id: string
-              p_option_type: string
-              p_option_number: number
-            }
-            Returns: boolean
-          }
-        | {
-            Args: {
-              p_questionnaire_id: string
-              p_option_type: string
-              p_option_number: number
-              p_email: string
-            }
-            Returns: boolean
-          }
       clean_questionnaire_votes: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
-      count_user_votes: {
-        Args: {
-          p_questionnaire_id: string
-          p_option_type: string
-        }
-        Returns: number
-      }
-      get_active_options: {
-        Args: {
-          p_questionnaire_id: string
-          p_type: string
-        }
-        Returns: {
-          option_number: number
-          option_text: string
-          vote_count: number
-          is_active: boolean
-        }[]
-      }
-      get_dimension_stats: {
-        Args: {
-          p_dimension?: string
-        }
-        Returns: {
-          dimension: string
-          total_votes: number
-          active_voters: number
-          participation_rate: number
-        }[]
-      }
-      get_vote_statistics: {
-        Args: {
-          p_dimension?: string
-        }
-        Returns: {
-          dimension: string
-          total_votes: number
-          strengths_votes: number
-          challenges_votes: number
-          opportunities_votes: number
-        }[]
-      }
-      register_votes: {
-        Args: {
-          p_questionnaire_id: string
-          p_email: string
-          p_votes: Json
-        }
-        Returns: undefined
-      }
-      update_fic_metrics: {
+      refresh_materialized_views: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
     }
     Enums: {
-      [_ in never]: never
+      option_status: "pending" | "active"
+      questionnaire_status: "pending" | "active" | "completed"
+      vote_type: "strengths" | "challenges" | "opportunities"
     }
     CompositeTypes: {
       [_ in never]: never
