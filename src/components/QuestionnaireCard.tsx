@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -41,7 +42,12 @@ export const QuestionnaireCard = ({
     const options = content.split('\n\n').filter(Boolean);
     const selectionCount = getSelectionCount(type);
     const bgColorClass = getBgColor(type);
-    const statuses = (questionnaire[`${type}_statuses`] || 'pending,pending,pending').split(',');
+    
+    // Get statuses from the corresponding array field
+    const statusesKey = `${type}_statuses`;
+    const statuses = Array.isArray(questionnaire[statusesKey]) 
+      ? questionnaire[statusesKey]
+      : ['pending', 'pending', 'pending'];
 
     return (
       <div className="space-y-4">
