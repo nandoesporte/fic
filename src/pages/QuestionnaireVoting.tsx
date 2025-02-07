@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -102,7 +103,7 @@ export const QuestionnaireVoting = () => {
             .from('questionnaire_votes')
             .insert({
               questionnaire_id: questionnaireId,
-              email: userEmail.toLowerCase(), // Garantindo que o email seja passado
+              email: userEmail.toLowerCase(),
               vote_type: 'upvote',
               option_type: optionType,
               option_number: optionNumber,
