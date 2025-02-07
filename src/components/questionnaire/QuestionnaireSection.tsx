@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Edit, Check, Circle } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -42,7 +43,10 @@ export const QuestionnaireSection = ({
                      editingLine?.type === type && 
                      editingLine?.index === index;
 
-    const statuses = (questionnaire[`${type}_statuses`] || 'pending,pending,pending').split(',');
+    const statusesKey = `${type}_statuses`;
+    const statuses = Array.isArray(questionnaire[statusesKey]) 
+      ? questionnaire[statusesKey] 
+      : ['pending', 'pending', 'pending'];
     const currentStatus = statuses[index] || 'pending';
 
     if (isEditing) {
@@ -108,7 +112,10 @@ export const QuestionnaireSection = ({
       </h3>
       <div className="space-y-6">
         {questionnaires.map((questionnaire) => {
-          const lines = (questionnaire[type] || '').split('\n\n').filter((line: string) => line.trim() !== '');
+          const content = questionnaire[type] || '';
+          const lines = typeof content === 'string' 
+            ? content.split('\n\n').filter((line: string) => line.trim() !== '')
+            : [];
           
           return (
             <div key={questionnaire.id} className="border-b pb-4">
