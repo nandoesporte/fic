@@ -1,3 +1,4 @@
+
 import { VoteButtons } from "@/components/VoteButtons";
 
 interface QuestionnaireOptionProps {
