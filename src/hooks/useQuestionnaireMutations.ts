@@ -1,12 +1,13 @@
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface Questionnaire {
   id: string;
-  strengths_statuses: string;
-  challenges_statuses: string;
-  opportunities_statuses: string;
+  strengths_statuses: string[];
+  challenges_statuses: string[];
+  opportunities_statuses: string[];
   [key: string]: any;
 }
 
@@ -50,15 +51,19 @@ export const useQuestionnaireMutations = () => {
       if (fetchError) throw fetchError;
 
       const statusField = `${type}_statuses`;
-      const statuses = (questionnaire[statusField] || 'pending,pending,pending').split(',')
-        .map((status: string, i: number) => i === index ? (status === 'active' ? 'pending' : 'active') : status);
+      const currentStatuses = Array.isArray(questionnaire[statusField]) 
+        ? questionnaire[statusField] 
+        : ['pending', 'pending', 'pending'];
 
-      const hasActiveStatus = statuses.includes('active');
+      const updatedStatuses = [...currentStatuses];
+      updatedStatuses[index] = currentStatus === 'active' ? 'pending' : 'active';
+
+      const hasActiveStatus = updatedStatuses.includes('active');
 
       const { error: updateError } = await supabase
         .from('fic_questionnaires')
         .update({ 
-          [statusField]: statuses.join(','),
+          [statusField]: updatedStatuses,
           status: hasActiveStatus ? 'active' : 'pending'
         })
         .eq('id', questionnaireId);
