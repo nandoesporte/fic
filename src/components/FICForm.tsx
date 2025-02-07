@@ -1,3 +1,4 @@
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -31,18 +32,18 @@ export function FICForm() {
   async function onSubmit(values: FICFormSchema) {
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from("fic_questionnaires").insert({
+      const { error } = await supabase.from("fic_questionnaires").insert([{
         dimension: values.dimension,
         group: values.group,
         strengths: [values.strengths1, values.strengths2, values.strengths3].join('\n\n'),
         challenges: [values.challenges1, values.challenges2, values.challenges3].join('\n\n'),
         opportunities: [values.opportunities1, values.opportunities2, values.opportunities3].join('\n\n'),
         user_id: null, // Explicitly set to null since we now allow anonymous submissions
-        strengths_statuses: 'pending,pending,pending',
-        challenges_statuses: 'pending,pending,pending',
-        opportunities_statuses: 'pending,pending,pending',
+        strengths_statuses: ['pending', 'pending', 'pending'],
+        challenges_statuses: ['pending', 'pending', 'pending'],
+        opportunities_statuses: ['pending', 'pending', 'pending'],
         status: 'pending'
-      });
+      }]);
 
       if (error) throw error;
 

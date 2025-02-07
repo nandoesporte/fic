@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
@@ -9,28 +10,24 @@ export type CooperativeData = {
 };
 
 type ProfileData = {
-  id: string;
+  cocamarengagement: string | null;
+  cocamarmembers: string | null;
+  cocamarname: string | null;
+  company_description: string | null;
+  company_logo: string | null;
+  company_name: string | null;
+  created_at: string | null;
   email: string;
-  steps: number;
-  coins: number;
-  created_at: string;
-  updated_at: string;
-  cpf: string;
-  name: string;
-  weight: number;
-  height: number;
-  birth_date: string;
-  gender: string;
-  fitness_level: string;
-  cocamarmembers: string;
-  cocamarengagement: string;
-  sicoobmembers: string;
-  sicoobengagement: string;
-  frisiamembers: string;
-  frisiaengagement: string;
-  cocamarname: string;
-  sicoobname: string;
-  frisianame: string;
+  frisiaengagement: string | null;
+  frisiamembers: string | null;
+  frisianame: string | null;
+  id: string;
+  sicoobengagement: string | null;
+  sicoobmembers: string | null;
+  sicoobname: string | null;
+  updated_at: string | null;
+  welcome_description: string | null;
+  welcome_message: string | null;
 };
 
 export const useCooperativeSettings = () => {
