@@ -77,6 +77,42 @@ export type Database = {
           },
         ]
       }
+      dimension_votes: {
+        Row: {
+          created_at: string | null
+          dimension: string
+          email: string
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          dimension: string
+          email: string
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          dimension?: string
+          email?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dimension_votes_dimension_fkey"
+            columns: ["dimension"]
+            isOneToOne: false
+            referencedRelation: "fic_dimensions"
+            referencedColumns: ["identifier"]
+          },
+          {
+            foreignKeyName: "dimension_votes_email_fkey"
+            columns: ["email"]
+            isOneToOne: false
+            referencedRelation: "registered_voters"
+            referencedColumns: ["email"]
+          },
+        ]
+      }
       fic_daily_metrics: {
         Row: {
           average_index: number
@@ -134,6 +170,7 @@ export type Database = {
           challenges_statuses: string[] | null
           created_at: string | null
           dimension: string
+          group: string | null
           group_code: string | null
           group_name: string | null
           id: string
@@ -151,6 +188,7 @@ export type Database = {
           challenges_statuses?: string[] | null
           created_at?: string | null
           dimension: string
+          group?: string | null
           group_code?: string | null
           group_name?: string | null
           id?: string
@@ -168,6 +206,7 @@ export type Database = {
           challenges_statuses?: string[] | null
           created_at?: string | null
           dimension?: string
+          group?: string | null
           group_code?: string | null
           group_name?: string | null
           id?: string
@@ -183,6 +222,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "fic_questionnaires_dimension_fkey"
+            columns: ["dimension"]
+            isOneToOne: false
+            referencedRelation: "fic_dimensions"
+            referencedColumns: ["identifier"]
+          },
+        ]
+      }
+      fic_reports: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          dimension: string | null
+          end_date: string
+          id: string
+          metrics: Json
+          start_date: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          dimension?: string | null
+          end_date: string
+          id?: string
+          metrics: Json
+          start_date: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          dimension?: string | null
+          end_date?: string
+          id?: string
+          metrics?: Json
+          start_date?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fic_reports_dimension_fkey"
             columns: ["dimension"]
             isOneToOne: false
             referencedRelation: "fic_dimensions"
@@ -252,6 +335,51 @@ export type Database = {
           welcome_message?: string | null
         }
         Relationships: []
+      }
+      questionnaire_votes: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          option_number: number
+          option_type: string
+          questionnaire_id: string
+          vote_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          option_number: number
+          option_type: string
+          questionnaire_id: string
+          vote_type: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          option_number?: number
+          option_type?: string
+          questionnaire_id?: string
+          vote_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questionnaire_votes_email_fkey"
+            columns: ["email"]
+            isOneToOne: false
+            referencedRelation: "registered_voters"
+            referencedColumns: ["email"]
+          },
+          {
+            foreignKeyName: "questionnaire_votes_questionnaire_id_fkey"
+            columns: ["questionnaire_id"]
+            isOneToOne: false
+            referencedRelation: "fic_questionnaires"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       registered_voters: {
         Row: {
@@ -402,6 +530,12 @@ export type Database = {
       refresh_materialized_views: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      safe_delete_dimension: {
+        Args: {
+          dimension_id: string
+        }
+        Returns: boolean
       }
     }
     Enums: {
