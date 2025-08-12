@@ -43,7 +43,7 @@ export const VoteList = ({ type, data }: VoteListProps) => {
             className={`flex items-center justify-between p-5 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ${getBgColor()}`}
           >
             <div className="flex-1">
-              <span className="text-sm font-medium">{(item.text || "").trim() || `Opção ${item.optionNumber}`}</span>
+              <span className="text-sm font-medium">{(item.text || "").trim() || "Texto da opção não disponível"}</span>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
