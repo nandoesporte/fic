@@ -60,22 +60,23 @@ export const QuestionnaireCard = ({
             selectionCount={selectionCount}
           />
           <div className="space-y-3 mt-4">
-            {options.map((option, index) => {
-              const isActive = statuses[index] === 'active';
-              const selected = isOptionSelected(type, index + 1);
-              
-              return (
-                <QuestionnaireOption
-                  key={index}
-                  option={option}
-                  index={index}
-                  isActive={isActive}
-                  isSelected={selected}
-                  onVote={() => onVote(type, index + 1)}
-                  disabled={selectionCount >= MAX_SELECTIONS && !selected}
-                />
-              );
-            })}
+            {options
+              .map((option, index) => ({ option, index }))
+              .filter(({ index }) => statuses[index] === 'active')
+              .map(({ option, index }) => {
+                const selected = isOptionSelected(type, index + 1);
+                return (
+                  <QuestionnaireOption
+                    key={index}
+                    option={option}
+                    index={index}
+                    isActive={true}
+                    isSelected={selected}
+                    onVote={() => onVote(type, index + 1)}
+                    disabled={selectionCount >= MAX_SELECTIONS && !selected}
+                  />
+                );
+              })}
           </div>
         </div>
       </div>
