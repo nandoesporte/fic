@@ -2,6 +2,30 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export const splitOptions = (content?: string) => {
+  if (!content) return [];
+  const normalized = String(content).replace(/\r\n/g, '\n').trim();
+  // Prefer splitting by blank lines; fallback to single newlines
+  let parts = normalized.split(/\n{2,}/);
+  if (parts.length === 1) {
+    parts = normalized.split('\n');
+  }
+  return parts.map(p => p.trim()).filter(Boolean);
+};
+
+const getTextForOption = (
+  qs: any[] | null,
+  field: 'strengths' | 'challenges' | 'opportunities',
+  optionIndex: number
+): string => {
+  if (!qs) return "";
+  for (const q of qs) {
+    const arr = splitOptions(q?.[field] || "");
+    if (arr[optionIndex]) return arr[optionIndex];
+  }
+  return "";
+};
+
 export const useQuestionnaireVotes = (selectedDimension: string) => {
   return useQuery({
     queryKey: ["questionnaire-votes", selectedDimension],
@@ -45,7 +69,7 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
       // Process each questionnaire and its votes
       questionnaires?.forEach(questionnaire => {
         const processVotes = (optionType: string, options: string) => {
-          const optionsArray = options.split('\n\n');
+          const optionsArray = splitOptions(options);
           
           // Get votes for this questionnaire and option type
           const votes = questionnaire.questionnaire_votes?.filter(
@@ -85,17 +109,17 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
         strengths: Object.entries(voteCounters.strengths).map(([optionNumber, total]) => ({
           optionNumber: String(optionNumber),
           total,
-          text: questionnaires?.[0]?.strengths?.split('\n\n')[parseInt(optionNumber) - 1] || ""
+          text: getTextForOption(questionnaires || [], 'strengths', parseInt(String(optionNumber)) - 1) || ""
         })),
         challenges: Object.entries(voteCounters.challenges).map(([optionNumber, total]) => ({
           optionNumber: String(optionNumber),
           total,
-          text: questionnaires?.[0]?.challenges?.split('\n\n')[parseInt(optionNumber) - 1] || ""
+          text: getTextForOption(questionnaires || [], 'challenges', parseInt(String(optionNumber)) - 1) || ""
         })),
         opportunities: Object.entries(voteCounters.opportunities).map(([optionNumber, total]) => ({
           optionNumber: String(optionNumber),
           total,
-          text: questionnaires?.[0]?.opportunities?.split('\n\n')[parseInt(optionNumber) - 1] || ""
+          text: getTextForOption(questionnaires || [], 'opportunities', parseInt(String(optionNumber)) - 1) || ""
         }))
       };
 

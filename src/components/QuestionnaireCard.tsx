@@ -39,7 +39,10 @@ export const QuestionnaireCard = ({
   const renderSection = (title: string, content: string, type: 'strengths' | 'challenges' | 'opportunities') => {
     if (!content) return null;
     
-    const options = content.split('\n\n').filter(Boolean);
+    const normalized = content.replace(/\r\n/g, '\n');
+    const options = (normalized.split(/\n{2,}/).length > 1 ? normalized.split(/\n{2,}/) : normalized.split('\n'))
+      .map(o => o.trim())
+      .filter(Boolean);
     const selectionCount = getSelectionCount(type);
     const bgColorClass = getBgColor(type);
     
