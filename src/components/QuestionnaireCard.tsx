@@ -77,28 +77,6 @@ export const QuestionnaireCard = ({
               );
             })}
           </div>
-
-          {options.some((_, i) => isOptionSelected(type, i + 1)) && (
-            <div className="mt-6">
-              <h4 className="text-sm font-medium opacity-90">Suas escolhas</h4>
-              <div className="mt-2 space-y-3">
-                {options.map((option, index) => {
-                  const selected = isOptionSelected(type, index + 1);
-                  if (!selected) return null;
-                  return (
-                    <div
-                      key={`sel-${index}`}
-                      className="flex items-center justify-between p-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 bg-white/10"
-                    >
-                      <span className="text-sm font-medium">{(option || '').trim()}</span>
-                      <span className="text-xs opacity-75">Opção {index + 1}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
         </div>
       </div>
     );
