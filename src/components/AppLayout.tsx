@@ -3,7 +3,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const showSidebar = !['/voting', '/formulario'].includes(location.pathname);
+  const showSidebar = !['/voting', '/formulario', '/login'].includes(location.pathname);
 
   return (
     <div className="min-h-screen flex w-full bg-background">
