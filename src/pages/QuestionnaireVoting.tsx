@@ -1,121 +1,49 @@
 // src/pages/QuestionnaireVoting.tsx
 import React, { useState } from "react";
+import { EmailVerification } from "@/components/voting/EmailVerification";
+import { useQuestionnaireVoting } from "@/hooks/useQuestionnaireVoting";
+import { splitOptions } from "@/lib/splitOptions";
 
 type SectionType = "strengths" | "challenges" | "opportunities";
 
-interface Questionnaire {
-  id: string;
-  dimension: string;
-  strengths: string[];
-  challenges: string[];
-  opportunities: string[];
-}
+export const QuestionnaireVoting: React.FC = () => {
+  const [userEmail, setUserEmail] = useState("");
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  
+  const {
+    questionnaires,
+    isLoading,
+    selections,
+    handleVote,
+    hasVotedInDimension
+  } = useQuestionnaireVoting(isEmailVerified, userEmail);
 
-interface VoteSelection {
-  [dimension: string]: {
-    strengths: string[];
-    challenges: string[];
-    opportunities: string[];
-  };
-}
-
-interface QuestionnaireVotingProps {
-  questionnaires: Questionnaire[];
-  isLoading: boolean;
-  userEmail: string;
-  onSubmitVotes?: (votes: {
-    questionnaireId: string;
-    dimension: string;
-    optionType: SectionType;
-    optionNumbers: number[];
-  }[]) => void;
-}
-
-export const QuestionnaireVoting: React.FC<QuestionnaireVotingProps> = ({
-  questionnaires,
-  isLoading,
-  userEmail,
-  onSubmitVotes,
-}) => {
-  const [selections, setSelections] = useState<VoteSelection>({});
   const [votedDimensions, setVotedDimensions] = useState<Set<string>>(new Set());
-
-  const handleVote = (questionnaireId: string, dimension: string, section: SectionType, option: string) => {
-    if (votedDimensions.has(dimension)) return;
-
-    setSelections((prev) => {
-      const dimensionVotes = prev[dimension] || {
-        strengths: [],
-        challenges: [],
-        opportunities: [],
-      };
-
-      const currentSectionVotes = dimensionVotes[section];
-      const isSelected = currentSectionVotes.includes(option);
-
-      let updatedSectionVotes;
-      if (isSelected) {
-        updatedSectionVotes = currentSectionVotes.filter((v) => v !== option);
-      } else {
-        if (currentSectionVotes.length >= 3) return prev; // Limite de 3
-        updatedSectionVotes = [...currentSectionVotes, option];
-      }
-
-      return {
-        ...prev,
-        [dimension]: {
-          ...dimensionVotes,
-          [section]: updatedSectionVotes,
-        },
-      };
-    });
+  const handleVoteClick = (questionnaireId: string, dimension: string, section: SectionType, optionIndex: number) => {
+    if (hasVotedInDimension(dimension)) return;
+    handleVote(questionnaireId, section, optionIndex + 1);
   };
 
-  const hasSelectedThreePerSection = (dimension: string) => {
-    const votes = selections[dimension];
-    if (!votes) return false;
+  const hasSelectedThreePerSection = (questionnaireId: string) => {
+    const qSelections = selections[questionnaireId];
+    if (!qSelections) return false;
     return (
-      votes.strengths.length === 3 &&
-      votes.challenges.length === 3 &&
-      votes.opportunities.length === 3
+      qSelections.strengths.length === 3 &&
+      qSelections.challenges.length === 3 &&
+      qSelections.opportunities.length === 3
     );
   };
 
-  const handleConfirmVotes = () => {
-    const allVotes: {
-      questionnaireId: string;
-      dimension: string;
-      optionType: SectionType;
-      optionNumbers: number[];
-    }[] = [];
-
-    for (const q of questionnaires) {
-      const votes = selections[q.dimension];
-      if (!votes) continue;
-
-      ["strengths", "challenges", "opportunities"].forEach((section) => {
-        const sectionVotes = votes[section as SectionType];
-        const optionNumbers = sectionVotes.map((option) =>
-          q[section as SectionType].indexOf(option) + 1
-        );
-        allVotes.push({
-          questionnaireId: q.id,
-          dimension: q.dimension,
-          optionType: section as SectionType,
-          optionNumbers,
-        });
-      });
-    }
-
-    if (onSubmitVotes) {
-      onSubmitVotes(allVotes);
-    }
-
-    // Marca dimensões como votadas
-    setVotedDimensions(
-      new Set([...votedDimensions, ...Object.keys(selections)])
+  if (!isEmailVerified) {
+    return (
+      <EmailVerification 
+        onVerified={(email) => {
+          setUserEmail(email);
+          setIsEmailVerified(true);
+        }}
+      />
     );
-  };
+  }
 
   if (isLoading) return <p>Carregando questionários...</p>;
 
@@ -124,28 +52,32 @@ export const QuestionnaireVoting: React.FC<QuestionnaireVotingProps> = ({
       <h2>Votação</h2>
       <p>Usuário: {userEmail}</p>
 
-      {questionnaires.map((q) => {
-        const alreadyVoted = votedDimensions.has(q.dimension);
+      {questionnaires?.map((q) => {
+        const alreadyVoted = hasVotedInDimension(q.dimension);
+        const qSelections = selections[q.id] || { strengths: [], challenges: [], opportunities: [] };
 
         return (
           <div key={q.id} style={{ border: "1px solid #ccc", padding: "1rem", marginBottom: "1rem" }}>
             <h3>Dimensão: {q.dimension}</h3>
-            {["strengths", "challenges", "opportunities"].map((section) => {
-              const sectionVotes = selections[q.dimension]?.[section as SectionType] || [];
+            {(["strengths", "challenges", "opportunities"] as SectionType[]).map((section) => {
+              const sectionVotes = qSelections[section] || [];
+              const sectionData = q[section];
+              const options = splitOptions(sectionData);
+              
               return (
                 <div key={section} style={{ marginBottom: "1rem" }}>
                   <h4>{section}</h4>
-                  {q[section as SectionType].map((option) => (
+                  {options.map((option, index) => (
                     <label key={option} style={{ display: "block" }}>
                       <input
                         type="checkbox"
                         disabled={
                           alreadyVoted ||
-                          (sectionVotes.length >= 3 && !sectionVotes.includes(option))
+                          (sectionVotes.length >= 3 && !sectionVotes.includes(index + 1))
                         }
-                        checked={sectionVotes.includes(option)}
+                        checked={sectionVotes.includes(index + 1)}
                         onChange={() =>
-                          handleVote(q.id, q.dimension, section as SectionType, option)
+                          handleVoteClick(q.id, q.dimension, section, index)
                         }
                       />
                       {option}
@@ -161,10 +93,9 @@ export const QuestionnaireVoting: React.FC<QuestionnaireVotingProps> = ({
       })}
 
       <button
-        onClick={handleConfirmVotes}
         disabled={
-          questionnaires.some((q) => !hasSelectedThreePerSection(q.dimension)) ||
-          Object.keys(selections).length === 0
+          !questionnaires?.length ||
+          questionnaires.some((q) => !hasSelectedThreePerSection(q.id))
         }
       >
         Confirmar Todos os Votos

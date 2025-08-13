@@ -2,7 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "@/pages/Index";
 import Login from "@/pages/Login";
-import QuestionnaireVoting from "@/pages/QuestionnaireVoting";
+import { QuestionnaireVoting } from "@/pages/QuestionnaireVoting";
 import QuestionnaireAnalytics from "@/pages/QuestionnaireAnalytics";
 import QuestionnaireForm from "@/pages/QuestionnaireForm";
 import ExportData from "@/pages/ExportData";
