@@ -71,6 +71,11 @@ export const DimensionAggregatedSection = ({
 
     if (entries.length === 0) return null;
 
+    // Calculate total selections for this section across all questionnaires in the dimension
+    const totalSelectionsInSection = questionnaires.reduce((total, q) => {
+      return total + getSelectionCount(q.id, type);
+    }, 0);
+
     const meta = SECTION_META[type];
 
     return (
@@ -78,14 +83,15 @@ export const DimensionAggregatedSection = ({
         <div className={`px-4 py-3 flex items-center justify-between ${meta.textContrast}`}>
           <h3 className="text-xl font-semibold">{meta.title}</h3>
           <span className={`text-sm ${type === "challenges" ? "text-foreground" : "text-white"}`}>
-            Selecione até 3 por grupo
+            {totalSelectionsInSection}/{MAX_SELECTIONS} selecionados
           </span>
         </div>
         <div className="p-2 sm:p-4">
           <div className="grid gap-3 sm:grid-cols-2">
             {entries.map(({ questionnaireId, option, index }) => {
               const selected = isSelected(questionnaireId, type, index + 1);
-              const count = getSelectionCount(questionnaireId, type);
+              const isDisabled = totalSelectionsInSection >= MAX_SELECTIONS && !selected;
+              
               return (
                 <QuestionnaireOption
                   key={`${questionnaireId}-${type}-${index}`}
@@ -94,7 +100,7 @@ export const DimensionAggregatedSection = ({
                   isActive={true}
                   isSelected={selected}
                   onVote={() => onVote(questionnaireId, type, index + 1)}
-                  disabled={count >= MAX_SELECTIONS && !selected}
+                  disabled={isDisabled}
                   accent={type}
                 />
               );
