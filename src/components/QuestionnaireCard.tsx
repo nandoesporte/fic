@@ -72,7 +72,7 @@ export const QuestionnaireCard = ({
                   isActive={isActive}
                   isSelected={selected}
                   onVote={() => onVote(type, index + 1)}
-                  disabled={selectionCount >= MAX_SELECTIONS && !selected}
+                  disabled={(!isActive && !selected) || (selectionCount >= MAX_SELECTIONS && !selected)}
                 />
               );
             })}

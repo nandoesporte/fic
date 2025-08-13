@@ -17,18 +17,19 @@ export const QuestionnaireOption = ({
   onVote,
   disabled
 }: QuestionnaireOptionProps) => {
+  const isDisabled = disabled || !isActive;
   return (
     <div 
       className={`flex items-center justify-between gap-4 p-4 ${
         isActive ? 'bg-primary/10' : 'bg-white/90'
-      } rounded-lg transition-colors`}
+      } rounded-lg transition-colors ${isDisabled ? 'opacity-60' : ''}`}
     >
       <p className="flex-1 text-sm text-gray-900 leading-relaxed">{option}</p>
       <div className="shrink-0">
         <VoteButtons
           isSelected={isSelected}
           onVote={onVote}
-          disabled={disabled}
+          disabled={isDisabled}
         />
       </div>
     </div>
