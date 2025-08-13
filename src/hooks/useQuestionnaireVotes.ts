@@ -5,12 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 export const splitOptions = (content?: string) => {
   if (!content) return [];
   const normalized = String(content).replace(/\r\n/g, '\n').trim();
-  // Prefer splitting by blank lines; fallback to single newlines
-  let parts = normalized.split(/\n{2,}/);
-  if (parts.length === 1) {
-    parts = normalized.split('\n');
-  }
-  return parts.map(p => p.trim()).filter(Boolean);
+  // Split on one or more newlines to keep indexing consistent regardless of single or blank line separators
+  const parts = normalized.split(/\n+/);
+  return parts.map((p) => p.trim()).filter((p) => p.length > 0);
 };
 
 const getTextForOption = (
