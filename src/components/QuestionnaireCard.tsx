@@ -5,6 +5,7 @@ import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { QuestionnaireOption } from "./questionnaire/QuestionnaireOption";
 import { QuestionnaireSectionHeader } from "./questionnaire/QuestionnaireSectionHeader";
+import { splitOptions } from "@/lib/splitOptions";
 
 interface QuestionnaireCardProps {
   questionnaire: any;
@@ -39,10 +40,7 @@ export const QuestionnaireCard = ({
   const renderSection = (title: string, content: string, type: 'strengths' | 'challenges' | 'opportunities') => {
     if (!content) return null;
     
-    const normalized = content.replace(/\r\n/g, '\n');
-    const options = (normalized.split(/\n{2,}/).length > 1 ? normalized.split(/\n{2,}/) : normalized.split('\n'))
-      .map(o => o.trim())
-      .filter(Boolean);
+    const options = splitOptions(content);
     const selectionCount = getSelectionCount(type);
     const bgColorClass = getBgColor(type);
     

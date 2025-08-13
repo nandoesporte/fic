@@ -5,6 +5,7 @@ import { QuestionnaireList } from "./questionnaire/QuestionnaireList";
 import { useQuestionnaireData } from "@/hooks/useQuestionnaireData";
 import { useQuestionnaireMutations } from "@/hooks/useQuestionnaireMutations";
 import { toast } from "sonner";
+import { splitOptions } from "@/lib/splitOptions";
 
 export type EditingLine = {
   questionnaireId: string;
@@ -79,8 +80,7 @@ export const QuestionnaireResponses = () => {
   };
 
   const splitText = (text: string): string[] => {
-    if (!text) return [];
-    return text.split('\n\n').filter(line => line.trim() !== '');
+    return splitOptions(text || "");
   };
 
   const getUniqueDimensions = () => {

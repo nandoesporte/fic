@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Edit, Check, Circle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { EditingLine } from "@/components/QuestionnaireResponses";
+import { splitOptions } from "@/lib/splitOptions";
 
 interface QuestionnaireSectionProps {
   title: string;
@@ -116,11 +117,8 @@ export const QuestionnaireSection = ({
       </h3>
       <div className="space-y-6">
         {questionnaires.map((questionnaire) => {
-          // Get content and ensure it's a string
           const content = questionnaire[type] || '';
-          const lines = typeof content === 'string'
-            ? content.split('\n\n').filter(line => line.trim() !== '')
-            : [];
+          const lines = splitOptions(typeof content === 'string' ? content : '');
           
           return (
             <div key={questionnaire.id} className="border-b pb-4">

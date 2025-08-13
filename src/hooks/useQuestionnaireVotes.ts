@@ -1,14 +1,7 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { splitOptions } from "@/lib/splitOptions";
 
-export const splitOptions = (content?: string) => {
-  if (!content) return [];
-  const normalized = String(content).replace(/\r\n/g, '\n').trim();
-  // Split on one or more newlines to keep indexing consistent regardless of single or blank line separators
-  const parts = normalized.split(/\n+/);
-  return parts.map((p) => p.trim()).filter((p) => p.length > 0);
-};
 
 const getTextForOption = (
   qs: any[] | null,
