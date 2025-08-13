@@ -65,6 +65,11 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean) => {
     const sectionSelections = currentSelections[optionType] || [];
     const isSelected = sectionSelections.includes(optionNumber);
 
+    const totalSelections =
+      (currentSelections.strengths?.length || 0) +
+      (currentSelections.challenges?.length || 0) +
+      (currentSelections.opportunities?.length || 0);
+
     if (isSelected) {
       setSelections(prev => ({
         ...prev,
@@ -76,8 +81,8 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean) => {
       return;
     }
 
-    if (sectionSelections.length >= 3) {
-      toast.error('Você já selecionou 3 opções nesta seção. Remova uma seleção para escolher outra.');
+    if (totalSelections >= 3) {
+      toast.error('Você já selecionou 3 opções neste formulário. Remova uma seleção para escolher outra.');
       return;
     }
 
