@@ -4,6 +4,7 @@ import { EmailVerification } from "@/components/voting/EmailVerification";
 import { VotingSection } from "@/components/voting/VotingSection";
 import { useQuestionnaireVoting } from "@/hooks/useQuestionnaireVoting";
 import { useVoteSubmission } from "@/hooks/useVoteSubmission";
+import { toast } from "sonner";
 
 export const QuestionnaireVoting = () => {
   const [userEmail, setUserEmail] = useState("");
@@ -24,7 +25,19 @@ export const QuestionnaireVoting = () => {
     if (!questionnaire) return;
 
     const questionnaireSelections = selections[questionnaireId];
-    if (!questionnaireSelections) return;
+    if (!questionnaireSelections) {
+      toast.error('Você deve selecionar exatamente 3 opções em cada seção: Pontos Fortes, Desafios e Oportunidades.');
+      return;
+    }
+
+    const strengthsCount = questionnaireSelections.strengths?.length ?? 0;
+    const challengesCount = questionnaireSelections.challenges?.length ?? 0;
+    const opportunitiesCount = questionnaireSelections.opportunities?.length ?? 0;
+
+    if ([strengthsCount, challengesCount, opportunitiesCount].some((c) => c !== 3)) {
+      toast.error('Você deve selecionar exatamente 3 opções em cada seção: Pontos Fortes, Desafios e Oportunidades.');
+      return;
+    }
 
     const votes = Object.entries(questionnaireSelections).map(([optionType, optionNumbers]) => ({
       optionType,
