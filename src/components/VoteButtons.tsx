@@ -10,13 +10,13 @@ interface VoteButtonsProps {
 export const VoteButtons = ({ isSelected, onVote, disabled }: VoteButtonsProps) => {
   return (
     <Button
-      variant={isSelected ? "default" : "outline"}
+      variant="outline"
       size="sm"
       onClick={onVote}
       disabled={disabled}
-      className={`${isSelected ? "bg-primary hover:bg-primary/90" : "hover:bg-accent/10"} transition-colors`}
+      className="text-foreground bg-background hover:bg-accent/10 transition-colors"
     >
-      <CheckSquare className={`h-4 w-4 mr-1 ${isSelected ? "text-primary-foreground" : "text-muted-foreground"}`} />
+      <CheckSquare className="h-4 w-4 mr-1 text-foreground" />
       {isSelected ? "Selecionado" : "Selecionar"}
     </Button>
   );
