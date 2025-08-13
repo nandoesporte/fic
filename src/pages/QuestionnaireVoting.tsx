@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { EmailVerification } from "@/components/voting/EmailVerification";
-import { VotingSection } from "@/components/voting/VotingSection";
 import { useQuestionnaireVoting } from "@/hooks/useQuestionnaireVoting";
 import { useVoteSubmission } from "@/hooks/useVoteSubmission";
 import { toast } from "sonner";
@@ -36,9 +35,9 @@ export const QuestionnaireVoting = () => {
   const handleConfirmAllVotes = async () => {
     if (!questionnaires || questionnaires.length === 0) return;
 
-    // Agrupar questionários por dimensão
     const dimensions = [...new Set(questionnaires.map(q => q.dimension))];
 
+    // Verifica se já votou em alguma dimensão
     for (const dimension of dimensions) {
       if (hasVotedInDimension(dimension)) {
         toast.error(`Você já votou na dimensão: ${dimension}.`);
@@ -46,7 +45,7 @@ export const QuestionnaireVoting = () => {
       }
     }
 
-    // Validar todas as dimensões de uma vez
+    // Valida todas as dimensões
     for (const dimension of dimensions) {
       const dimensionQuestionnaires = questionnaires.filter(q => q.dimension === dimension);
 
@@ -135,4 +134,128 @@ export const QuestionnaireVoting = () => {
   );
 };
 
-export default QuestionnaireVoting;
+// COMPONENTE VotingSection INTEGRADO
+const VotingSection = ({
+  questionnaires,
+  isLoading,
+  selections,
+  onVote,
+  hasVotedInDimension
+}) => {
+  if (isLoading) return <p>Carregando...</p>;
+
+  return (
+    <div>
+      {questionnaires.map((questionnaire) => {
+        const alreadyVoted = hasVotedInDimension(questionnaire.dimension);
+        const questionnaireSelections = selections[questionnaire.id] || {
+          strengths: [],
+          challenges: [],
+          opportunities: []
+        };
+
+        const isSectionFull = (section) =>
+          questionnaireSelections[section]?.length >= 3;
+
+        return (
+          <div
+            key={questionnaire.id}
+            style={{
+              border: "1px solid #ccc",
+              padding: "15px",
+              marginBottom: "20px",
+              borderRadius: "8px"
+            }}
+          >
+            <h3>{questionnaire.title}</h3>
+            <p><b>Dimensão:</b> {questionnaire.dimension}</p>
+
+            {/* Pontos Fortes */}
+            <h4>Pontos Fortes (selecione até 3)</h4>
+            {questionnaire.strengths.map((option) => {
+              const selected = questionnaireSelections.strengths.includes(option);
+              const disableOption =
+                (!selected && isSectionFull("strengths")) || alreadyVoted;
+
+              return (
+                <button
+                  key={option}
+                  onClick={() => onVote(questionnaire.id, "strengths", option)}
+                  disabled={disableOption}
+                  style={{
+                    margin: "5px",
+                    background: selected ? "#007bff" : "#f5f5f5",
+                    color: selected ? "#fff" : "#000",
+                    padding: "8px 12px",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: disableOption ? "not-allowed" : "pointer",
+                    opacity: disableOption ? 0.6 : 1
+                  }}
+                >
+                  {selected ? "✅ " : ""}{option}
+                </button>
+              );
+            })}
+
+            {/* Desafios */}
+            <h4>Desafios (selecione até 3)</h4>
+            {questionnaire.challenges.map((option) => {
+              const selected = questionnaireSelections.challenges.includes(option);
+              const disableOption =
+                (!selected && isSectionFull("challenges")) || alreadyVoted;
+
+              return (
+                <button
+                  key={option}
+                  onClick={() => onVote(questionnaire.id, "challenges", option)}
+                  disabled={disableOption}
+                  style={{
+                    margin: "5px",
+                    background: selected ? "#ffc107" : "#f5f5f5",
+                    color: selected ? "#000" : "#000",
+                    padding: "8px 12px",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: disableOption ? "not-allowed" : "pointer",
+                    opacity: disableOption ? 0.6 : 1
+                  }}
+                >
+                  {selected ? "✅ " : ""}{option}
+                </button>
+              );
+            })}
+
+            {/* Oportunidades */}
+            <h4>Oportunidades (selecione até 3)</h4>
+            {questionnaire.opportunities.map((option) => {
+              const selected = questionnaireSelections.opportunities.includes(option);
+              const disableOption =
+                (!selected && isSectionFull("opportunities")) || alreadyVoted;
+
+              return (
+                <button
+                  key={option}
+                  onClick={() => onVote(questionnaire.id, "opportunities", option)}
+                  disabled={disableOption}
+                  style={{
+                    margin: "5px",
+                    background: selected ? "#28a745" : "#f5f5f5",
+                    color: selected ? "#fff" : "#000",
+                    padding: "8px 12px",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: disableOption ? "not-allowed" : "pointer",
+                    opacity: disableOption ? 0.6 : 1
+                  }}
+                >
+                  {selected ? "✅ " : ""}{option}
+                </button>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
