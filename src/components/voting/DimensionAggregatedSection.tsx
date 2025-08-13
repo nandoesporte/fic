@@ -17,7 +17,8 @@ interface DimensionAggregatedSectionProps {
     optionType: "strengths" | "challenges" | "opportunities",
     optionNumber: number
   ) => void;
-  onConfirmVotes: (questionnaireId: string) => void;
+  onConfirmVotes: (dimension: string) => void;
+  hasVotedInDimension: (dimension: string) => boolean;
 }
 
 const MAX_SELECTIONS = 3;
@@ -36,6 +37,7 @@ export const DimensionAggregatedSection = ({
   selections,
   onVote,
   onConfirmVotes,
+  hasVotedInDimension,
 }: DimensionAggregatedSectionProps) => {
   const isSelected = (questionnaireId: string, type: SectionType, optionNumber: number) => {
     const qSel = selections[questionnaireId];
@@ -109,18 +111,35 @@ export const DimensionAggregatedSection = ({
       {renderSection("challenges")}
       {renderSection("opportunities")}
 
-      <div className="flex flex-wrap gap-2 justify-end">
-        {questionnaires.map((q) => {
-          const complete =
-            getSelectionCount(q.id, 'strengths') === MAX_SELECTIONS &&
-            getSelectionCount(q.id, 'challenges') === MAX_SELECTIONS &&
-            getSelectionCount(q.id, 'opportunities') === MAX_SELECTIONS;
+      <div className="flex justify-end">
+        {(() => {
+          // Calcular totais de seleções para toda a dimensão
+          let totalStrengths = 0;
+          let totalChallenges = 0;
+          let totalOpportunities = 0;
+          
+          questionnaires.forEach(q => {
+            totalStrengths += getSelectionCount(q.id, 'strengths');
+            totalChallenges += getSelectionCount(q.id, 'challenges');
+            totalOpportunities += getSelectionCount(q.id, 'opportunities');
+          });
+
+          const isComplete = totalStrengths === MAX_SELECTIONS && 
+                           totalChallenges === MAX_SELECTIONS && 
+                           totalOpportunities === MAX_SELECTIONS;
+          
+          const hasVoted = hasVotedInDimension(dimension);
+
           return (
-            <Button key={q.id} onClick={() => onConfirmVotes(q.id)} disabled={!complete}>
-              Confirmar Votos {q.group ? `(${q.group})` : ""}
+            <Button 
+              onClick={() => onConfirmVotes(dimension)} 
+              disabled={!isComplete || hasVoted}
+              className={hasVoted ? "opacity-50" : ""}
+            >
+              {hasVoted ? "Já Votado" : "Confirmar Votos da Dimensão"}
             </Button>
           );
-        })}
+        })()}
       </div>
     </div>
   );

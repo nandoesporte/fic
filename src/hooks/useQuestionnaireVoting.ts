@@ -12,7 +12,7 @@ export type VoteSelection = {
   };
 };
 
-export const useQuestionnaireVoting = (isEmailVerified: boolean) => {
+export const useQuestionnaireVoting = (isEmailVerified: boolean, userEmail: string) => {
   const [selections, setSelections] = useState<VoteSelection>({});
 
   const { data: questionnaires, isLoading } = useQuery({
@@ -60,6 +60,20 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean) => {
     enabled: isEmailVerified,
   });
 
+  // Check if user has already voted in each dimension
+  const { data: userVotes } = useQuery({
+    queryKey: ['user-votes', userEmail],
+    queryFn: async () => {
+      if (!userEmail) return [];
+      const { data } = await supabase
+        .from('dimension_votes')
+        .select('dimension')
+        .eq('email', userEmail.toLowerCase());
+      return data || [];
+    },
+    enabled: isEmailVerified && !!userEmail,
+  });
+
   const handleVote = (questionnaireId: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => {
     const currentSelections = selections[questionnaireId] ?? { strengths: [], challenges: [], opportunities: [] };
     const sectionSelections = currentSelections[optionType] || [];
@@ -99,11 +113,16 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean) => {
     }));
   };
 
+  const hasVotedInDimension = (dimension: string) => {
+    return userVotes?.some(vote => vote.dimension === dimension) || false;
+  };
+
   return {
     questionnaires,
     isLoading,
     selections,
     handleVote,
-    setSelections
+    setSelections,
+    hasVotedInDimension
   };
 };

@@ -13,7 +13,8 @@ interface VotingSectionProps {
     };
   };
   onVote: (questionnaireId: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => void;
-  onConfirmVotes: (questionnaireId: string) => void;
+  onConfirmVotes: (dimension: string) => void;
+  hasVotedInDimension: (dimension: string) => boolean;
 }
 
 export const VotingSection = ({
@@ -22,7 +23,8 @@ export const VotingSection = ({
   isLoading,
   selections,
   onVote,
-  onConfirmVotes
+  onConfirmVotes,
+  hasVotedInDimension
 }: VotingSectionProps) => {
   const groupQuestionnairesByDimension = (questionnaires: any[]): { [key: string]: any[] } => {
     return questionnaires.reduce((acc, curr) => {
@@ -63,6 +65,7 @@ export const VotingSection = ({
                   selections={selections}
                   onVote={onVote}
                   onConfirmVotes={onConfirmVotes}
+                  hasVotedInDimension={hasVotedInDimension}
                 />
               </div>
             ))}

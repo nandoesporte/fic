@@ -13,40 +13,60 @@ export const QuestionnaireVoting = () => {
     isLoading,
     selections,
     handleVote,
-    setSelections
-  } = useQuestionnaireVoting(isEmailVerified);
+    setSelections,
+    hasVotedInDimension
+  } = useQuestionnaireVoting(isEmailVerified, userEmail);
 
   const submitVotesMutation = useVoteSubmission(userEmail);
 
-  const handleConfirmVotes = async (questionnaireId: string) => {
-    const questionnaire = questionnaires?.find(q => q.id === questionnaireId);
-    if (!questionnaire) return;
+  const handleConfirmVotes = async (dimension: string) => {
+    const dimensionQuestionnaires = questionnaires?.filter(q => q.dimension === dimension) || [];
+    if (dimensionQuestionnaires.length === 0) return;
 
-    const questionnaireSelections = selections[questionnaireId];
-    if (!questionnaireSelections) {
-      toast.error("Selecione exatamente 3 opções em cada seção.");
+    // Verificar se já votou nesta dimensão
+    if (hasVotedInDimension(dimension)) {
+      toast.error("Você já votou nesta dimensão.");
       return;
     }
 
-    const strengthsCount = questionnaireSelections.strengths?.length || 0;
-    const challengesCount = questionnaireSelections.challenges?.length || 0;
-    const opportunitiesCount = questionnaireSelections.opportunities?.length || 0;
+    // Validar que todas as seções de todos os questionários da dimensão têm exatamente 3 seleções
+    let totalStrengths = 0;
+    let totalChallenges = 0; 
+    let totalOpportunities = 0;
 
-    if (strengthsCount !== 3 || challengesCount !== 3 || opportunitiesCount !== 3) {
+    for (const questionnaire of dimensionQuestionnaires) {
+      const questionnaireSelections = selections[questionnaire.id];
+      if (!questionnaireSelections) {
+        toast.error("Selecione exatamente 3 opções em cada seção.");
+        return;
+      }
+
+      totalStrengths += questionnaireSelections.strengths?.length || 0;
+      totalChallenges += questionnaireSelections.challenges?.length || 0;
+      totalOpportunities += questionnaireSelections.opportunities?.length || 0;
+    }
+
+    if (totalStrengths !== 3 || totalChallenges !== 3 || totalOpportunities !== 3) {
       toast.error("Selecione exatamente 3 opções em Pontos Fortes, Desafios e Oportunidades.");
       return;
     }
 
-    const votes = Object.entries(questionnaireSelections).map(([optionType, optionNumbers]) => ({
-      optionType,
-      optionNumbers,
-    }));
+    // Submeter votos para todos os questionários da dimensão
+    for (const questionnaire of dimensionQuestionnaires) {
+      const questionnaireSelections = selections[questionnaire.id];
+      if (questionnaireSelections) {
+        const votes = Object.entries(questionnaireSelections).map(([optionType, optionNumbers]) => ({
+          optionType,
+          optionNumbers,
+        }));
 
-    await submitVotesMutation.mutate({ 
-      questionnaireId, 
-      votes,
-      dimension: questionnaire.dimension 
-    });
+        await submitVotesMutation.mutate({ 
+          questionnaireId: questionnaire.id, 
+          votes,
+          dimension: questionnaire.dimension 
+        });
+      }
+    }
 
     setSelections({});
   };
@@ -68,6 +88,7 @@ export const QuestionnaireVoting = () => {
       selections={selections}
       onVote={handleVote}
       onConfirmVotes={handleConfirmVotes}
+      hasVotedInDimension={hasVotedInDimension}
     />
   );
 };
