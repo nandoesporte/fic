@@ -24,25 +24,11 @@ export const QuestionnaireCard = ({
   getSelectionCount,
   onConfirmVotes
 }: QuestionnaireCardProps) => {
-  const getBgColor = (type: string) => {
-    switch (type) {
-      case 'strengths':
-        return 'bg-[#228B22] text-white';
-      case 'challenges':
-        return 'bg-[#FFD700] text-gray-900';
-      case 'opportunities':
-        return 'bg-[#000080] text-white';
-      default:
-        return '';
-    }
-  };
-
   const renderSection = (title: string, content: string, type: 'strengths' | 'challenges' | 'opportunities') => {
     if (!content) return null;
     
     const options = splitOptions(content);
     const selectionCount = getSelectionCount(type);
-    const bgColorClass = getBgColor(type);
     
     // Get statuses from the corresponding array field
     const statusesKey = `${type}_statuses`;
@@ -50,16 +36,26 @@ export const QuestionnaireCard = ({
       ? questionnaire[statusesKey]
       : ['pending', 'pending', 'pending'];
 
+    // Map options with original indices and visibility (only active options are shown)
+    const items = options.map((option, index) => ({
+      option,
+      index,
+      isActive: statuses[index] === 'active'
+    }));
+
+    const visibleItems = items.filter((item) => item.isActive);
+
+    if (visibleItems.length === 0) return null;
+
     return (
-      <div className="space-y-4">
-        <div className={`p-4 rounded-lg ${bgColorClass}`}>
+      <section className="space-y-4">
+        <div className="p-4 rounded-lg border bg-card shadow-sm">
           <QuestionnaireSectionHeader 
             title={title}
             selectionCount={selectionCount}
           />
-          <div className="space-y-3 mt-4">
-            {options.map((option, index) => {
-              const isActive = statuses[index] === 'active';
+          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+            {visibleItems.map(({ option, index }) => {
               const selected = isOptionSelected(type, index + 1);
               
               return (
@@ -67,16 +63,16 @@ export const QuestionnaireCard = ({
                   key={index}
                   option={option}
                   index={index}
-                  isActive={isActive}
+                  isActive={true}
                   isSelected={selected}
                   onVote={() => onVote(type, index + 1)}
-                  disabled={(!isActive && !selected) || (selectionCount >= MAX_SELECTIONS && !selected)}
+                  disabled={(selectionCount >= MAX_SELECTIONS && !selected)}
                 />
               );
             })}
           </div>
         </div>
-      </div>
+      </section>
     );
   };
 
