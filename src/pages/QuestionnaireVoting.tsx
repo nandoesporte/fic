@@ -4,14 +4,12 @@ import { useQuestionnaireVoting } from "@/hooks/useQuestionnaireVoting";
 import { useVoteSubmission } from "@/hooks/useVoteSubmission";
 import { toast } from "sonner";
 
-type SectionType = "strengths" | "challenges" | "opportunities";
-
 interface VotingSectionProps {
   userEmail: string;
   questionnaires: any[];
   isLoading: boolean;
   selections: any;
-  onVote: (questionnaireId: string, section: SectionType, optionNumber: number) => void;
+  onVote: (questionnaireId: string, section: string, option: string) => void;
   hasVotedInDimension: (dimension: string) => boolean;
 }
 
@@ -37,11 +35,6 @@ const VotingSection: React.FC<VotingSectionProps> = ({
         const isSectionFull = (section: string) =>
           questionnaireSelections[section]?.length >= 3;
 
-        // Parse the string data into arrays
-        const strengthsArray = questionnaire.strengths ? questionnaire.strengths.split('\n\n').filter(Boolean) : [];
-        const challengesArray = questionnaire.challenges ? questionnaire.challenges.split('\n\n').filter(Boolean) : [];
-        const opportunitiesArray = questionnaire.opportunities ? questionnaire.opportunities.split('\n\n').filter(Boolean) : [];
-
         return (
           <div
             key={questionnaire.id}
@@ -52,21 +45,20 @@ const VotingSection: React.FC<VotingSectionProps> = ({
               borderRadius: "8px"
             }}
           >
-            <h3>Grupo: {questionnaire.group}</h3>
+            <h3>{questionnaire.title}</h3>
             <p><b>Dimensão:</b> {questionnaire.dimension}</p>
 
             {/* Pontos Fortes */}
             <h4>Pontos Fortes (selecione até 3)</h4>
-            {strengthsArray.map((option: string, index: number) => {
-              const optionNumber = index + 1;
-              const selected = questionnaireSelections.strengths.includes(optionNumber);
+            {questionnaire.strengths.map((option: string) => {
+              const selected = questionnaireSelections.strengths.includes(option);
               const disableOption =
                 (!selected && isSectionFull("strengths")) || alreadyVoted;
 
               return (
                 <button
-                  key={`${questionnaire.id}-strengths-${index}`}
-                  onClick={() => onVote(questionnaire.id, "strengths", optionNumber)}
+                  key={option}
+                  onClick={() => onVote(questionnaire.id, "strengths", option)}
                   disabled={disableOption}
                   style={{
                     margin: "5px",
@@ -86,16 +78,15 @@ const VotingSection: React.FC<VotingSectionProps> = ({
 
             {/* Desafios */}
             <h4>Desafios (selecione até 3)</h4>
-            {challengesArray.map((option: string, index: number) => {
-              const optionNumber = index + 1;
-              const selected = questionnaireSelections.challenges.includes(optionNumber);
+            {questionnaire.challenges.map((option: string) => {
+              const selected = questionnaireSelections.challenges.includes(option);
               const disableOption =
                 (!selected && isSectionFull("challenges")) || alreadyVoted;
 
               return (
                 <button
-                  key={`${questionnaire.id}-challenges-${index}`}
-                  onClick={() => onVote(questionnaire.id, "challenges", optionNumber)}
+                  key={option}
+                  onClick={() => onVote(questionnaire.id, "challenges", option)}
                   disabled={disableOption}
                   style={{
                     margin: "5px",
@@ -115,16 +106,15 @@ const VotingSection: React.FC<VotingSectionProps> = ({
 
             {/* Oportunidades */}
             <h4>Oportunidades (selecione até 3)</h4>
-            {opportunitiesArray.map((option: string, index: number) => {
-              const optionNumber = index + 1;
-              const selected = questionnaireSelections.opportunities.includes(optionNumber);
+            {questionnaire.opportunities.map((option: string) => {
+              const selected = questionnaireSelections.opportunities.includes(option);
               const disableOption =
                 (!selected && isSectionFull("opportunities")) || alreadyVoted;
 
               return (
                 <button
-                  key={`${questionnaire.id}-opportunities-${index}`}
-                  onClick={() => onVote(questionnaire.id, "opportunities", optionNumber)}
+                  key={option}
+                  onClick={() => onVote(questionnaire.id, "opportunities", option)}
                   disabled={disableOption}
                   style={{
                     margin: "5px",
@@ -163,16 +153,16 @@ export const QuestionnaireVoting = () => {
 
   const submitVotesMutation = useVoteSubmission(userEmail);
 
-  const handleVote = (questionnaireId: string, section: SectionType, optionNumber: number) => {
+  const handleVote = (questionnaireId: string, section: string, option: string) => {
     const currentSelections = selections[questionnaireId]?.[section] || [];
-    const alreadySelected = currentSelections.includes(optionNumber);
+    const alreadySelected = currentSelections.includes(option);
 
     if (!alreadySelected && currentSelections.length >= 3) {
       toast.error("Você só pode selecionar até 3 opções nesta seção.");
       return;
     }
 
-    baseHandleVote(questionnaireId, section, optionNumber);
+    baseHandleVote(questionnaireId, section, option);
   };
 
   const handleConfirmAllVotes = async () => {
