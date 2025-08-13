@@ -4,7 +4,7 @@ import { useQuestionnaireVoting } from "@/hooks/useQuestionnaireVoting";
 import { useVoteSubmission } from "@/hooks/useVoteSubmission";
 import { toast } from "sonner";
 
-export const QuestionnaireVoting = () => {
+const QuestionnaireVoting = () => {
   const [userEmail, setUserEmail] = useState("");
   const [isEmailVerified, setIsEmailVerified] = useState(false);
 
@@ -116,7 +116,7 @@ export const QuestionnaireVoting = () => {
       <div style={{ textAlign: "center", marginTop: "20px" }}>
         <button
           onClick={handleConfirmAllVotes}
-          disabled={submitVotesMutation.isLoading}
+          disabled={submitVotesMutation.isPending}
           style={{
             padding: "10px 20px",
             fontSize: "16px",
@@ -136,6 +136,7 @@ export const QuestionnaireVoting = () => {
 
 // COMPONENTE VotingSection INTEGRADO
 const VotingSection = ({
+  userEmail,
   questionnaires,
   isLoading,
   selections,
@@ -259,3 +260,5 @@ const VotingSection = ({
     </div>
   );
 };
+
+export default QuestionnaireVoting;
