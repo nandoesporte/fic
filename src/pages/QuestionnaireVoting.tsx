@@ -155,11 +155,6 @@ const VotingSection = ({
           opportunities: []
         };
 
-        // Parse string data into arrays
-        const strengthsArray = questionnaire.strengths?.split('\n\n').filter(item => item.trim()) || [];
-        const challengesArray = questionnaire.challenges?.split('\n\n').filter(item => item.trim()) || [];
-        const opportunitiesArray = questionnaire.opportunities?.split('\n\n').filter(item => item.trim()) || [];
-
         const isSectionFull = (section) =>
           questionnaireSelections[section]?.length >= 3;
 
@@ -173,21 +168,20 @@ const VotingSection = ({
               borderRadius: "8px"
             }}
           >
-            <h3>{questionnaire.group}</h3>
+            <h3>{questionnaire.title}</h3>
             <p><b>Dimensão:</b> {questionnaire.dimension}</p>
 
             {/* Pontos Fortes */}
-            <h4>Pontos Fortes (selecione exatamente 3)</h4>
-            {strengthsArray.map((option, index) => {
-              const optionNumber = index + 1;
-              const selected = questionnaireSelections.strengths.includes(optionNumber);
+            <h4>Pontos Fortes (selecione até 3)</h4>
+            {questionnaire.strengths.map((option) => {
+              const selected = questionnaireSelections.strengths.includes(option);
               const disableOption =
                 (!selected && isSectionFull("strengths")) || alreadyVoted;
 
               return (
                 <button
-                  key={optionNumber}
-                  onClick={() => onVote(questionnaire.id, "strengths", optionNumber)}
+                  key={option}
+                  onClick={() => onVote(questionnaire.id, "strengths", option)}
                   disabled={disableOption}
                   style={{
                     margin: "5px",
@@ -200,23 +194,22 @@ const VotingSection = ({
                     opacity: disableOption ? 0.6 : 1
                   }}
                 >
-                  {selected ? "✅ " : ""}{option.trim()}
+                  {selected ? "✅ " : ""}{option}
                 </button>
               );
             })}
 
             {/* Desafios */}
-            <h4>Desafios (selecione exatamente 3)</h4>
-            {challengesArray.map((option, index) => {
-              const optionNumber = index + 1;
-              const selected = questionnaireSelections.challenges.includes(optionNumber);
+            <h4>Desafios (selecione até 3)</h4>
+            {questionnaire.challenges.map((option) => {
+              const selected = questionnaireSelections.challenges.includes(option);
               const disableOption =
                 (!selected && isSectionFull("challenges")) || alreadyVoted;
 
               return (
                 <button
-                  key={optionNumber}
-                  onClick={() => onVote(questionnaire.id, "challenges", optionNumber)}
+                  key={option}
+                  onClick={() => onVote(questionnaire.id, "challenges", option)}
                   disabled={disableOption}
                   style={{
                     margin: "5px",
@@ -229,23 +222,22 @@ const VotingSection = ({
                     opacity: disableOption ? 0.6 : 1
                   }}
                 >
-                  {selected ? "✅ " : ""}{option.trim()}
+                  {selected ? "✅ " : ""}{option}
                 </button>
               );
             })}
 
             {/* Oportunidades */}
-            <h4>Oportunidades (selecione exatamente 3)</h4>
-            {opportunitiesArray.map((option, index) => {
-              const optionNumber = index + 1;
-              const selected = questionnaireSelections.opportunities.includes(optionNumber);
+            <h4>Oportunidades (selecione até 3)</h4>
+            {questionnaire.opportunities.map((option) => {
+              const selected = questionnaireSelections.opportunities.includes(option);
               const disableOption =
                 (!selected && isSectionFull("opportunities")) || alreadyVoted;
 
               return (
                 <button
-                  key={optionNumber}
-                  onClick={() => onVote(questionnaire.id, "opportunities", optionNumber)}
+                  key={option}
+                  onClick={() => onVote(questionnaire.id, "opportunities", option)}
                   disabled={disableOption}
                   style={{
                     margin: "5px",
@@ -258,7 +250,7 @@ const VotingSection = ({
                     opacity: disableOption ? 0.6 : 1
                   }}
                 >
-                  {selected ? "✅ " : ""}{option.trim()}
+                  {selected ? "✅ " : ""}{option}
                 </button>
               );
             })}
