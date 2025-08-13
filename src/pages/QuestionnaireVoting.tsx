@@ -1,266 +1,174 @@
-import { useState } from "react";
-import { EmailVerification } from "@/components/voting/EmailVerification";
-import { useQuestionnaireVoting } from "@/hooks/useQuestionnaireVoting";
-import { useVoteSubmission } from "@/hooks/useVoteSubmission";
-import { toast } from "sonner";
+// src/pages/QuestionnaireVoting.tsx
+import React, { useState } from "react";
 
-interface VotingSectionProps {
-  userEmail: string;
-  questionnaires: any[];
-  isLoading: boolean;
-  selections: any;
-  onVote: (questionnaireId: string, section: string, option: string) => void;
-  hasVotedInDimension: (dimension: string) => boolean;
+type SectionType = "strengths" | "challenges" | "opportunities";
+
+interface Questionnaire {
+  id: string;
+  dimension: string;
+  strengths: string[];
+  challenges: string[];
+  opportunities: string[];
 }
 
-const VotingSection: React.FC<VotingSectionProps> = ({
+interface VoteSelection {
+  [dimension: string]: {
+    strengths: string[];
+    challenges: string[];
+    opportunities: string[];
+  };
+}
+
+interface QuestionnaireVotingProps {
+  questionnaires: Questionnaire[];
+  isLoading: boolean;
+  userEmail: string;
+  onSubmitVotes?: (votes: {
+    questionnaireId: string;
+    dimension: string;
+    optionType: SectionType;
+    optionNumbers: number[];
+  }[]) => void;
+}
+
+export const QuestionnaireVoting: React.FC<QuestionnaireVotingProps> = ({
   questionnaires,
   isLoading,
-  selections,
-  onVote,
-  hasVotedInDimension
+  userEmail,
+  onSubmitVotes,
 }) => {
-  if (isLoading) return <p>Carregando...</p>;
+  const [selections, setSelections] = useState<VoteSelection>({});
+  const [votedDimensions, setVotedDimensions] = useState<Set<string>>(new Set());
+
+  const handleVote = (questionnaireId: string, dimension: string, section: SectionType, option: string) => {
+    if (votedDimensions.has(dimension)) return;
+
+    setSelections((prev) => {
+      const dimensionVotes = prev[dimension] || {
+        strengths: [],
+        challenges: [],
+        opportunities: [],
+      };
+
+      const currentSectionVotes = dimensionVotes[section];
+      const isSelected = currentSectionVotes.includes(option);
+
+      let updatedSectionVotes;
+      if (isSelected) {
+        updatedSectionVotes = currentSectionVotes.filter((v) => v !== option);
+      } else {
+        if (currentSectionVotes.length >= 3) return prev; // Limite de 3
+        updatedSectionVotes = [...currentSectionVotes, option];
+      }
+
+      return {
+        ...prev,
+        [dimension]: {
+          ...dimensionVotes,
+          [section]: updatedSectionVotes,
+        },
+      };
+    });
+  };
+
+  const hasSelectedThreePerSection = (dimension: string) => {
+    const votes = selections[dimension];
+    if (!votes) return false;
+    return (
+      votes.strengths.length === 3 &&
+      votes.challenges.length === 3 &&
+      votes.opportunities.length === 3
+    );
+  };
+
+  const handleConfirmVotes = () => {
+    const allVotes: {
+      questionnaireId: string;
+      dimension: string;
+      optionType: SectionType;
+      optionNumbers: number[];
+    }[] = [];
+
+    for (const q of questionnaires) {
+      const votes = selections[q.dimension];
+      if (!votes) continue;
+
+      ["strengths", "challenges", "opportunities"].forEach((section) => {
+        const sectionVotes = votes[section as SectionType];
+        const optionNumbers = sectionVotes.map((option) =>
+          q[section as SectionType].indexOf(option) + 1
+        );
+        allVotes.push({
+          questionnaireId: q.id,
+          dimension: q.dimension,
+          optionType: section as SectionType,
+          optionNumbers,
+        });
+      });
+    }
+
+    if (onSubmitVotes) {
+      onSubmitVotes(allVotes);
+    }
+
+    // Marca dimensões como votadas
+    setVotedDimensions(
+      new Set([...votedDimensions, ...Object.keys(selections)])
+    );
+  };
+
+  if (isLoading) return <p>Carregando questionários...</p>;
 
   return (
     <div>
-      {questionnaires.map((questionnaire) => {
-        const alreadyVoted = hasVotedInDimension(questionnaire.dimension);
-        const questionnaireSelections = selections[questionnaire.id] || {
-          strengths: [],
-          challenges: [],
-          opportunities: []
-        };
+      <h2>Votação</h2>
+      <p>Usuário: {userEmail}</p>
 
-        const isSectionFull = (section: string) =>
-          questionnaireSelections[section]?.length >= 3;
+      {questionnaires.map((q) => {
+        const alreadyVoted = votedDimensions.has(q.dimension);
 
         return (
-          <div
-            key={questionnaire.id}
-            style={{
-              border: "1px solid #ccc",
-              padding: "15px",
-              marginBottom: "20px",
-              borderRadius: "8px"
-            }}
-          >
-            <h3>{questionnaire.title}</h3>
-            <p><b>Dimensão:</b> {questionnaire.dimension}</p>
-
-            {/* Pontos Fortes */}
-            <h4>Pontos Fortes (selecione até 3)</h4>
-            {questionnaire.strengths.map((option: string) => {
-              const selected = questionnaireSelections.strengths.includes(option);
-              const disableOption =
-                (!selected && isSectionFull("strengths")) || alreadyVoted;
-
+          <div key={q.id} style={{ border: "1px solid #ccc", padding: "1rem", marginBottom: "1rem" }}>
+            <h3>Dimensão: {q.dimension}</h3>
+            {["strengths", "challenges", "opportunities"].map((section) => {
+              const sectionVotes = selections[q.dimension]?.[section as SectionType] || [];
               return (
-                <button
-                  key={option}
-                  onClick={() => onVote(questionnaire.id, "strengths", option)}
-                  disabled={disableOption}
-                  style={{
-                    margin: "5px",
-                    background: selected ? "#007bff" : "#f5f5f5",
-                    color: selected ? "#fff" : "#000",
-                    padding: "8px 12px",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: disableOption ? "not-allowed" : "pointer",
-                    opacity: disableOption ? 0.6 : 1
-                  }}
-                >
-                  {selected ? "✅ " : ""}{option}
-                </button>
+                <div key={section} style={{ marginBottom: "1rem" }}>
+                  <h4>{section}</h4>
+                  {q[section as SectionType].map((option) => (
+                    <label key={option} style={{ display: "block" }}>
+                      <input
+                        type="checkbox"
+                        disabled={
+                          alreadyVoted ||
+                          (sectionVotes.length >= 3 && !sectionVotes.includes(option))
+                        }
+                        checked={sectionVotes.includes(option)}
+                        onChange={() =>
+                          handleVote(q.id, q.dimension, section as SectionType, option)
+                        }
+                      />
+                      {option}
+                    </label>
+                  ))}
+                  <p>Selecionados: {sectionVotes.length} / 3</p>
+                </div>
               );
             })}
-
-            {/* Desafios */}
-            <h4>Desafios (selecione até 3)</h4>
-            {questionnaire.challenges.map((option: string) => {
-              const selected = questionnaireSelections.challenges.includes(option);
-              const disableOption =
-                (!selected && isSectionFull("challenges")) || alreadyVoted;
-
-              return (
-                <button
-                  key={option}
-                  onClick={() => onVote(questionnaire.id, "challenges", option)}
-                  disabled={disableOption}
-                  style={{
-                    margin: "5px",
-                    background: selected ? "#ffc107" : "#f5f5f5",
-                    color: "#000",
-                    padding: "8px 12px",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: disableOption ? "not-allowed" : "pointer",
-                    opacity: disableOption ? 0.6 : 1
-                  }}
-                >
-                  {selected ? "✅ " : ""}{option}
-                </button>
-              );
-            })}
-
-            {/* Oportunidades */}
-            <h4>Oportunidades (selecione até 3)</h4>
-            {questionnaire.opportunities.map((option: string) => {
-              const selected = questionnaireSelections.opportunities.includes(option);
-              const disableOption =
-                (!selected && isSectionFull("opportunities")) || alreadyVoted;
-
-              return (
-                <button
-                  key={option}
-                  onClick={() => onVote(questionnaire.id, "opportunities", option)}
-                  disabled={disableOption}
-                  style={{
-                    margin: "5px",
-                    background: selected ? "#28a745" : "#f5f5f5",
-                    color: selected ? "#fff" : "#000",
-                    padding: "8px 12px",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: disableOption ? "not-allowed" : "pointer",
-                    opacity: disableOption ? 0.6 : 1
-                  }}
-                >
-                  {selected ? "✅ " : ""}{option}
-                </button>
-              );
-            })}
+            {alreadyVoted && <p style={{ color: "red" }}>Você já votou nesta dimensão.</p>}
           </div>
         );
       })}
+
+      <button
+        onClick={handleConfirmVotes}
+        disabled={
+          questionnaires.some((q) => !hasSelectedThreePerSection(q.dimension)) ||
+          Object.keys(selections).length === 0
+        }
+      >
+        Confirmar Todos os Votos
+      </button>
     </div>
   );
 };
-
-export const QuestionnaireVoting = () => {
-  const [userEmail, setUserEmail] = useState("");
-  const [isEmailVerified, setIsEmailVerified] = useState(false);
-
-  const {
-    questionnaires,
-    isLoading,
-    selections,
-    handleVote: baseHandleVote,
-    setSelections,
-    hasVotedInDimension
-  } = useQuestionnaireVoting(isEmailVerified, userEmail);
-
-  const submitVotesMutation = useVoteSubmission(userEmail);
-
-  const handleVote = (questionnaireId: string, section: string, option: string) => {
-    const currentSelections = selections[questionnaireId]?.[section] || [];
-    const alreadySelected = currentSelections.includes(option);
-
-    if (!alreadySelected && currentSelections.length >= 3) {
-      toast.error("Você só pode selecionar até 3 opções nesta seção.");
-      return;
-    }
-
-    baseHandleVote(questionnaireId, section, option);
-  };
-
-  const handleConfirmAllVotes = async () => {
-    if (!questionnaires || questionnaires.length === 0) return;
-
-    const dimensions = [...new Set(questionnaires.map(q => q.dimension))];
-
-    for (const dimension of dimensions) {
-      if (hasVotedInDimension(dimension)) {
-        toast.error(`Você já votou na dimensão: ${dimension}.`);
-        return;
-      }
-    }
-
-    for (const dimension of dimensions) {
-      const dimensionQuestionnaires = questionnaires.filter(q => q.dimension === dimension);
-
-      let totalStrengths = 0;
-      let totalChallenges = 0;
-      let totalOpportunities = 0;
-
-      for (const questionnaire of dimensionQuestionnaires) {
-        const questionnaireSelections = selections[questionnaire.id];
-        if (!questionnaireSelections) {
-          toast.error(`Selecione exatamente 3 opções em cada seção na dimensão: ${dimension}.`);
-          return;
-        }
-
-        totalStrengths += questionnaireSelections.strengths?.length || 0;
-        totalChallenges += questionnaireSelections.challenges?.length || 0;
-        totalOpportunities += questionnaireSelections.opportunities?.length || 0;
-      }
-
-      if (totalStrengths !== 3 || totalChallenges !== 3 || totalOpportunities !== 3) {
-        toast.error(`A dimensão "${dimension}" precisa ter exatamente 3 seleções em cada seção.`);
-        return;
-      }
-    }
-
-    for (const questionnaire of questionnaires) {
-      const questionnaireSelections = selections[questionnaire.id];
-      if (questionnaireSelections) {
-        const votes = Object.entries(questionnaireSelections).map(([optionType, optionNumbers]) => ({
-          optionType,
-          optionNumbers,
-        }));
-
-        await submitVotesMutation.mutate({
-          questionnaireId: questionnaire.id,
-          votes,
-          dimension: questionnaire.dimension
-        });
-      }
-    }
-
-    toast.success("Todos os votos foram enviados com sucesso!");
-    setSelections({});
-  };
-
-  const handleEmailVerified = (email: string) => {
-    setUserEmail(email);
-    setIsEmailVerified(true);
-  };
-
-  if (!isEmailVerified) {
-    return <EmailVerification onVerified={handleEmailVerified} />;
-  }
-
-  return (
-    <>
-      <VotingSection
-        userEmail={userEmail}
-        questionnaires={questionnaires || []}
-        isLoading={isLoading}
-        selections={selections}
-        onVote={handleVote}
-        hasVotedInDimension={hasVotedInDimension}
-      />
-
-      <div style={{ textAlign: "center", marginTop: "20px" }}>
-        <button
-          onClick={handleConfirmAllVotes}
-          disabled={submitVotesMutation.isPending}
-          style={{
-            padding: "10px 20px",
-            fontSize: "16px",
-            background: "#007bff",
-            color: "#fff",
-            border: "none",
-            borderRadius: "5px",
-            cursor: "pointer"
-          }}
-        >
-          Confirmar Todos os Votos
-        </button>
-      </div>
-    </>
-  );
-};
-
-export default QuestionnaireVoting;
