@@ -23,7 +23,7 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean) => {
         .from('fic_questionnaires')
         .select('*')
         .eq('status', 'active')
-        .order('created_at', { ascending: false });
+        .order('updated_at', { ascending: false });
 
       if (questionnairesError) {
         toast.error('Erro ao carregar questionários');
@@ -32,9 +32,12 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean) => {
 
       console.log('Questionnaires data fetched:', questionnairesData);
       
-      // Consolidate questionnaires by group
-      const consolidatedQuestionnaires = questionnairesData.reduce((acc: { [key: string]: any }, curr) => {
-        if (curr.group) {
+      // Consolidate questionnaires by group using the most recently updated record
+      const consolidatedByGroup = questionnairesData.reduce((acc: { [key: string]: any }, curr) => {
+        if (!curr.group) return acc;
+        const existing = acc[curr.group];
+        const isNewer = !existing || new Date(curr.updated_at) > new Date(existing.updated_at);
+        if (isNewer) {
           acc[curr.group] = {
             id: curr.id,
             dimension: curr.dimension,
@@ -42,6 +45,7 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean) => {
             challenges: curr.challenges,
             opportunities: curr.opportunities,
             created_at: curr.created_at,
+            updated_at: curr.updated_at,
             strengths_statuses: curr.strengths_statuses,
             challenges_statuses: curr.challenges_statuses,
             opportunities_statuses: curr.opportunities_statuses,
@@ -51,7 +55,7 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean) => {
         return acc;
       }, {});
 
-      return Object.values(consolidatedQuestionnaires);
+      return Object.values(consolidatedByGroup);
     },
     enabled: isEmailVerified,
   });
