@@ -24,16 +24,16 @@ export const QuestionnaireCard = ({
   getSelectionCount,
   onConfirmVotes
 }: QuestionnaireCardProps) => {
-  const getBgColor = (type: string) => {
+  const getAccentClass = (type: string) => {
     switch (type) {
       case 'strengths':
-        return 'bg-[#228B22] text-white';
+        return 'bg-[hsl(var(--strengths))]';
       case 'challenges':
-        return 'bg-[#FFD700] text-gray-900';
+        return 'bg-[hsl(var(--challenges))]';
       case 'opportunities':
-        return 'bg-[#000080] text-white';
+        return 'bg-[hsl(var(--opportunities))]';
       default:
-        return '';
+        return 'bg-primary';
     }
   };
 
@@ -42,41 +42,50 @@ export const QuestionnaireCard = ({
     
     const options = splitOptions(content);
     const selectionCount = getSelectionCount(type);
-    const bgColorClass = getBgColor(type);
-    
+
     // Get statuses from the corresponding array field
     const statusesKey = `${type}_statuses`;
     const statuses = Array.isArray(questionnaire[statusesKey]) 
       ? questionnaire[statusesKey]
       : ['pending', 'pending', 'pending'];
 
+    // Keep original indexes to vote correctly but hide non-active
+    const entries = options
+      .map((option, index) => ({ option, index, status: statuses[index] }))
+      .filter((e) => e.status === 'active');
+
+    if (entries.length === 0) return null;
+
+    const accentClass = getAccentClass(type);
+
     return (
-      <div className="space-y-4">
-        <div className={`p-4 rounded-lg ${bgColorClass}`}>
+      <section className="rounded-xl border bg-card shadow-sm overflow-hidden">
+        <div className={`h-1 w-full ${accentClass}`} />
+        <div className="px-4 py-4 border-b bg-muted/40">
           <QuestionnaireSectionHeader 
             title={title}
             selectionCount={selectionCount}
           />
-          <div className="space-y-3 mt-4">
-            {options.map((option, index) => {
-              const isActive = statuses[index] === 'active';
+        </div>
+        <div className="p-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {entries.map(({ option, index }) => {
               const selected = isOptionSelected(type, index + 1);
-              
               return (
                 <QuestionnaireOption
                   key={index}
                   option={option}
                   index={index}
-                  isActive={isActive}
+                  isActive={true}
                   isSelected={selected}
                   onVote={() => onVote(type, index + 1)}
-                  disabled={(!isActive && !selected) || (selectionCount >= MAX_SELECTIONS && !selected)}
+                  disabled={(selectionCount >= MAX_SELECTIONS && !selected)}
                 />
               );
             })}
           </div>
         </div>
-      </div>
+      </section>
     );
   };
 
@@ -92,7 +101,7 @@ export const QuestionnaireCard = ({
           <div className="flex justify-between items-start mb-4">
             <div>
               <h2 className="text-xl font-semibold">{questionnaire.dimension}</h2>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Enviado {formatDistanceToNow(new Date(questionnaire.created_at), { 
                   addSuffix: true,
                   locale: ptBR 
@@ -111,7 +120,6 @@ export const QuestionnaireCard = ({
             <Button
               onClick={onConfirmVotes}
               disabled={!allSectionsComplete}
-              className="bg-primary hover:bg-primary/90"
             >
               Confirmar Votos
             </Button>

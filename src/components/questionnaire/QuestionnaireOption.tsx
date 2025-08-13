@@ -20,11 +20,9 @@ export const QuestionnaireOption = ({
   const isDisabled = disabled || !isActive;
   return (
     <div 
-      className={`flex items-center justify-between gap-4 p-4 ${
-        isActive ? 'bg-primary/10' : 'bg-white/90'
-      } rounded-lg transition-colors ${isDisabled ? 'opacity-60' : ''}`}
+      className={`group flex items-start justify-between gap-4 rounded-lg border bg-card p-4 shadow-sm transition ${isDisabled ? 'opacity-60' : 'hover:shadow-md'} ${isSelected ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : ''}`}
     >
-      <p className="flex-1 text-sm text-gray-900 leading-relaxed">{option}</p>
+      <p className="flex-1 text-sm text-foreground leading-relaxed">{option}</p>
       <div className="shrink-0">
         <VoteButtons
           isSelected={isSelected}

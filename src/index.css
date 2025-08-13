@@ -49,6 +49,11 @@
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Section color tokens */
+    --strengths: 142 72% 29%;
+    --challenges: 48 96% 53%;
+    --opportunities: 240 100% 27%;
   }
 
   .dark {
@@ -87,6 +92,11 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Section color tokens (dark) */
+    --strengths: 142 72% 35%;
+    --challenges: 48 96% 58%;
+    --opportunities: 240 100% 60%;
   }
 }
 
