@@ -41,10 +41,14 @@ export const useVoteSubmission = (userEmail: string) => {
           dimension: dimension
         });
 
-      // Registrar os votos individuais
-      const votePromises = votes.flatMap(({ optionType, optionNumbers }) =>
-        optionNumbers.map(optionNumber =>
-          supabase
+      // Registrar os votos individuais sequencialmente para evitar problemas de concorrência
+      console.log('Submitting votes:', votes);
+      
+      for (const { optionType, optionNumbers } of votes) {
+        for (const optionNumber of optionNumbers) {
+          console.log(`Inserting vote: ${optionType} option ${optionNumber}`);
+          
+          const { error } = await supabase
             .from('questionnaire_votes')
             .insert({
               questionnaire_id: questionnaireId,
@@ -52,11 +56,16 @@ export const useVoteSubmission = (userEmail: string) => {
               vote_type: 'upvote',
               option_type: optionType,
               option_number: optionNumber,
-            })
-        )
-      );
-
-      await Promise.all(votePromises);
+            });
+            
+          if (error) {
+            console.error(`Error inserting vote for ${optionType} option ${optionNumber}:`, error);
+            throw error;
+          }
+          
+          console.log(`Successfully inserted vote: ${optionType} option ${optionNumber}`);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
