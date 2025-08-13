@@ -109,13 +109,18 @@ export const DimensionAggregatedSection = ({
       {renderSection("challenges")}
       {renderSection("opportunities")}
 
-      {/* Confirm buttons per grupo (questionário) para manter funcionalidade atual */}
       <div className="flex flex-wrap gap-2 justify-end">
-        {questionnaires.map((q) => (
-          <Button key={q.id} onClick={() => onConfirmVotes(q.id)}>
-            Confirmar Votos {q.group ? `(${q.group})` : ""}
-          </Button>
-        ))}
+        {questionnaires.map((q) => {
+          const complete =
+            getSelectionCount(q.id, 'strengths') === MAX_SELECTIONS &&
+            getSelectionCount(q.id, 'challenges') === MAX_SELECTIONS &&
+            getSelectionCount(q.id, 'opportunities') === MAX_SELECTIONS;
+          return (
+            <Button key={q.id} onClick={() => onConfirmVotes(q.id)} disabled={!complete}>
+              Confirmar Votos {q.group ? `(${q.group})` : ""}
+            </Button>
+          );
+        })}
       </div>
     </div>
   );

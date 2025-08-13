@@ -84,7 +84,7 @@ export const QuestionnaireCard = ({
                     isActive={true}
                     isSelected={selected}
                     onVote={() => onVote(type, index + 1)}
-                    disabled={totalSelectionCount >= MAX_SELECTIONS && !selected}
+                    disabled={selectionCount >= MAX_SELECTIONS && !selected}
                     accent={type}
                   />
                 );
@@ -95,7 +95,10 @@ export const QuestionnaireCard = ({
       );
   };
 
-  const isFormComplete = getTotalSelectionCount() === MAX_SELECTIONS;
+  const isFormComplete =
+    getSelectionCount('strengths') === MAX_SELECTIONS &&
+    getSelectionCount('challenges') === MAX_SELECTIONS &&
+    getSelectionCount('opportunities') === MAX_SELECTIONS;
 
   return (
     <Card className="p-6">
