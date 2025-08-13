@@ -58,35 +58,35 @@ export const QuestionnaireCard = ({
 
     const accentClass = getAccentClass(type);
 
-    return (
-      <section className="rounded-xl border bg-card shadow-sm overflow-hidden">
-        <div className={`h-1 w-full ${accentClass}`} />
-        <div className="px-4 py-4 border-b bg-muted/40">
-          <QuestionnaireSectionHeader 
-            title={title}
-            selectionCount={selectionCount}
-          />
-        </div>
-        <div className="p-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            {entries.map(({ option, index }) => {
-              const selected = isOptionSelected(type, index + 1);
-              return (
-                <QuestionnaireOption
-                  key={index}
-                  option={option}
-                  index={index}
-                  isActive={true}
-                  isSelected={selected}
-                  onVote={() => onVote(type, index + 1)}
-                  disabled={(selectionCount >= MAX_SELECTIONS && !selected)}
-                />
-              );
-            })}
+      return (
+        <section className={`rounded-2xl ${accentClass} p-3 sm:p-4 shadow-sm`}>
+          <div className={`px-4 py-3 ${type === 'challenges' ? 'text-foreground' : 'text-white'}`}>
+            <QuestionnaireSectionHeader
+              title={title}
+              selectionCount={selectionCount}
+            />
           </div>
-        </div>
-      </section>
-    );
+          <div className="p-2 sm:p-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {entries.map(({ option, index }) => {
+                const selected = isOptionSelected(type, index + 1);
+                return (
+                  <QuestionnaireOption
+                    key={index}
+                    option={option}
+                    index={index}
+                    isActive={true}
+                    isSelected={selected}
+                    onVote={() => onVote(type, index + 1)}
+                    disabled={selectionCount >= MAX_SELECTIONS && !selected}
+                    accent={type}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      );
   };
 
   const allSectionsComplete = 

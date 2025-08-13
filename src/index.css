@@ -51,9 +51,9 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
 
     /* Section color tokens */
-    --strengths: 142 72% 29%;
-    --challenges: 48 96% 53%;
-    --opportunities: 240 100% 27%;
+    --strengths: 120 61% 34%; /* #228B22 */
+    --challenges: 51 100% 50%; /* #FFD700 */
+    --opportunities: 240 100% 25%; /* #000080 */
   }
 
   .dark {
@@ -94,9 +94,9 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
 
     /* Section color tokens (dark) */
-    --strengths: 142 72% 35%;
-    --challenges: 48 96% 58%;
-    --opportunities: 240 100% 60%;
+    --strengths: 120 61% 34%; /* #228B22 */
+    --challenges: 51 100% 50%; /* #FFD700 */
+    --opportunities: 240 100% 25%; /* #000080 */
   }
 }
 
