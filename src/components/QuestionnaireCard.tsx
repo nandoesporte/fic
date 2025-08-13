@@ -37,6 +37,11 @@ export const QuestionnaireCard = ({
     }
   };
 
+  const getTotalSelectionCount = () =>
+    getSelectionCount('strengths') +
+    getSelectionCount('challenges') +
+    getSelectionCount('opportunities');
+
   const renderSection = (title: string, content: string, type: 'strengths' | 'challenges' | 'opportunities') => {
     if (!content) return null;
     
@@ -57,6 +62,7 @@ export const QuestionnaireCard = ({
     if (entries.length === 0) return null;
 
     const accentClass = getAccentClass(type);
+    const totalSelectionCount = getTotalSelectionCount();
 
       return (
         <section className={`rounded-2xl ${accentClass} p-3 sm:p-4 shadow-sm`}>
@@ -78,7 +84,7 @@ export const QuestionnaireCard = ({
                     isActive={true}
                     isSelected={selected}
                     onVote={() => onVote(type, index + 1)}
-                    disabled={selectionCount >= MAX_SELECTIONS && !selected}
+                    disabled={totalSelectionCount >= MAX_SELECTIONS && !selected}
                     accent={type}
                   />
                 );
@@ -89,10 +95,7 @@ export const QuestionnaireCard = ({
       );
   };
 
-  const allSectionsComplete = 
-    getSelectionCount('strengths') === MAX_SELECTIONS &&
-    getSelectionCount('challenges') === MAX_SELECTIONS &&
-    getSelectionCount('opportunities') === MAX_SELECTIONS;
+  const isFormComplete = getTotalSelectionCount() === MAX_SELECTIONS;
 
   return (
     <Card className="p-6">
@@ -119,7 +122,7 @@ export const QuestionnaireCard = ({
           <div className="flex justify-end mt-6">
             <Button
               onClick={onConfirmVotes}
-              disabled={!allSectionsComplete}
+              disabled={!isFormComplete}
             >
               Confirmar Votos
             </Button>

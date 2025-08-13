@@ -61,31 +61,38 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean) => {
   });
 
   const handleVote = (questionnaireId: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => {
-    const currentSelections = selections[questionnaireId]?.[optionType] || [];
-    const isSelected = currentSelections.includes(optionNumber);
+    const currentSelections = selections[questionnaireId] ?? { strengths: [], challenges: [], opportunities: [] };
+    const sectionSelections = currentSelections[optionType] || [];
+    const isSelected = sectionSelections.includes(optionNumber);
+
+    const totalSelections =
+      (currentSelections.strengths?.length || 0) +
+      (currentSelections.challenges?.length || 0) +
+      (currentSelections.opportunities?.length || 0);
 
     if (isSelected) {
       setSelections(prev => ({
         ...prev,
         [questionnaireId]: {
           ...prev[questionnaireId],
-          [optionType]: currentSelections.filter(num => num !== optionNumber)
+          [optionType]: sectionSelections.filter(num => num !== optionNumber)
         }
       }));
-    } else {
-      if (currentSelections.length >= 3) {
-        toast.error('Você já selecionou 3 opções nesta seção. Remova uma seleção para escolher outra.');
-        return;
-      }
-
-      setSelections(prev => ({
-        ...prev,
-        [questionnaireId]: {
-          ...prev[questionnaireId],
-          [optionType]: [...currentSelections, optionNumber]
-        }
-      }));
+      return;
     }
+
+    if (totalSelections >= 3) {
+      toast.error('Você já selecionou 3 opções neste formulário. Remova uma seleção para escolher outra.');
+      return;
+    }
+
+    setSelections(prev => ({
+      ...prev,
+      [questionnaireId]: {
+        ...prev[questionnaireId],
+        [optionType]: [...sectionSelections, optionNumber]
+      }
+    }));
   };
 
   return {
