@@ -87,7 +87,7 @@ export const DimensionAggregatedSection = ({
           </span>
         </div>
         <div className="p-2 sm:p-4">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3">
             {entries.map(({ questionnaireId, option, index }) => {
               const selected = isSelected(questionnaireId, type, index + 1);
               const isDisabled = totalSelectionsInSection >= MAX_SELECTIONS && !selected;
