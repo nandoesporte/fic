@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailInput } from "@/components/EmailInput";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { votingToasts } from "./VotingToast";
 
 interface EmailVerificationProps {
   onVerified: (email: string) => void;
@@ -15,7 +15,7 @@ export const EmailVerification = ({ onVerified }: EmailVerificationProps) => {
 
   const verifyEmail = async () => {
     if (!userEmail) {
-      toast.error('Por favor, insira seu email');
+      votingToasts.error('Email obrigatório', 'Por favor, insira seu email para continuar.');
       return;
     }
 
@@ -33,22 +33,22 @@ export const EmailVerification = ({ onVerified }: EmailVerificationProps) => {
 
       if (error) {
         console.error('Erro ao verificar email:', error);
-        toast.error('Erro ao verificar email. Por favor, tente novamente.');
+        votingToasts.error('Erro de conexão', 'Erro ao verificar email. Por favor, tente novamente.');
         return;
       }
 
       if (!voter) {
         console.log('Email não encontrado:', userEmail);
-        toast.error('Email não encontrado no sistema. Por favor, verifique se o email está correto.');
+        votingToasts.emailNotFound();
         return;
       }
 
       console.log('Email verificado com sucesso:', voter);
       onVerified(userEmail);
-      toast.success('Email verificado com sucesso!');
+      votingToasts.emailVerified();
     } catch (error) {
       console.error('Erro ao verificar email:', error);
-      toast.error('Erro ao verificar email. Por favor, tente novamente.');
+      votingToasts.error('Erro inesperado', 'Erro ao verificar email. Por favor, tente novamente.');
     } finally {
       setIsVerifying(false);
     }

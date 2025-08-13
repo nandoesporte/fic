@@ -1,8 +1,8 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { votingToasts } from "@/components/voting/VotingToast";
 
 export const useVoteSubmission = (userEmail: string) => {
   const queryClient = useQueryClient();
@@ -61,12 +61,12 @@ export const useVoteSubmission = (userEmail: string) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
       queryClient.invalidateQueries({ queryKey: ['questionnaire-votes'] });
-      toast.success('Votos registrados com sucesso!');
+      votingToasts.votesSubmitted();
       navigate('/vote-success');
     },
     onError: (error) => {
       console.error('Error submitting votes:', error);
-      toast.error('Erro ao registrar votos: ' + error.message);
+      votingToasts.error('Erro ao registrar votos', error.message);
     },
   });
 };

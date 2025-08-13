@@ -1,6 +1,7 @@
 import { QuestionnaireOption } from "@/components/questionnaire/QuestionnaireOption";
 import { splitOptions } from "@/lib/splitOptions";
 import { Button } from "@/components/ui/button";
+import { votingToasts } from "./VotingToast";
 
 interface DimensionAggregatedSectionProps {
   dimension: string;
@@ -138,7 +139,15 @@ export const DimensionAggregatedSection = ({
 
           return (
             <Button 
-              onClick={() => onConfirmVotes(dimension)} 
+              onClick={() => {
+                if (hasVoted) {
+                  votingToasts.alreadyVoted(dimension);
+                } else if (!isComplete) {
+                  votingToasts.incompleteVotes();
+                } else {
+                  onConfirmVotes(dimension);
+                }
+              }} 
               disabled={!isComplete || hasVoted}
               className={hasVoted ? "opacity-50" : ""}
             >

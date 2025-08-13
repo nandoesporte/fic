@@ -100,7 +100,9 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean, userEmail: stri
     };
 
     if (sectionSelections.length >= 3) {
-      toast.error(`Você já selecionou 3 opções em ${labels[optionType]}.`);
+      import('@/components/voting/VotingToast').then(({ votingToasts }) => {
+        votingToasts.maxSelectionsReached(labels[optionType]);
+      });
       return;
     }
 
