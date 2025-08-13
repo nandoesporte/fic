@@ -17,12 +17,14 @@ export const QuestionnaireOption = ({
   onVote,
   disabled
 }: QuestionnaireOptionProps) => {
-  const isDisabled = disabled;
+  const isDisabled = disabled || !isActive;
   return (
     <div 
-      className={`flex items-center justify-between gap-4 p-4 rounded-lg border bg-card shadow-sm transition-colors hover:bg-muted/50 ${isDisabled ? 'opacity-60' : ''}`}
+      className={`flex items-center justify-between gap-4 p-4 ${
+        isActive ? 'bg-primary/10' : 'bg-white/90'
+      } rounded-lg transition-colors ${isDisabled ? 'opacity-60' : ''}`}
     >
-      <p className="flex-1 text-sm text-card-foreground leading-relaxed">{option}</p>
+      <p className="flex-1 text-sm text-gray-900 leading-relaxed">{option}</p>
       <div className="shrink-0">
         <VoteButtons
           isSelected={isSelected}
