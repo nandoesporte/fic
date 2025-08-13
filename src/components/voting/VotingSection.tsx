@@ -1,4 +1,4 @@
-import { GroupedQuestionnaireList } from "@/components/questionnaire/GroupedQuestionnaireList";
+import { DimensionAggregatedSection } from "@/components/voting/DimensionAggregatedSection";
 import { Loader2 } from "lucide-react";
 
 interface VotingSectionProps {
@@ -57,7 +57,8 @@ export const VotingSection = ({
                 <h2 className="text-xl font-semibold text-foreground capitalize">
                   {dimension.replace(/-/g, ' ')}
                 </h2>
-                <GroupedQuestionnaireList
+                <DimensionAggregatedSection
+                  dimension={dimension}
                   questionnaires={dimensionQuestionnaires}
                   selections={selections}
                   onVote={onVote}
