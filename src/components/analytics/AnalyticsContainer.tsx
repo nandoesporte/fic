@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuestionnaireVotes } from '@/hooks/useQuestionnaireVotes';
 import { useQuery } from '@tanstack/react-query';
@@ -69,6 +70,27 @@ export const AnalyticsContainer = () => {
     },
   });
 
+  // Also fetch dimension votes to get accurate participation data
+  const { data: dimensionVotes } = useQuery({
+    queryKey: ['dimension-votes', selectedDimension],
+    queryFn: async () => {
+      let query = supabase.from('dimension_votes').select('*');
+      
+      if (selectedDimension !== "all") {
+        query = query.eq('dimension', selectedDimension);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        throw error;
+      }
+      
+      console.log("Dimension votes:", data);
+      return data;
+    },
+  });
+
   const { data: votingData, isLoading } = useQuestionnaireVotes(selectedDimension);
 
   if (isLoading) {
@@ -91,11 +113,18 @@ export const AnalyticsContainer = () => {
   };
 
   const totalVotes = calculateTotalVotes(votingData);
-  const expectedVotesPerUser = 9;
-  const expectedTotalVotes = totalVoters * expectedVotesPerUser;
-  const participationRate = expectedTotalVotes > 0 
-    ? Math.round((totalVotes / expectedTotalVotes) * 100) 
+  const actualParticipants = dimensionVotes?.length || 0;
+  const participationRate = totalVoters > 0 
+    ? Math.round((actualParticipants / totalVoters) * 100) 
     : 0;
+
+  console.log("Analytics summary:", {
+    totalVoters,
+    actualParticipants,
+    totalVotes,
+    participationRate,
+    selectedDimension
+  });
 
   return (
     <div className="space-y-6">

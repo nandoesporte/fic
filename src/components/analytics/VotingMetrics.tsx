@@ -1,3 +1,4 @@
+
 import { MetricCard } from "./MetricCard";
 import { Users, Vote, ChartBar } from "lucide-react";
 
@@ -8,16 +9,18 @@ interface VotingMetricsProps {
 }
 
 export const VotingMetrics = ({ totalVoters, totalVotes, participationRate }: VotingMetricsProps) => {
-  // Calculate actual participants based on total votes (9 votes per participant)
-  const actualParticipants = Math.floor(totalVotes / 9);
+  // Calculate actual participants based on unique voters who have submitted votes
+  // Each participant should vote in all 3 categories (strengths, challenges, opportunities)
+  // with up to 3 votes per category, so max 9 votes per participant
+  const estimatedParticipants = totalVotes > 0 ? Math.ceil(totalVotes / 9) : 0;
   
   return (
     <div className="grid gap-4 md:grid-cols-3">
       <MetricCard
         icon={Users}
-        title="Total de Participantes"
-        value={actualParticipants}
-        description="Cada participante deve fazer 9 votos"
+        title="Participantes Estimados"
+        value={estimatedParticipants}
+        description={`De ${totalVoters} eleitores registrados`}
         iconClassName="bg-blue-100 text-blue-600"
       />
       <MetricCard

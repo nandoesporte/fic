@@ -1,7 +1,7 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { splitOptions } from "@/lib/splitOptions";
-
 
 const getTextForOption = (
   qs: any[] | null,
@@ -49,8 +49,11 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
         throw questionnairesError;
       }
 
-      // Initialize vote counters
-      const voteCounters: Record<string, Record<number, number>> = {
+      console.log("Questionnaires found:", questionnaires?.length);
+      console.log("Questionnaires data:", questionnaires);
+
+      // Initialize vote counters - fix the structure to properly accumulate across questionnaires
+      const voteCounters: Record<string, Record<number, { count: number, text: string }>> = {
         strengths: {},
         challenges: {},
         opportunities: {}
@@ -58,28 +61,34 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
 
       // Process each questionnaire and its votes
       questionnaires?.forEach(questionnaire => {
+        console.log(`Processing questionnaire ${questionnaire.id} for dimension ${questionnaire.dimension}`);
+        
         const processVotes = (optionType: string, options: string) => {
           const optionsArray = splitOptions(options);
+          console.log(`${optionType} options:`, optionsArray);
           
           // Get votes for this questionnaire and option type
           const votes = questionnaire.questionnaire_votes?.filter(
             vote => vote.option_type === optionType && vote.vote_type === 'upvote'
           ) || [];
 
+          console.log(`Votes for ${optionType}:`, votes);
+
           // Count votes for each option
           votes.forEach(vote => {
-            if (!voteCounters[optionType][vote.option_number]) {
-              voteCounters[optionType][vote.option_number] = 0;
+            const optionNumber = vote.option_number;
+            const text = optionsArray[optionNumber - 1] || "";
+            
+            // Create a global key that combines text and option number to handle duplicates across questionnaires
+            const globalKey = `${text}-${optionNumber}`;
+            
+            if (!voteCounters[optionType][optionNumber]) {
+              voteCounters[optionType][optionNumber] = { count: 0, text };
             }
-            voteCounters[optionType][vote.option_number]++;
+            voteCounters[optionType][optionNumber].count++;
+            
+            console.log(`Added vote for ${optionType} option ${optionNumber}: "${text}"`);
           });
-
-          // Return formatted results
-          return Object.entries(voteCounters[optionType]).map(([optionNumber, total]) => ({
-            optionNumber: optionNumber,
-            total,
-            text: optionsArray[parseInt(optionNumber) - 1] || ""
-          }));
         };
 
         // Process votes for each category
@@ -94,23 +103,34 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
         }
       });
 
-      // Format final results
+      console.log("Final vote counters:", voteCounters);
+
+      // Format final results - aggregate by text content, not just option number
+      const aggregateByText = (category: string) => {
+        const textMap = new Map<string, { total: number, optionNumber: string }>();
+        
+        Object.entries(voteCounters[category]).forEach(([optionNumber, data]) => {
+          const text = data.text.trim();
+          if (text) {
+            if (textMap.has(text)) {
+              textMap.get(text)!.total += data.count;
+            } else {
+              textMap.set(text, { total: data.count, optionNumber: String(optionNumber) });
+            }
+          }
+        });
+        
+        return Array.from(textMap.entries()).map(([text, data]) => ({
+          optionNumber: data.optionNumber,
+          total: data.total,
+          text
+        }));
+      };
+
       const results = {
-        strengths: Object.entries(voteCounters.strengths).map(([optionNumber, total]) => ({
-          optionNumber: String(optionNumber),
-          total,
-          text: getTextForOption(questionnaires || [], 'strengths', parseInt(String(optionNumber)) - 1) || ""
-        })),
-        challenges: Object.entries(voteCounters.challenges).map(([optionNumber, total]) => ({
-          optionNumber: String(optionNumber),
-          total,
-          text: getTextForOption(questionnaires || [], 'challenges', parseInt(String(optionNumber)) - 1) || ""
-        })),
-        opportunities: Object.entries(voteCounters.opportunities).map(([optionNumber, total]) => ({
-          optionNumber: String(optionNumber),
-          total,
-          text: getTextForOption(questionnaires || [], 'opportunities', parseInt(String(optionNumber)) - 1) || ""
-        }))
+        strengths: aggregateByText('strengths'),
+        challenges: aggregateByText('challenges'),
+        opportunities: aggregateByText('opportunities')
       };
 
       console.log("Processed vote data:", results);
