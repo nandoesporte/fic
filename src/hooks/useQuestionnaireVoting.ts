@@ -38,14 +38,14 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean, userEmail: stri
     enabled: isEmailVerified,
   });
 
-  // Check if user has already voted in each dimension
+  // Check if user has already voted for each questionnaire
   const { data: userVotes } = useQuery({
     queryKey: ['user-votes', userEmail],
     queryFn: async () => {
       if (!userEmail) return [];
       const { data } = await supabase
-        .from('dimension_votes')
-        .select('dimension')
+        .from('questionnaire_votes')
+        .select('questionnaire_id')
         .eq('email', userEmail.toLowerCase());
       return data || [];
     },
@@ -94,13 +94,15 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean, userEmail: stri
   };
 
   const hasVotedInDimension = (dimension: string) => {
-    return userVotes?.some(vote => vote.dimension === dimension) || false;
+    // Check if user has voted for any questionnaire in this dimension
+    const dimensionQuestionnaires = questionnaires?.filter(q => q.dimension === dimension) || [];
+    return dimensionQuestionnaires.some(q => 
+      userVotes?.some(vote => vote.questionnaire_id === q.id)
+    );
   };
 
   const hasVotedQuestionnaire = (questionnaireId: string) => {
-    const questionnaire = questionnaires?.find(q => q.id === questionnaireId);
-    if (!questionnaire) return false;
-    return hasVotedInDimension(questionnaire.dimension);
+    return userVotes?.some(vote => vote.questionnaire_id === questionnaireId) || false;
   };
 
   return {
