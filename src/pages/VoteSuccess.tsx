@@ -18,7 +18,7 @@ const VoteSuccess = () => {
             onClick={() => navigate("/voting")}
             className="w-full"
           >
-            Voltar para Votação
+            Retorne para Sala
           </Button>
         </div>
       </div>
