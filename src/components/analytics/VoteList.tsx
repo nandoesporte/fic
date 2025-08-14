@@ -52,7 +52,7 @@ export const VoteList = ({ type, data }: VoteListProps) => {
               <div className="flex items-center gap-4">
                 <div className="text-right">
                   <span className="text-xs opacity-75">Total de votos</span>
-                  <p className="font-bold">{percentage}% - {item.total}</p>
+                  <p className="font-bold">{percentage}% {item.total}</p>
                 </div>
               </div>
             </div>
