@@ -1,4 +1,4 @@
-import { IndividualQuestionnaireSection } from "@/components/voting/IndividualQuestionnaireSection";
+import { DimensionAggregatedSection } from "@/components/voting/DimensionAggregatedSection";
 import { Loader2 } from "lucide-react";
 
 interface VotingSectionProps {
@@ -13,8 +13,8 @@ interface VotingSectionProps {
     };
   };
   onVote: (questionnaireId: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => void;
-  onConfirmVotes: (questionnaireId: string) => void;
-  hasVotedQuestionnaire: (questionnaireId: string) => boolean;
+  onConfirmVotes: (dimension: string) => void;
+  hasVotedInDimension: (dimension: string) => boolean;
 }
 
 export const VotingSection = ({
@@ -24,8 +24,20 @@ export const VotingSection = ({
   selections,
   onVote,
   onConfirmVotes,
-  hasVotedQuestionnaire
+  hasVotedInDimension
 }: VotingSectionProps) => {
+  const groupQuestionnairesByDimension = (questionnaires: any[]): { [key: string]: any[] } => {
+    return questionnaires.reduce((acc, curr) => {
+      const dimension = curr.dimension;
+      if (!acc[dimension]) {
+        acc[dimension] = [];
+      }
+      acc[dimension].push(curr);
+      return acc;
+    }, {} as { [key: string]: any[] });
+  };
+
+  const groupedByDimension = groupQuestionnairesByDimension(questionnaires);
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -42,15 +54,20 @@ export const VotingSection = ({
           </div>
         ) : (
           <div className="space-y-6">
-            {questionnaires.map((questionnaire) => (
-              <IndividualQuestionnaireSection
-                key={questionnaire.id}
-                questionnaire={questionnaire}
-                selections={selections[questionnaire.id] || { strengths: [], challenges: [], opportunities: [] }}
-                onVote={onVote}
-                onConfirmVotes={onConfirmVotes}
-                hasVotedQuestionnaire={hasVotedQuestionnaire}
-              />
+            {Object.entries(groupedByDimension).map(([dimension, dimensionQuestionnaires]) => (
+              <div key={dimension} className="space-y-4">
+                <h2 className="text-xl font-semibold text-foreground capitalize">
+                  {dimension.replace(/-/g, ' ')}
+                </h2>
+                <DimensionAggregatedSection
+                  dimension={dimension}
+                  questionnaires={dimensionQuestionnaires}
+                  selections={selections}
+                  onVote={onVote}
+                  onConfirmVotes={onConfirmVotes}
+                  hasVotedInDimension={hasVotedInDimension}
+                />
+              </div>
             ))}
           </div>
         )}

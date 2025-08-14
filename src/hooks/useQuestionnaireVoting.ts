@@ -32,20 +32,42 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean, userEmail: stri
 
       console.log('Questionnaires data fetched:', questionnairesData);
       
-      // Retornar todos os questionários ativos sem consolidação
-      return questionnairesData;
+      // Consolidate questionnaires by group using the most recently updated record
+      const consolidatedByGroup = questionnairesData.reduce((acc: { [key: string]: any }, curr) => {
+        if (!curr.group) return acc;
+        const existing = acc[curr.group];
+        const isNewer = !existing || new Date(curr.updated_at) > new Date(existing.updated_at);
+        if (isNewer) {
+          acc[curr.group] = {
+            id: curr.id,
+            dimension: curr.dimension,
+            strengths: curr.strengths,
+            challenges: curr.challenges,
+            opportunities: curr.opportunities,
+            created_at: curr.created_at,
+            updated_at: curr.updated_at,
+            strengths_statuses: curr.strengths_statuses,
+            challenges_statuses: curr.challenges_statuses,
+            opportunities_statuses: curr.opportunities_statuses,
+            group: curr.group
+          };
+        }
+        return acc;
+      }, {});
+
+      return Object.values(consolidatedByGroup);
     },
     enabled: isEmailVerified,
   });
 
-  // Check if user has already voted for each questionnaire
+  // Check if user has already voted in each dimension
   const { data: userVotes } = useQuery({
     queryKey: ['user-votes', userEmail],
     queryFn: async () => {
       if (!userEmail) return [];
       const { data } = await supabase
-        .from('questionnaire_votes')
-        .select('questionnaire_id')
+        .from('dimension_votes')
+        .select('dimension')
         .eq('email', userEmail.toLowerCase());
       return data || [];
     },
@@ -94,15 +116,7 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean, userEmail: stri
   };
 
   const hasVotedInDimension = (dimension: string) => {
-    // Check if user has voted for any questionnaire in this dimension
-    const dimensionQuestionnaires = questionnaires?.filter(q => q.dimension === dimension) || [];
-    return dimensionQuestionnaires.some(q => 
-      userVotes?.some(vote => vote.questionnaire_id === q.id)
-    );
-  };
-
-  const hasVotedQuestionnaire = (questionnaireId: string) => {
-    return userVotes?.some(vote => vote.questionnaire_id === questionnaireId) || false;
+    return userVotes?.some(vote => vote.dimension === dimension) || false;
   };
 
   return {
@@ -111,7 +125,6 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean, userEmail: stri
     selections,
     handleVote,
     setSelections,
-    hasVotedInDimension,
-    hasVotedQuestionnaire
+    hasVotedInDimension
   };
 };
