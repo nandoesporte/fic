@@ -9,6 +9,13 @@ export type CooperativeData = {
   engagement: number;
 };
 
+export type CooperativeImages = {
+  image1?: string;
+  image2?: string;
+  image3?: string;
+  image4?: string;
+};
+
 type ProfileData = {
   cocamarengagement: string | null;
   cocamarmembers: string | null;
@@ -28,10 +35,15 @@ type ProfileData = {
   updated_at: string | null;
   welcome_description: string | null;
   welcome_message: string | null;
+  coop_image_1: string | null;
+  coop_image_2: string | null;
+  coop_image_3: string | null;
+  coop_image_4: string | null;
 };
 
 export const useCooperativeSettings = () => {
   const [cooperatives, setCooperatives] = useState<CooperativeData[]>([]);
+  const [cooperativeImages, setCooperativeImages] = useState<CooperativeImages>({});
   const [loading, setLoading] = useState(true);
   const { session } = useAuth();
 
@@ -56,6 +68,7 @@ export const useCooperativeSettings = () => {
             engagement: 85 
           }
         ]);
+        setCooperativeImages({});
         setLoading(false);
         return;
       }
@@ -90,6 +103,13 @@ export const useCooperativeSettings = () => {
             engagement: parseInt(profileData.frisiaengagement || "85") 
           }
         ]);
+
+        setCooperativeImages({
+          image1: profileData.coop_image_1 || undefined,
+          image2: profileData.coop_image_2 || undefined,
+          image3: profileData.coop_image_3 || undefined,
+          image4: profileData.coop_image_4 || undefined
+        });
       }
     } catch (error) {
       console.error('Error fetching cooperative settings:', error);
@@ -102,5 +122,5 @@ export const useCooperativeSettings = () => {
     fetchSettings();
   }, [session?.user?.id]); // Re-fetch when user ID changes
 
-  return { cooperatives, loading, refetch: fetchSettings };
+  return { cooperatives, cooperativeImages, loading, refetch: fetchSettings };
 };

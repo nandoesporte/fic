@@ -21,7 +21,11 @@ export default function Settings() {
     sicoobEngagement: "92",
     frisiaName: "Frísia",
     frisiaMembers: "12400",
-    frisiaEngagement: "85"
+    frisiaEngagement: "85",
+    coopImage1: "",
+    coopImage2: "",
+    coopImage3: "",
+    coopImage4: ""
   });
 
   useEffect(() => {
@@ -55,7 +59,11 @@ export default function Settings() {
             sicoobEngagement: profile.sicoobengagement || "92",
             frisiaName: profile.frisianame || "Frísia",
             frisiaMembers: profile.frisiamembers || "12400",
-            frisiaEngagement: profile.frisiaengagement || "85"
+            frisiaEngagement: profile.frisiaengagement || "85",
+            coopImage1: profile.coop_image_1 || "",
+            coopImage2: profile.coop_image_2 || "",
+            coopImage3: profile.coop_image_3 || "",
+            coopImage4: profile.coop_image_4 || ""
           });
         }
       } catch (error) {
@@ -96,7 +104,11 @@ export default function Settings() {
           sicoobengagement: formData.sicoobEngagement,
           frisianame: formData.frisiaName,
           frisiamembers: formData.frisiaMembers,
-          frisiaengagement: formData.frisiaEngagement
+          frisiaengagement: formData.frisiaEngagement,
+          coop_image_1: formData.coopImage1,
+          coop_image_2: formData.coopImage2,
+          coop_image_3: formData.coopImage3,
+          coop_image_4: formData.coopImage4
         })
         .eq('id', session.user.id);
 
@@ -218,6 +230,52 @@ export default function Settings() {
               </div>
             </div>
           </div>
+
+          <Card className="p-6 mt-6">
+            <h3 className="text-lg font-semibold mb-4">Imagens das Cooperativas</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="coopImage1">Imagem da Cooperativa 1 (URL)</Label>
+                <Input
+                  id="coopImage1"
+                  name="coopImage1"
+                  value={formData.coopImage1}
+                  onChange={handleInputChange}
+                  placeholder="https://exemplo.com/logo1.png"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="coopImage2">Imagem da Cooperativa 2 (URL)</Label>
+                <Input
+                  id="coopImage2"
+                  name="coopImage2"
+                  value={formData.coopImage2}
+                  onChange={handleInputChange}
+                  placeholder="https://exemplo.com/logo2.png"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="coopImage3">Imagem da Cooperativa 3 (URL)</Label>
+                <Input
+                  id="coopImage3"
+                  name="coopImage3"
+                  value={formData.coopImage3}
+                  onChange={handleInputChange}
+                  placeholder="https://exemplo.com/logo3.png"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="coopImage4">Imagem da Cooperativa 4 (URL)</Label>
+                <Input
+                  id="coopImage4"
+                  name="coopImage4"
+                  value={formData.coopImage4}
+                  onChange={handleInputChange}
+                  placeholder="https://exemplo.com/logo4.png"
+                />
+              </div>
+            </div>
+          </Card>
 
           <Button className="mt-6" type="submit" disabled={loading}>
             {loading ? "Salvando..." : "Salvar Alterações"}
