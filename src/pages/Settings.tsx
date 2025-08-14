@@ -93,7 +93,8 @@ export default function Settings() {
     setLoading(true);
 
     try {
-      const { error } = await supabase
+      // First try to update, if no rows affected, create profile
+      const { data, error } = await supabase
         .from('profiles')
         .update({
           cocamarname: formData.cocamarName,
@@ -110,9 +111,35 @@ export default function Settings() {
           coop_image_3: formData.coopImage3,
           coop_image_4: formData.coopImage4
         })
-        .eq('id', session.user.id);
+        .eq('id', session.user.id)
+        .select();
 
       if (error) throw error;
+      
+      // If no profile exists, create one
+      if (!data || data.length === 0) {
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: session.user.id,
+            email: session.user.email || '',
+            cocamarname: formData.cocamarName,
+            cocamarmembers: formData.cocamarMembers,
+            cocamarengagement: formData.cocamarEngagement,
+            sicoobname: formData.sicoobName,
+            sicoobmembers: formData.sicoobMembers,
+            sicoobengagement: formData.sicoobEngagement,
+            frisianame: formData.frisiaName,
+            frisiamembers: formData.frisiaMembers,
+            frisiaengagement: formData.frisiaEngagement,
+            coop_image_1: formData.coopImage1,
+            coop_image_2: formData.coopImage2,
+            coop_image_3: formData.coopImage3,
+            coop_image_4: formData.coopImage4
+          });
+        
+        if (insertError) throw insertError;
+      }
       
       toast.success("Configurações atualizadas com sucesso!");
     } catch (error) {
