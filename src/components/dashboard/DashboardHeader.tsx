@@ -26,19 +26,24 @@ export const DashboardHeader = () => {
   useEffect(() => {
     const fetchWeather = async () => {
       try {
+        console.log('Fetching weather data...');
+        
         // Try to get user's location
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             async (position) => {
               const { latitude, longitude } = position.coords;
+              console.log('Got user location:', latitude, longitude);
               await getWeatherData(latitude, longitude);
             },
-            async () => {
+            async (error) => {
+              console.log('Geolocation error, using default location:', error);
               // Fallback to default location (São Paulo)
               await getWeatherData();
             }
           );
         } else {
+          console.log('Geolocation not supported, using default location');
           // Fallback to default location
           await getWeatherData();
         }
@@ -50,15 +55,27 @@ export const DashboardHeader = () => {
 
     const getWeatherData = async (lat?: number, lon?: number) => {
       try {
+        console.log('Calling weather function with:', { lat, lon });
+        
         const { data, error } = await supabase.functions.invoke('get-weather', {
           body: { lat, lon }
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase function error:', error);
+          throw error;
+        }
 
+        console.log('Weather data received:', data);
         setWeather(data);
       } catch (error) {
         console.error('Weather API error:', error);
+        // Set fallback weather data so the display still shows something
+        setWeather({
+          temperature: 24,
+          condition: 'informação não disponível',
+          city: 'São Paulo'
+        });
       } finally {
         setIsLoadingWeather(false);
       }
@@ -113,7 +130,7 @@ export const DashboardHeader = () => {
             </div>
           </div>
 
-          {!isLoadingWeather && weather && (
+          {weather && (
             <div className="bg-white/80 backdrop-blur-sm rounded-lg px-4 py-3 shadow-sm border border-white/50">
               <div className="flex items-center gap-2 text-blue-700">
                 <Cloud className="h-4 w-4" />
@@ -127,6 +144,18 @@ export const DashboardHeader = () => {
               </div>
               <div className="text-xs text-gray-500">
                 {weather.city}
+              </div>
+            </div>
+          )}
+
+          {isLoadingWeather && (
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg px-4 py-3 shadow-sm border border-white/50">
+              <div className="flex items-center gap-2 text-blue-700">
+                <Cloud className="h-4 w-4 animate-pulse" />
+                <span className="text-sm font-medium">Clima</span>
+              </div>
+              <div className="text-lg font-bold text-gray-500 mt-1">
+                Carregando...
               </div>
             </div>
           )}
