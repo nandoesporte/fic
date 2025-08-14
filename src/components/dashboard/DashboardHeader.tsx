@@ -1,10 +1,19 @@
-import { Sparkles, Clock, Calendar } from "lucide-react";
+import { Sparkles, Clock, Calendar, Cloud } from "lucide-react";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
+
+interface WeatherData {
+  temperature: number;
+  condition: string;
+  city: string;
+}
 
 export const DashboardHeader = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [isLoadingWeather, setIsLoadingWeather] = useState(true);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -12,6 +21,55 @@ export const DashboardHeader = () => {
     }, 1000);
 
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        // Try to get user's location
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const { latitude, longitude } = position.coords;
+              await getWeatherData(latitude, longitude);
+            },
+            async () => {
+              // Fallback to default location (São Paulo)
+              await getWeatherData();
+            }
+          );
+        } else {
+          // Fallback to default location
+          await getWeatherData();
+        }
+      } catch (error) {
+        console.error('Error fetching weather:', error);
+        setIsLoadingWeather(false);
+      }
+    };
+
+    const getWeatherData = async (lat?: number, lon?: number) => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-weather', {
+          body: { lat, lon }
+        });
+
+        if (error) throw error;
+
+        setWeather(data);
+      } catch (error) {
+        console.error('Weather API error:', error);
+      } finally {
+        setIsLoadingWeather(false);
+      }
+    };
+
+    fetchWeather();
+
+    // Refresh weather every 30 minutes
+    const weatherInterval = setInterval(fetchWeather, 30 * 60 * 1000);
+
+    return () => clearInterval(weatherInterval);
   }, []);
 
   const formatTime = (date: Date) => format(date, "HH:mm:ss", { locale: ptBR });
@@ -54,6 +112,24 @@ export const DashboardHeader = () => {
               {formatDate(currentTime)}
             </div>
           </div>
+
+          {!isLoadingWeather && weather && (
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg px-4 py-3 shadow-sm border border-white/50">
+              <div className="flex items-center gap-2 text-blue-700">
+                <Cloud className="h-4 w-4" />
+                <span className="text-sm font-medium">Clima</span>
+              </div>
+              <div className="text-lg font-bold text-gray-900 mt-1">
+                {weather.temperature}°C
+              </div>
+              <div className="text-xs text-gray-600 capitalize">
+                {weather.condition}
+              </div>
+              <div className="text-xs text-gray-500">
+                {weather.city}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
