@@ -14,13 +14,14 @@ export const QuestionnaireVoting: React.FC = () => {
     isLoading,
     selections,
     handleVote,
-    hasVotedForQuestionnaire
+    hasVotedInDimension,
+    hasVotedQuestionnaire
   } = useQuestionnaireVoting(isEmailVerified, userEmail);
 
   const voteSubmission = useVoteSubmission(userEmail);
 
   const handleConfirmVotes = (questionnaireId: string) => {
-    // Encontrar o questionário pelo ID
+    // Encontrar o questionário específico
     const questionnaire = questionnaires?.find(q => q.id === questionnaireId);
     if (!questionnaire) {
       console.error("Questionário não encontrado:", questionnaireId);
@@ -84,7 +85,7 @@ export const QuestionnaireVoting: React.FC = () => {
       selections={selections}
       onVote={handleVote}
       onConfirmVotes={handleConfirmVotes}
-      hasVotedForQuestionnaire={hasVotedForQuestionnaire}
+      hasVotedQuestionnaire={hasVotedQuestionnaire}
     />
   );
 };

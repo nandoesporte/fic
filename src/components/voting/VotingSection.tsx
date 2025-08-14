@@ -14,7 +14,7 @@ interface VotingSectionProps {
   };
   onVote: (questionnaireId: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => void;
   onConfirmVotes: (questionnaireId: string) => void;
-  hasVotedForQuestionnaire: (questionnaireId: string) => boolean;
+  hasVotedQuestionnaire: (questionnaireId: string) => boolean;
 }
 
 export const VotingSection = ({
@@ -24,7 +24,7 @@ export const VotingSection = ({
   selections,
   onVote,
   onConfirmVotes,
-  hasVotedForQuestionnaire
+  hasVotedQuestionnaire
 }: VotingSectionProps) => {
 
   return (
@@ -43,15 +43,14 @@ export const VotingSection = ({
         ) : (
           <div className="space-y-6">
             {questionnaires.map((questionnaire) => (
-              <div key={questionnaire.id} className="space-y-4">
-                <IndividualQuestionnaireSection
-                  questionnaire={questionnaire}
-                  selections={selections}
-                  onVote={onVote}
-                  onConfirmVotes={onConfirmVotes}
-                  hasVotedForQuestionnaire={hasVotedForQuestionnaire}
-                />
-              </div>
+              <IndividualQuestionnaireSection
+                key={questionnaire.id}
+                questionnaire={questionnaire}
+                selections={selections[questionnaire.id] || { strengths: [], challenges: [], opportunities: [] }}
+                onVote={onVote}
+                onConfirmVotes={onConfirmVotes}
+                hasVotedQuestionnaire={hasVotedQuestionnaire}
+              />
             ))}
           </div>
         )}

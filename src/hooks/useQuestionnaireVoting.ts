@@ -32,20 +32,20 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean, userEmail: stri
 
       console.log('Questionnaires data fetched:', questionnairesData);
       
-      // Return all questionnaires individually, not consolidated by group
+      // Retornar todos os questionários ativos sem consolidação
       return questionnairesData;
     },
     enabled: isEmailVerified,
   });
 
-  // Check if user has already voted for each questionnaire
+  // Check if user has already voted in each dimension
   const { data: userVotes } = useQuery({
     queryKey: ['user-votes', userEmail],
     queryFn: async () => {
       if (!userEmail) return [];
       const { data } = await supabase
-        .from('questionnaire_votes')
-        .select('questionnaire_id')
+        .from('dimension_votes')
+        .select('dimension')
         .eq('email', userEmail.toLowerCase());
       return data || [];
     },
@@ -93,8 +93,14 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean, userEmail: stri
     }));
   };
 
-  const hasVotedForQuestionnaire = (questionnaireId: string) => {
-    return userVotes?.some(vote => vote.questionnaire_id === questionnaireId) || false;
+  const hasVotedInDimension = (dimension: string) => {
+    return userVotes?.some(vote => vote.dimension === dimension) || false;
+  };
+
+  const hasVotedQuestionnaire = (questionnaireId: string) => {
+    const questionnaire = questionnaires?.find(q => q.id === questionnaireId);
+    if (!questionnaire) return false;
+    return hasVotedInDimension(questionnaire.dimension);
   };
 
   return {
@@ -103,6 +109,7 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean, userEmail: stri
     selections,
     handleVote,
     setSelections,
-    hasVotedForQuestionnaire
+    hasVotedInDimension,
+    hasVotedQuestionnaire
   };
 };
