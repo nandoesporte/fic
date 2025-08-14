@@ -27,7 +27,7 @@ const CooperativeImageCard = ({
 export const DashboardCooperatives = () => {
   const { cooperativeImages, loading } = useCooperativeSettings();
 
-  if (loading) {
+  if (loading || !cooperativeImages) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[1, 2, 3, 4].map((index) => (
@@ -44,19 +44,19 @@ export const DashboardCooperatives = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <CooperativeImageCard 
-        imageUrl={cooperativeImages.image1} 
+        imageUrl={cooperativeImages?.image1} 
         altText="Cooperativa 1"
       />
       <CooperativeImageCard 
-        imageUrl={cooperativeImages.image2} 
+        imageUrl={cooperativeImages?.image2} 
         altText="Cooperativa 2"
       />
       <CooperativeImageCard 
-        imageUrl={cooperativeImages.image3} 
+        imageUrl={cooperativeImages?.image3} 
         altText="Cooperativa 3"
       />
       <CooperativeImageCard 
-        imageUrl={cooperativeImages.image4} 
+        imageUrl={cooperativeImages?.image4} 
         altText="Cooperativa 4"
       />
     </div>
