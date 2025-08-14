@@ -86,6 +86,15 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        
+        <div className="mt-auto p-4">
+          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg p-4 border border-primary/20">
+            <div className="text-sm font-medium text-foreground mb-1">Bem-vindo!</div>
+            <div className="text-xs text-muted-foreground leading-relaxed">
+              Gerencie seus questionários e análises de forma simples e eficiente.
+            </div>
+          </div>
+        </div>
       </SidebarContent>
     </Sidebar>
   );
