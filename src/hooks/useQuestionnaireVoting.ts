@@ -32,30 +32,8 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean, userEmail: stri
 
       console.log('Questionnaires data fetched:', questionnairesData);
       
-      // Consolidate questionnaires by group using the most recently updated record
-      const consolidatedByGroup = questionnairesData.reduce((acc: { [key: string]: any }, curr) => {
-        if (!curr.group) return acc;
-        const existing = acc[curr.group];
-        const isNewer = !existing || new Date(curr.updated_at) > new Date(existing.updated_at);
-        if (isNewer) {
-          acc[curr.group] = {
-            id: curr.id,
-            dimension: curr.dimension,
-            strengths: curr.strengths,
-            challenges: curr.challenges,
-            opportunities: curr.opportunities,
-            created_at: curr.created_at,
-            updated_at: curr.updated_at,
-            strengths_statuses: curr.strengths_statuses,
-            challenges_statuses: curr.challenges_statuses,
-            opportunities_statuses: curr.opportunities_statuses,
-            group: curr.group
-          };
-        }
-        return acc;
-      }, {});
-
-      return Object.values(consolidatedByGroup);
+      // Retornar todos os questionários ativos sem consolidação
+      return questionnairesData;
     },
     enabled: isEmailVerified,
   });
@@ -119,12 +97,19 @@ export const useQuestionnaireVoting = (isEmailVerified: boolean, userEmail: stri
     return userVotes?.some(vote => vote.dimension === dimension) || false;
   };
 
+  const hasVotedQuestionnaire = (questionnaireId: string) => {
+    const questionnaire = questionnaires?.find(q => q.id === questionnaireId);
+    if (!questionnaire) return false;
+    return hasVotedInDimension(questionnaire.dimension);
+  };
+
   return {
     questionnaires,
     isLoading,
     selections,
     handleVote,
     setSelections,
-    hasVotedInDimension
+    hasVotedInDimension,
+    hasVotedQuestionnaire
   };
 };
