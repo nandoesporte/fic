@@ -4,10 +4,13 @@ import { EmailVerification } from "@/components/voting/EmailVerification";
 import { VotingSection } from "@/components/voting/VotingSection";
 import { useQuestionnaireVoting } from "@/hooks/useQuestionnaireVoting";
 import { useVoteSubmission } from "@/hooks/useVoteSubmission";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export const QuestionnaireVoting: React.FC = () => {
   const [userEmail, setUserEmail] = useState("");
   const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [selectedDimension, setSelectedDimension] = useState<string>("all");
   
   const {
     questionnaires,
@@ -18,6 +21,20 @@ export const QuestionnaireVoting: React.FC = () => {
   } = useQuestionnaireVoting(isEmailVerified, userEmail);
 
   const voteSubmission = useVoteSubmission(userEmail);
+
+  // Get available dimensions
+  const { data: dimensions } = useQuery({
+    queryKey: ['dimensions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('fic_dimensions')
+        .select('*')
+        .order('label');
+      if (error) throw error;
+      return data;
+    },
+    enabled: isEmailVerified,
+  });
 
   const handleConfirmVotes = (dimension: string) => {
     // Encontrar todos os questionários da dimensão
@@ -91,6 +108,9 @@ export const QuestionnaireVoting: React.FC = () => {
       onVote={handleVote}
       onConfirmVotes={handleConfirmVotes}
       hasVotedInDimension={hasVotedInDimension}
+      selectedDimension={selectedDimension}
+      onDimensionChange={setSelectedDimension}
+      dimensions={dimensions || []}
     />
   );
 };
