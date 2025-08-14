@@ -25,7 +25,8 @@ export default function Settings() {
     coopImage1: "",
     coopImage2: "",
     coopImage3: "",
-    coopImage4: ""
+    coopImage4: "",
+    weatherCity: "São Paulo"
   });
 
   useEffect(() => {
@@ -63,7 +64,8 @@ export default function Settings() {
             coopImage1: profile.coop_image_1 || "",
             coopImage2: profile.coop_image_2 || "",
             coopImage3: profile.coop_image_3 || "",
-            coopImage4: profile.coop_image_4 || ""
+            coopImage4: profile.coop_image_4 || "",
+            weatherCity: profile.weather_city || "São Paulo"
           });
         }
       } catch (error) {
@@ -109,7 +111,8 @@ export default function Settings() {
           coop_image_1: formData.coopImage1,
           coop_image_2: formData.coopImage2,
           coop_image_3: formData.coopImage3,
-          coop_image_4: formData.coopImage4
+          coop_image_4: formData.coopImage4,
+          weather_city: formData.weatherCity
         })
         .eq('id', session.user.id)
         .select();
@@ -135,7 +138,8 @@ export default function Settings() {
             coop_image_1: formData.coopImage1,
             coop_image_2: formData.coopImage2,
             coop_image_3: formData.coopImage3,
-            coop_image_4: formData.coopImage4
+            coop_image_4: formData.coopImage4,
+            weather_city: formData.weatherCity
           });
         
         if (insertError) throw insertError;
@@ -301,6 +305,23 @@ export default function Settings() {
                   placeholder="https://exemplo.com/logo4.png"
                 />
               </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 mt-6">
+            <h3 className="text-lg font-semibold mb-4">Configurações de Clima</h3>
+            <div className="space-y-2">
+              <Label htmlFor="weatherCity">Cidade para Display de Meteorologia</Label>
+              <Input
+                id="weatherCity"
+                name="weatherCity"
+                value={formData.weatherCity}
+                onChange={handleInputChange}
+                placeholder="Ex: São Paulo, Rio de Janeiro, Belo Horizonte"
+              />
+              <p className="text-sm text-gray-500">
+                Digite o nome da cidade que deseja exibir no dashboard
+              </p>
             </div>
           </Card>
 

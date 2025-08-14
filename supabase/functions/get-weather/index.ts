@@ -17,53 +17,56 @@ serve(async (req) => {
   }
 
   try {
-    const { lat, lon } = await req.json()
+    const { lat, lon, city } = await req.json()
     
     const apiKey = Deno.env.get('GOOGLE_CLOUD_API_KEY')
     if (!apiKey) {
       throw new Error('Google Cloud API key not configured')
     }
 
-    // Default coordinates (São Paulo, Brazil) if not provided
-    const latitude = lat || -23.5505
-    const longitude = lon || -46.6333
+    let latitude = lat || -23.5505
+    let longitude = lon || -46.6333
+    let cityName = city || 'São Paulo'
 
-    // Use Google Maps Geocoding API to get location name
-    const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}&language=pt-BR`
-    
-    const geocodeResponse = await fetch(geocodeUrl)
-    const geocodeData = await geocodeResponse.json()
+    // If city name is provided, geocode it to get coordinates
+    if (city && city !== 'São Paulo') {
+      console.log('Geocoding city:', city)
+      
+      const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(city)}&key=${apiKey}&language=pt-BR`
+      
+      const geocodeResponse = await fetch(geocodeUrl)
+      const geocodeData = await geocodeResponse.json()
 
-    if (!geocodeResponse.ok || geocodeData.status !== 'OK') {
-      throw new Error('Failed to get location data from Google')
-    }
-
-    // Extract city name
-    let city = 'São Paulo'
-    if (geocodeData.results && geocodeData.results.length > 0) {
-      const addressComponents = geocodeData.results[0].address_components
-      const cityComponent = addressComponents.find((component: any) => 
-        component.types.includes('locality') || 
-        component.types.includes('administrative_area_level_2')
-      )
-      if (cityComponent) {
-        city = cityComponent.long_name
+      if (geocodeResponse.ok && geocodeData.status === 'OK' && geocodeData.results.length > 0) {
+        const location = geocodeData.results[0].geometry.location
+        latitude = location.lat
+        longitude = location.lng
+        
+        // Extract formatted city name
+        const addressComponents = geocodeData.results[0].address_components
+        const cityComponent = addressComponents.find((component: any) => 
+          component.types.includes('locality') || 
+          component.types.includes('administrative_area_level_2')
+        )
+        if (cityComponent) {
+          cityName = cityComponent.long_name
+        }
+        
+        console.log(`Geocoded ${city} to:`, { latitude, longitude, cityName })
+      } else {
+        console.log('Geocoding failed, using coordinates for city name')
       }
     }
 
-    // Use Google Solar API to get weather information (or alternative weather service)
-    // Since Google doesn't have a direct weather API, we'll use OpenWeatherMap with Google geocoding
-    const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=demo_key&units=metric&lang=pt_br`
-    
-    // For demo purposes, we'll simulate weather data since we're using Google for location
-    // In production, you would integrate with a weather service of your choice
+    // For demo purposes with Google API, we'll simulate weather data
+    // You can integrate with any weather service you prefer
     const simulatedWeatherData: WeatherData = {
       temperature: Math.floor(Math.random() * 15) + 20, // 20-35°C
       condition: ['céu claro', 'parcialmente nublado', 'ensolarado', 'nuvens dispersas'][Math.floor(Math.random() * 4)],
-      city: city
+      city: cityName
     }
 
-    console.log(`Weather data retrieved for ${city}: ${simulatedWeatherData.temperature}°C, ${simulatedWeatherData.condition}`)
+    console.log(`Weather data retrieved for ${cityName}: ${simulatedWeatherData.temperature}°C, ${simulatedWeatherData.condition}`)
 
     return new Response(
       JSON.stringify(simulatedWeatherData),

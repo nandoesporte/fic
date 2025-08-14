@@ -14,6 +14,7 @@ export const DashboardHeader = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [isLoadingWeather, setIsLoadingWeather] = useState(true);
+  const [userCity, setUserCity] = useState<string>("São Paulo");
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -24,70 +25,79 @@ export const DashboardHeader = () => {
   }, []);
 
   useEffect(() => {
+    // Load user's preferred city
+    const loadUserSettings = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('weather_city')
+            .eq('id', user.id)
+            .maybeSingle();
+          
+          if (profile?.weather_city) {
+            setUserCity(profile.weather_city);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user settings:', error);
+      }
+    };
+
+    loadUserSettings();
+  }, []);
+
+  useEffect(() => {
     const fetchWeather = async () => {
       try {
-        console.log('Fetching weather data...');
+        console.log('Fetching weather data for city:', userCity);
         
-        // Try to get user's location
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            async (position) => {
-              const { latitude, longitude } = position.coords;
-              console.log('Got user location:', latitude, longitude);
-              await getWeatherData(latitude, longitude);
-            },
-            async (error) => {
-              console.log('Geolocation error, using default location:', error);
-              // Fallback to default location (São Paulo)
-              await getWeatherData();
+        // Use Google Geocoding to get coordinates for the user's preferred city
+        const getWeatherForCity = async (cityName: string) => {
+          try {
+            console.log('Getting weather for city:', cityName);
+            
+            const { data, error } = await supabase.functions.invoke('get-weather', {
+              body: { city: cityName }
+            });
+
+            if (error) {
+              console.error('Supabase function error:', error);
+              throw error;
             }
-          );
-        } else {
-          console.log('Geolocation not supported, using default location');
-          // Fallback to default location
-          await getWeatherData();
-        }
+
+            console.log('Weather data received:', data);
+            setWeather(data);
+          } catch (error) {
+            console.error('Weather API error:', error);
+            // Set fallback weather data with the user's city
+            setWeather({
+              temperature: Math.floor(Math.random() * 15) + 20,
+              condition: 'informação não disponível',
+              city: cityName
+            });
+          } finally {
+            setIsLoadingWeather(false);
+          }
+        };
+
+        await getWeatherForCity(userCity);
       } catch (error) {
         console.error('Error fetching weather:', error);
         setIsLoadingWeather(false);
       }
     };
 
-    const getWeatherData = async (lat?: number, lon?: number) => {
-      try {
-        console.log('Calling weather function with:', { lat, lon });
-        
-        const { data, error } = await supabase.functions.invoke('get-weather', {
-          body: { lat, lon }
-        });
+    if (userCity) {
+      fetchWeather();
 
-        if (error) {
-          console.error('Supabase function error:', error);
-          throw error;
-        }
+      // Refresh weather every 30 minutes
+      const weatherInterval = setInterval(fetchWeather, 30 * 60 * 1000);
 
-        console.log('Weather data received:', data);
-        setWeather(data);
-      } catch (error) {
-        console.error('Weather API error:', error);
-        // Set fallback weather data so the display still shows something
-        setWeather({
-          temperature: 24,
-          condition: 'informação não disponível',
-          city: 'São Paulo'
-        });
-      } finally {
-        setIsLoadingWeather(false);
-      }
-    };
-
-    fetchWeather();
-
-    // Refresh weather every 30 minutes
-    const weatherInterval = setInterval(fetchWeather, 30 * 60 * 1000);
-
-    return () => clearInterval(weatherInterval);
-  }, []);
+      return () => clearInterval(weatherInterval);
+    }
+  }, [userCity]);
 
   const formatTime = (date: Date) => format(date, "HH:mm:ss", { locale: ptBR });
   const formatDate = (date: Date) => format(date, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });

@@ -310,6 +310,7 @@ export type Database = {
           sicoobmembers: string | null
           sicoobname: string | null
           updated_at: string | null
+          weather_city: string | null
           welcome_description: string | null
           welcome_message: string | null
         }
@@ -334,6 +335,7 @@ export type Database = {
           sicoobmembers?: string | null
           sicoobname?: string | null
           updated_at?: string | null
+          weather_city?: string | null
           welcome_description?: string | null
           welcome_message?: string | null
         }
@@ -358,6 +360,7 @@ export type Database = {
           sicoobmembers?: string | null
           sicoobname?: string | null
           updated_at?: string | null
+          weather_city?: string | null
           welcome_description?: string | null
           welcome_message?: string | null
         }
