@@ -1,16 +1,38 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sidebar } from "@/components/ui/sidebar";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  useSidebar,
+} from "@/components/ui/sidebar";
 import { FileText, BarChart2, Database, FormInput, LayoutDashboard, Brain, Users, ClipboardList, PlusCircle, Settings, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+const menuItems = [
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Novo Questionário", url: "/novo-questionario", icon: PlusCircle },
+  { title: "Respostas dos Questionários", url: "/respostas", icon: ClipboardList },
+  { title: "Formulário", url: "/formulario", icon: FormInput },
+  { title: "Sistema de Votação", url: "/voting", icon: FileText },
+  { title: "Análise de Votos", url: "/analytics", icon: BarChart2 },
+  { title: "Exportar Dados", url: "/export", icon: Database },
+  { title: "Relatório IA", url: "/ai-report", icon: Brain },
+  { title: "Usuários", url: "/users", icon: Users },
+  { title: "Configurações", url: "/settings", icon: Settings },
+];
 
 export function AppSidebar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { state } = useSidebar();
 
   const handleLogout = async () => {
     try {
@@ -32,113 +54,39 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className="border-r border-border bg-sidebar-background w-[275px] md:w-[275px] sm:w-full overflow-hidden" collapsible="icon">
-      <ScrollArea className="h-full">
-        <div className="space-y-4 py-6">
-          <div className="px-4 sm:px-6">
-            <div className="space-y-2 sm:space-y-3">
-              <Link to="/">
-                <Button
-                  variant={pathname === "/" ? "secondary" : "ghost"}
-                  className="w-full justify-start text-sm"
+    <Sidebar collapsible="icon">
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {menuItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={pathname === item.url}
+                    tooltip={item.title}
+                  >
+                    <Link to={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={handleLogout}
+                  className="text-red-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-950"
+                  tooltip="Sair"
                 >
-                  <LayoutDashboard className="mr-2 h-4 w-4" />
-                  <span>Dashboard</span>
-                </Button>
-              </Link>
-              <Link to="/novo-questionario">
-                <Button
-                  variant={pathname === "/novo-questionario" ? "secondary" : "ghost"}
-                  className="w-full justify-start text-sm"
-                >
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  <span>Novo Questionário</span>
-                </Button>
-              </Link>
-              <Link to="/respostas">
-                <Button
-                  variant={pathname === "/respostas" ? "secondary" : "ghost"}
-                  className="w-full justify-start text-sm"
-                >
-                  <ClipboardList className="mr-2 h-4 w-4" />
-                  <span>Respostas dos Questionários</span>
-                </Button>
-              </Link>
-              <Link to="/formulario">
-                <Button
-                  variant={pathname === "/formulario" ? "secondary" : "ghost"}
-                  className="w-full justify-start text-sm"
-                >
-                  <FormInput className="mr-2 h-4 w-4" />
-                  <span>Formulário</span>
-                </Button>
-              </Link>
-              <Link to="/voting">
-                <Button
-                  variant={pathname === "/voting" ? "secondary" : "ghost"}
-                  className="w-full justify-start text-sm"
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  <span>Sistema de Votação</span>
-                </Button>
-              </Link>
-              <Link to="/analytics">
-                <Button
-                  variant={pathname === "/analytics" ? "secondary" : "ghost"}
-                  className="w-full justify-start text-sm"
-                >
-                  <BarChart2 className="mr-2 h-4 w-4" />
-                  <span>Análise de Votos</span>
-                </Button>
-              </Link>
-              <Link to="/export">
-                <Button
-                  variant={pathname === "/export" ? "secondary" : "ghost"}
-                  className="w-full justify-start text-sm"
-                >
-                  <Database className="mr-2 h-4 w-4" />
-                  <span>Exportar Dados</span>
-                </Button>
-              </Link>
-              <Link to="/ai-report">
-                <Button
-                  variant={pathname === "/ai-report" ? "secondary" : "ghost"}
-                  className="w-full justify-start text-sm"
-                >
-                  <Brain className="mr-2 h-4 w-4" />
-                  <span>Relatório IA</span>
-                </Button>
-              </Link>
-              <Link to="/users">
-                <Button
-                  variant={pathname === "/users" ? "secondary" : "ghost"}
-                  className="w-full justify-start text-sm"
-                >
-                  <Users className="mr-2 h-4 w-4" />
-                  <span>Usuários</span>
-                </Button>
-              </Link>
-              <Link to="/settings">
-                <Button
-                  variant={pathname === "/settings" ? "secondary" : "ghost"}
-                  className="w-full justify-start text-sm"
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Configurações</span>
-                </Button>
-              </Link>
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-sm text-red-500 hover:text-red-600 hover:bg-red-100"
-                onClick={handleLogout}
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Sair</span>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </ScrollArea>
+                  <LogOut className="h-4 w-4" />
+                  <span>Sair</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
     </Sidebar>
   );
 }
