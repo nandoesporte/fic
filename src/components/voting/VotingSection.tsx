@@ -1,4 +1,4 @@
-import { DimensionAggregatedSection } from "@/components/voting/DimensionAggregatedSection";
+import { IndividualQuestionnaireSection } from "@/components/voting/IndividualQuestionnaireSection";
 import { Loader2 } from "lucide-react";
 
 interface VotingSectionProps {
@@ -13,8 +13,8 @@ interface VotingSectionProps {
     };
   };
   onVote: (questionnaireId: string, optionType: 'strengths' | 'challenges' | 'opportunities', optionNumber: number) => void;
-  onConfirmVotes: (dimension: string) => void;
-  hasVotedInDimension: (dimension: string) => boolean;
+  onConfirmVotes: (questionnaireId: string) => void;
+  hasVotedForQuestionnaire: (questionnaireId: string) => boolean;
 }
 
 export const VotingSection = ({
@@ -24,20 +24,8 @@ export const VotingSection = ({
   selections,
   onVote,
   onConfirmVotes,
-  hasVotedInDimension
+  hasVotedForQuestionnaire
 }: VotingSectionProps) => {
-  const groupQuestionnairesByDimension = (questionnaires: any[]): { [key: string]: any[] } => {
-    return questionnaires.reduce((acc, curr) => {
-      const dimension = curr.dimension;
-      if (!acc[dimension]) {
-        acc[dimension] = [];
-      }
-      acc[dimension].push(curr);
-      return acc;
-    }, {} as { [key: string]: any[] });
-  };
-
-  const groupedByDimension = groupQuestionnairesByDimension(questionnaires);
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -54,18 +42,14 @@ export const VotingSection = ({
           </div>
         ) : (
           <div className="space-y-6">
-            {Object.entries(groupedByDimension).map(([dimension, dimensionQuestionnaires]) => (
-              <div key={dimension} className="space-y-4">
-                <h2 className="text-xl font-semibold text-foreground capitalize">
-                  {dimension.replace(/-/g, ' ')}
-                </h2>
-                <DimensionAggregatedSection
-                  dimension={dimension}
-                  questionnaires={dimensionQuestionnaires}
+            {questionnaires.map((questionnaire) => (
+              <div key={questionnaire.id} className="space-y-4">
+                <IndividualQuestionnaireSection
+                  questionnaire={questionnaire}
                   selections={selections}
                   onVote={onVote}
                   onConfirmVotes={onConfirmVotes}
-                  hasVotedInDimension={hasVotedInDimension}
+                  hasVotedForQuestionnaire={hasVotedForQuestionnaire}
                 />
               </div>
             ))}

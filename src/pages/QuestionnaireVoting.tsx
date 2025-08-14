@@ -14,22 +14,22 @@ export const QuestionnaireVoting: React.FC = () => {
     isLoading,
     selections,
     handleVote,
-    hasVotedInDimension
+    hasVotedForQuestionnaire
   } = useQuestionnaireVoting(isEmailVerified, userEmail);
 
   const voteSubmission = useVoteSubmission(userEmail);
 
-  const handleConfirmVotes = (dimension: string) => {
-    // Encontrar o questionário da dimensão
-    const dimensionQuestionnaire = questionnaires?.find(q => q.dimension === dimension);
-    if (!dimensionQuestionnaire) {
-      console.error("Questionário da dimensão não encontrado:", dimension);
+  const handleConfirmVotes = (questionnaireId: string) => {
+    // Encontrar o questionário pelo ID
+    const questionnaire = questionnaires?.find(q => q.id === questionnaireId);
+    if (!questionnaire) {
+      console.error("Questionário não encontrado:", questionnaireId);
       return;
     }
 
     // Preparar os votos no formato esperado pelo useVoteSubmission
     const votes = [];
-    const qSelection = selections[dimensionQuestionnaire.id];
+    const qSelection = selections[questionnaireId];
     
     if (qSelection) {
       // Adicionar votos de strengths
@@ -59,9 +59,9 @@ export const QuestionnaireVoting: React.FC = () => {
 
     // Submeter os votos
     voteSubmission.mutate({
-      questionnaireId: dimensionQuestionnaire.id,
+      questionnaireId: questionnaireId,
       votes,
-      dimension
+      dimension: questionnaire.dimension
     });
   };
 
@@ -84,7 +84,7 @@ export const QuestionnaireVoting: React.FC = () => {
       selections={selections}
       onVote={handleVote}
       onConfirmVotes={handleConfirmVotes}
-      hasVotedInDimension={hasVotedInDimension}
+      hasVotedForQuestionnaire={hasVotedForQuestionnaire}
     />
   );
 };
