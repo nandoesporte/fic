@@ -21,7 +21,7 @@ export const useVoteSubmission = (userEmail: string) => {
         throw new Error('Email não fornecido');
       }
 
-      // Verificar se já votou nesta dimensão
+      // Verificar se já votou nesta dimensão (apenas no primeiro questionário)
       const { data: existingVote } = await supabase
         .from('dimension_votes')
         .select('id')
@@ -33,13 +33,22 @@ export const useVoteSubmission = (userEmail: string) => {
         throw new Error('Você já votou nesta dimensão');
       }
 
-      // Registrar o voto na dimensão
-      await supabase
+      // Registrar o voto na dimensão apenas uma vez por dimensão
+      const { data: firstVoteCheck } = await supabase
         .from('dimension_votes')
-        .insert({
-          email: userEmail.toLowerCase(),
-          dimension: dimension
-        });
+        .select('id')
+        .eq('email', userEmail.toLowerCase())
+        .eq('dimension', dimension)
+        .maybeSingle();
+
+      if (!firstVoteCheck) {
+        await supabase
+          .from('dimension_votes')
+          .insert({
+            email: userEmail.toLowerCase(),
+            dimension: dimension
+          });
+      }
 
       // Registrar os votos individuais sequencialmente para evitar problemas de concorrência
       console.log('Submitting votes:', votes);

@@ -20,48 +20,54 @@ export const QuestionnaireVoting: React.FC = () => {
   const voteSubmission = useVoteSubmission(userEmail);
 
   const handleConfirmVotes = (dimension: string) => {
-    // Encontrar o questionário da dimensão
-    const dimensionQuestionnaire = questionnaires?.find(q => q.dimension === dimension);
-    if (!dimensionQuestionnaire) {
-      console.error("Questionário da dimensão não encontrado:", dimension);
+    // Encontrar todos os questionários da dimensão
+    const dimensionQuestionnaires = questionnaires?.filter(q => q.dimension === dimension) || [];
+    if (dimensionQuestionnaires.length === 0) {
+      console.error("Nenhum questionário da dimensão encontrado:", dimension);
       return;
     }
 
-    // Preparar os votos no formato esperado pelo useVoteSubmission
-    const votes = [];
-    const qSelection = selections[dimensionQuestionnaire.id];
-    
-    if (qSelection) {
-      // Adicionar votos de strengths
-      if (qSelection.strengths?.length > 0) {
-        votes.push({
-          optionType: 'strengths',
-          optionNumbers: qSelection.strengths
-        });
-      }
+    // Preparar e submeter votos para cada questionário que tem seleções
+    dimensionQuestionnaires.forEach(questionnaire => {
+      const qSelection = selections[questionnaire.id];
       
-      // Adicionar votos de challenges
-      if (qSelection.challenges?.length > 0) {
-        votes.push({
-          optionType: 'challenges',
-          optionNumbers: qSelection.challenges
-        });
-      }
-      
-      // Adicionar votos de opportunities
-      if (qSelection.opportunities?.length > 0) {
-        votes.push({
-          optionType: 'opportunities',
-          optionNumbers: qSelection.opportunities
-        });
-      }
-    }
+      if (qSelection) {
+        const votes = [];
+        
+        // Adicionar votos de strengths
+        if (qSelection.strengths?.length > 0) {
+          votes.push({
+            optionType: 'strengths',
+            optionNumbers: qSelection.strengths
+          });
+        }
+        
+        // Adicionar votos de challenges
+        if (qSelection.challenges?.length > 0) {
+          votes.push({
+            optionType: 'challenges',
+            optionNumbers: qSelection.challenges
+          });
+        }
+        
+        // Adicionar votos de opportunities
+        if (qSelection.opportunities?.length > 0) {
+          votes.push({
+            optionType: 'opportunities',
+            optionNumbers: qSelection.opportunities
+          });
+        }
 
-    // Submeter os votos
-    voteSubmission.mutate({
-      questionnaireId: dimensionQuestionnaire.id,
-      votes,
-      dimension
+        // Submeter os votos para este questionário específico
+        if (votes.length > 0) {
+          console.log(`Submitting votes for questionnaire ${questionnaire.id}:`, votes);
+          voteSubmission.mutate({
+            questionnaireId: questionnaire.id,
+            votes,
+            dimension
+          });
+        }
+      }
     });
   };
 
