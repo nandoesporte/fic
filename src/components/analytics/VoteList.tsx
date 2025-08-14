@@ -25,10 +25,11 @@ export const VoteList = ({ type, data }: VoteListProps) => {
     }
   };
 
-  // Sort data by option number to maintain consistent order
-  const sortedData = [...data].sort((a, b) => 
-    parseInt(a.optionNumber) - parseInt(b.optionNumber)
-  );
+  // Sort data by total votes (descending order - maior primeiro)
+  const sortedData = [...data].sort((a, b) => b.total - a.total);
+  
+  // Calculate total votes for percentage calculation
+  const totalVotes = data.reduce((sum, item) => sum + item.total, 0);
 
   return (
     <div className="mb-4 space-y-3">
@@ -37,22 +38,26 @@ export const VoteList = ({ type, data }: VoteListProps) => {
           Nenhum voto registrado para esta seção
         </div>
       ) : (
-        sortedData.map((item, index) => (
-          <div
-            key={index}
-            className={`flex items-center justify-between p-5 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ${getBgColor()}`}
-          >
-            <div className="flex-1">
-              <span className="text-sm font-medium">{(item.text || "").trim() || "Texto da opção não disponível"}</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <span className="text-xs opacity-75">Total de votos</span>
-                <p className="font-bold">{item.total}</p>
+        sortedData.map((item, index) => {
+          const percentage = totalVotes > 0 ? Math.round((item.total / totalVotes) * 100) : 0;
+          
+          return (
+            <div
+              key={index}
+              className={`flex items-center justify-between p-5 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ${getBgColor()}`}
+            >
+              <div className="flex-1">
+                <span className="text-sm font-medium">{(item.text || "").trim() || "Texto da opção não disponível"}</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <span className="text-xs opacity-75">Total de votos</span>
+                  <p className="font-bold">{percentage}% - {item.total}</p>
+                </div>
               </div>
             </div>
-          </div>
-        ))
+          );
+        })
       )}
     </div>
   );
