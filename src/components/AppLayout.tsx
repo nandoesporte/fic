@@ -4,7 +4,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const showSidebar = !['/voting', '/formulario', '/login', '/vote-success'].includes(location.pathname);
+  const showSidebar = !['/voting', '/formulario', '/login', '/vote-success', '/form-success'].includes(location.pathname);
 
   if (!showSidebar) {
     return (
