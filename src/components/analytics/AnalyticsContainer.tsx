@@ -113,14 +113,19 @@ export const AnalyticsContainer = () => {
   };
 
   const totalVotes = calculateTotalVotes(votingData);
-  const actualParticipants = dimensionVotes?.length || 0;
+  
+  // Contar participantes únicos por email
+  const uniqueParticipants = dimensionVotes 
+    ? new Set(dimensionVotes.map(vote => vote.email)).size 
+    : 0;
+  
   const participationRate = totalVoters > 0 
-    ? Math.round((actualParticipants / totalVoters) * 100) 
+    ? Math.round((uniqueParticipants / totalVoters) * 100) 
     : 0;
 
   console.log("Analytics summary:", {
     totalVoters,
-    actualParticipants,
+    uniqueParticipants,
     totalVotes,
     participationRate,
     selectedDimension
