@@ -122,5 +122,17 @@ export const useCooperativeSettings = () => {
     fetchSettings();
   }, [session?.user?.id]); // Re-fetch when user ID changes
 
+  // Also refetch when returning to the page
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && session?.user?.id) {
+        fetchSettings();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [session?.user?.id]);
+
   return { cooperatives, cooperativeImages, loading, refetch: fetchSettings };
 };
