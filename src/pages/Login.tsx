@@ -66,6 +66,9 @@ export default function Login() {
     <div className="min-h-screen bg-gradient-to-b from-sky-50 to-sky-100 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
+          <div className="flex justify-center mb-6">
+            <img src="/lovable-uploads/51e9ba6a-5b44-4dbc-8ba0-a4dbe43f8f8b.png" alt="FIC Logo" className="h-20 w-auto" />
+          </div>
           <h1 className="text-3xl font-bold text-gray-900">Bem-vindo ao FIC</h1>
           <p className="mt-2 text-gray-600">
             Sistema de Felicidade Interna do Cooperativismo
