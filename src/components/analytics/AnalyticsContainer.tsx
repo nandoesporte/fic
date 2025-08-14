@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuestionnaireVotes } from '@/hooks/useQuestionnaireVotes';
 import { useQuery } from '@tanstack/react-query';
