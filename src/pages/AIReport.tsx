@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileSpreadsheet, FileText } from "lucide-react";
+import { Loader2, FileSpreadsheet, FileText, Brain, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import {
   Table,
@@ -18,12 +18,31 @@ import { Json } from "@/integrations/supabase/types";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { AIVotingMetrics } from "@/components/analytics/AIVotingMetrics";
+import { AIVotingResults } from "@/components/analytics/AIVotingResults";
+import { DimensionFilter } from "@/components/analytics/DimensionFilter";
 
 interface ReportMetrics {
   total_votos: number;
   pontos_fortes: number;
   desafios: number;
   oportunidades: number;
+}
+
+interface VoteGroup {
+  text: string;
+  votes: number;
+  variations: string[];
+}
+
+interface VoteAnalysis {
+  dimension: string;
+  totalVotes: number;
+  strengths: VoteGroup[];
+  challenges: VoteGroup[];
+  opportunities: VoteGroup[];
+  participationRate: number;
+  uniqueVoters: number;
 }
 
 function isReportMetrics(metrics: Json): metrics is { [key: string]: Json } & ReportMetrics {
@@ -40,10 +59,12 @@ function isReportMetrics(metrics: Json): metrics is { [key: string]: Json } & Re
 }
 
 export default function AIReport() {
-  const [selectedDimension, setSelectedDimension] = useState<string>("");
+  const [selectedDimension, setSelectedDimension] = useState<string>("all");
   const [analysis, setAnalysis] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [voteAnalysis, setVoteAnalysis] = useState<VoteAnalysis | null>(null);
+  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
 
   const { data: dimensions, isLoading } = useQuery({
     queryKey: ['dimensions'],
@@ -71,11 +92,6 @@ export default function AIReport() {
   });
 
   const handleAnalyze = async () => {
-    if (!selectedDimension) {
-      toast.error("Por favor, selecione uma dimensão");
-      return;
-    }
-
     setIsAnalyzing(true);
     setProgress(0);
     try {
@@ -86,12 +102,30 @@ export default function AIReport() {
       if (response.error) throw response.error;
       setAnalysis(response.data.analysis);
       setProgress(100);
-      toast.success("Análise concluída com sucesso!");
+      toast.success("Análise de IA concluída com sucesso!");
     } catch (error) {
       console.error('Error:', error);
-      toast.error("Erro ao gerar análise");
+      toast.error("Erro ao gerar análise de IA");
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const handleIntelligentAnalysis = async () => {
+    setIsLoadingAnalysis(true);
+    try {
+      const response = await supabase.functions.invoke('intelligent-vote-analysis', {
+        body: { dimension: selectedDimension },
+      });
+
+      if (response.error) throw response.error;
+      setVoteAnalysis(response.data);
+      toast.success("Análise inteligente concluída!");
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error("Erro ao gerar análise inteligente");
+    } finally {
+      setIsLoadingAnalysis(false);
     }
   };
 
@@ -167,30 +201,76 @@ export default function AIReport() {
         </p>
       </div>
 
+      {/* Seção de Análise Inteligente de Votos */}
       <Card className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Brain className="h-5 w-5 text-blue-600" />
+          <h2 className="text-xl font-semibold">Análise Inteligente de Votos</h2>
+        </div>
+        
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Selecione a Dimensão
-            </label>
-            <select
-              className="w-full p-2 border rounded-md"
-              value={selectedDimension}
-              onChange={(e) => setSelectedDimension(e.target.value)}
-            >
-              <option value="">Selecione uma dimensão...</option>
-              {dimensions?.map((dimension) => (
-                <option key={dimension.identifier} value={dimension.identifier}>
-                  {dimension.label}
-                </option>
-              ))}
-            </select>
+          <DimensionFilter
+            selectedDimension={selectedDimension}
+            onDimensionChange={setSelectedDimension}
+            dimensions={dimensions}
+          />
+
+          <Button
+            onClick={handleIntelligentAnalysis}
+            disabled={isLoadingAnalysis}
+            className="w-full"
+          >
+            {isLoadingAnalysis ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processando arquivos de backup...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Analisar Votos dos Arquivos de Backup
+              </>
+            )}
+          </Button>
+        </div>
+
+        {voteAnalysis && (
+          <div className="mt-8 space-y-6">
+            <AIVotingMetrics
+              totalVoters={0} // Será calculado pelo componente
+              totalVotes={voteAnalysis.totalVotes}
+              uniqueVoters={voteAnalysis.uniqueVoters}
+              participationRate={voteAnalysis.participationRate}
+            />
+
+            <AIVotingResults
+              strengths={voteAnalysis.strengths}
+              challenges={voteAnalysis.challenges}
+              opportunities={voteAnalysis.opportunities}
+            />
           </div>
+        )}
+      </Card>
+
+      {/* Seção de Relatórios IA Tradicionais */}
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Brain className="h-5 w-5 text-purple-600" />
+          <h2 className="text-xl font-semibold">Análise IA Tradicional</h2>
+        </div>
+        
+        <div className="space-y-4">
+          <DimensionFilter
+            selectedDimension={selectedDimension}
+            onDimensionChange={setSelectedDimension}
+            dimensions={dimensions}
+          />
 
           <Button
             onClick={handleAnalyze}
-            disabled={isAnalyzing || !selectedDimension}
+            disabled={isAnalyzing || selectedDimension === ""}
             className="w-full"
+            variant="outline"
           >
             {isAnalyzing ? (
               <>
@@ -198,7 +278,7 @@ export default function AIReport() {
                 Analisando...
               </>
             ) : (
-              'Gerar Análise'
+              'Gerar Análise de IA'
             )}
           </Button>
 
