@@ -233,44 +233,14 @@ IMPORTANTE:
       groupSimilarTexts(Array.from(optionTexts.opportunities), 'Oportunidades')
     ]);
 
-    // Contar votos para cada grupo - cada opção representa um voto
+    // Contar votos para cada grupo - cada variação original representa um voto
     const countVotesForGroup = (group: any, category: string) => {
-      let totalVotes = 0;
-      
-      for (const variation of group.variations) {
-        // Contar quantas vezes esta variação aparece nos questionários
-        for (const questionnaire of allQuestionnaires) {
-          const splitOptions = (content: string) => {
-            if (!content) return [];
-            const normalized = content.replace(/\r\n/g, "\n").trim();
-            const hasBlankLines = /\n{2,}/.test(normalized);
-            const parts = hasBlankLines ? normalized.split(/\n{2,}/) : normalized.split(/\n/);
-            return parts.map(p => p.trim()).filter(p => p.length > 0);
-          };
-
-          let options: string[] = [];
-          
-          if (category === 'strengths') {
-            options = splitOptions(questionnaire.strengths || '');
-          } else if (category === 'challenges') {
-            options = splitOptions(questionnaire.challenges || '');
-          } else if (category === 'opportunities') {
-            options = splitOptions(questionnaire.opportunities || '');
-          }
-
-          // Buscar pela variação exata ou similar
-          const foundVariation = options.find(opt => 
-            opt.trim() === variation.trim() || 
-            opt.trim().toLowerCase() === variation.trim().toLowerCase()
-          );
-          
-          if (foundVariation) {
-            totalVotes += 1;
-          }
-        }
-      }
+      // Cada variação original conta como 1 voto
+      // As variações são os textos originais agrupados pela IA
+      const totalVotes = group.variations.length;
 
       console.log(`Group "${group.mainText}" (${category}): ${totalVotes} votes from ${group.variations.length} variations`);
+      console.log(`Variations: ${group.variations.join(', ')}`);
 
       return {
         text: group.mainText,
