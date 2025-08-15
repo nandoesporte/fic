@@ -244,19 +244,31 @@ IMPORTANTE:
 
     // Contar votos para cada grupo baseado nas variações originais encontradas
     const countVotesForGroup = (group: any, category: string, allOptionsForCategory: string[]) => {
-      // Contar quantas vezes cada variação do grupo aparece nas opções originais
+      // REGRA CRÍTICA: Cada variação no grupo deve contar quantas vezes aparece nas opções originais
+      // Cada aparição = 1 voto exato
       let totalVotes = 0;
       
+      console.log(`\n=== Counting votes for group "${group.mainText}" (${category}) ===`);
+      console.log(`Group variations: [${group.variations.join(', ')}]`);
+      console.log(`Total original options in category: ${allOptionsForCategory.length}`);
+      
       for (const variation of group.variations) {
-        // Contar todas as ocorrências desta variação nas opções originais
-        const occurrences = allOptionsForCategory.filter(option => 
-          option.trim().toLowerCase() === variation.trim().toLowerCase()
-        ).length;
-        totalVotes += occurrences;
+        // Contar EXATAMENTE quantas vezes esta variação aparece nas opções originais
+        const exactMatches = allOptionsForCategory.filter(option => {
+          const match = option.trim().toLowerCase() === variation.trim().toLowerCase();
+          if (match) {
+            console.log(`  ✓ Found exact match: "${option}" matches "${variation}"`);
+          }
+          return match;
+        });
+        
+        const variationVotes = exactMatches.length;
+        totalVotes += variationVotes;
+        console.log(`  Variation "${variation}": ${variationVotes} votes`);
       }
-
-      console.log(`Group "${group.mainText}" (${category}): ${totalVotes} votes from ${group.variations.length} variations`);
-      console.log(`Variations: ${group.variations.join(', ')}`);
+      
+      console.log(`  TOTAL VOTES FOR GROUP: ${totalVotes}`);
+      console.log(`=== End group counting ===\n`);
 
       return {
         text: group.mainText,

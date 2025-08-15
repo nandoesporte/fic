@@ -30,6 +30,7 @@ export const AIVotingResults = ({ strengths, challenges, opportunities }: AIVoti
     return (
       <div className="space-y-3">
         {groups.map((group, index) => {
+          // SEMPRE calcular porcentagem, mesmo para 0 votos
           const percentage = totalVotes > 0 ? Math.round((group.votes / totalVotes) * 100) : 0;
           
           return (
@@ -67,7 +68,9 @@ export const AIVotingResults = ({ strengths, challenges, opportunities }: AIVoti
               <div className="flex items-center gap-4">
                 <div className="text-right">
                   <span className="text-xs opacity-75">Total de votos</span>
-                  <p className="font-bold">{percentage}% • {group.votes}</p>
+                  <p className="font-bold">
+                    {percentage}% • {group.votes} {group.votes === 1 ? 'voto' : 'votos'}
+                  </p>
                 </div>
               </div>
             </div>
