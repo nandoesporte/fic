@@ -6,6 +6,7 @@ import { Form } from "@/components/ui/form";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { GroupSelect } from "./FICForm/GroupSelect";
 import { DimensionSelect } from "./FICForm/DimensionSelect";
 import { TextAreaSection } from "./FICForm/TextAreaSection";
@@ -13,6 +14,7 @@ import { formSchema, type FICFormSchema } from "./FICForm/types";
 
 export function FICForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   const form = useForm<FICFormSchema>({
     resolver: zodResolver(formSchema),
@@ -49,6 +51,7 @@ export function FICForm() {
 
       toast.success("Questionário enviado com sucesso!");
       form.reset();
+      navigate('/form-success');
     } catch (error) {
       console.error("Erro ao enviar questionário:", error);
       toast.error("Erro ao enviar questionário. Por favor, tente novamente.");
