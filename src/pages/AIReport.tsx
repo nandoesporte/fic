@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileSpreadsheet, FileText, Brain, RefreshCw } from "lucide-react";
+import { Loader2, FileSpreadsheet, FileText, Brain, RefreshCw, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Table,
@@ -21,6 +21,7 @@ import autoTable from 'jspdf-autotable';
 import { AIVotingMetrics } from "@/components/analytics/AIVotingMetrics";
 import { AIVotingResults } from "@/components/analytics/AIVotingResults";
 import { DimensionFilter } from "@/components/analytics/DimensionFilter";
+import { ConsolidatedReport } from "@/components/analytics/ConsolidatedReport";
 
 interface ReportMetrics {
   total_votos: number;
@@ -45,6 +46,22 @@ interface VoteAnalysis {
   uniqueVoters: number;
 }
 
+interface ConsolidatedVote {
+  groupName: string;
+  originalTexts: string[];
+  totalVotes: number;
+  category: 'strengths' | 'challenges' | 'opportunities';
+}
+
+interface ConsolidatedReportData {
+  dimension: string;
+  totalVotes: number;
+  uniqueVoters: number;
+  strengths: ConsolidatedVote[];
+  challenges: ConsolidatedVote[];
+  opportunities: ConsolidatedVote[];
+}
+
 function isReportMetrics(metrics: Json): metrics is { [key: string]: Json } & ReportMetrics {
   if (typeof metrics !== 'object' || metrics === null || Array.isArray(metrics)) {
     return false;
@@ -65,6 +82,8 @@ export default function AIReport() {
   const [progress, setProgress] = useState(0);
   const [voteAnalysis, setVoteAnalysis] = useState<VoteAnalysis | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
+  const [consolidatedReport, setConsolidatedReport] = useState<ConsolidatedReportData | null>(null);
+  const [isLoadingConsolidated, setIsLoadingConsolidated] = useState(false);
 
   const { data: dimensions, isLoading } = useQuery({
     queryKey: ['dimensions'],
@@ -126,6 +145,24 @@ export default function AIReport() {
       toast.error("Erro ao gerar análise inteligente");
     } finally {
       setIsLoadingAnalysis(false);
+    }
+  };
+
+  const handleConsolidatedReport = async () => {
+    setIsLoadingConsolidated(true);
+    try {
+      const response = await supabase.functions.invoke('generate-consolidated-report', {
+        body: { dimension: selectedDimension },
+      });
+
+      if (response.error) throw response.error;
+      setConsolidatedReport(response.data);
+      toast.success("Relatório consolidado gerado com sucesso!");
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error("Erro ao gerar relatório consolidado");
+    } finally {
+      setIsLoadingConsolidated(false);
     }
   };
 
@@ -200,6 +237,57 @@ export default function AIReport() {
           Análise detalhada dos votos por dimensão usando inteligência artificial
         </p>
       </div>
+
+      {/* Seção de Relatório Consolidado por IA */}
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <BarChart3 className="h-5 w-5 text-purple-600" />
+          <h2 className="text-xl font-semibold">Relatório Consolidado por IA</h2>
+        </div>
+        
+        <p className="text-gray-600 mb-4">
+          Análise avançada que agrupa votos similares por significado e intenção usando IA.
+        </p>
+
+        <div className="space-y-4">
+          <DimensionFilter
+            selectedDimension={selectedDimension}
+            onDimensionChange={setSelectedDimension}
+            dimensions={dimensions}
+          />
+
+          <Button
+            onClick={handleConsolidatedReport}
+            disabled={isLoadingConsolidated}
+            className="w-full"
+          >
+            {isLoadingConsolidated ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processando e agrupando votos...
+              </>
+            ) : (
+              <>
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Gerar Relatório Consolidado
+              </>
+            )}
+          </Button>
+        </div>
+
+        {consolidatedReport && (
+          <div className="mt-8">
+            <ConsolidatedReport
+              dimension={consolidatedReport.dimension}
+              totalVotes={consolidatedReport.totalVotes}
+              uniqueVoters={consolidatedReport.uniqueVoters}
+              strengths={consolidatedReport.strengths}
+              challenges={consolidatedReport.challenges}
+              opportunities={consolidatedReport.opportunities}
+            />
+          </div>
+        )}
+      </Card>
 
       {/* Seção de Análise Inteligente de Votos */}
       <Card className="p-6">
