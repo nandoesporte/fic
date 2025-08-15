@@ -52,11 +52,11 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
       console.log("Questionnaires found:", questionnaires?.length);
       console.log("Questionnaires data:", questionnaires);
 
-      // Initialize vote counters - fix the structure to properly accumulate across questionnaires
-      const voteCounters: Record<string, Record<number, { count: number, text: string }>> = {
-        strengths: {},
-        challenges: {},
-        opportunities: {}
+      // Store individual votes without aggregating
+      const individualVotes: Record<string, Array<{ text: string; questionnaireId: string; optionNumber: number }>> = {
+        strengths: [],
+        challenges: [],
+        opportunities: []
       };
 
       // Process each questionnaire and its votes
@@ -74,20 +74,20 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
 
           console.log(`Votes for ${optionType}:`, votes);
 
-          // Count votes for each option
+          // Store each individual vote
           votes.forEach(vote => {
             const optionNumber = vote.option_number;
             const text = optionsArray[optionNumber - 1] || "";
             
-            // Create a global key that combines text and option number to handle duplicates across questionnaires
-            const globalKey = `${text}-${optionNumber}`;
-            
-            if (!voteCounters[optionType][optionNumber]) {
-              voteCounters[optionType][optionNumber] = { count: 0, text };
+            if (text.trim()) {
+              individualVotes[optionType].push({
+                text: text.trim(),
+                questionnaireId: questionnaire.id,
+                optionNumber
+              });
+              
+              console.log(`Added individual vote for ${optionType}: "${text}"`);
             }
-            voteCounters[optionType][optionNumber].count++;
-            
-            console.log(`Added vote for ${optionType} option ${optionNumber}: "${text}"`);
           });
         };
 
@@ -103,21 +103,29 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
         }
       });
 
-      console.log("Final vote counters:", voteCounters);
+      console.log("Individual votes:", individualVotes);
 
-      // Format final results - don't aggregate, show each option with its individual count
+      // Format final results - show each individual vote with its text
       const formatResults = (category: string) => {
-        const results: Array<{ optionNumber: string; total: number; text: string }> = [];
+        const categoryVotes = individualVotes[category];
         
-        Object.entries(voteCounters[category]).forEach(([optionNumber, data]) => {
-          const text = data.text.trim();
-          if (text && data.count > 0) {
-            results.push({
-              optionNumber: String(optionNumber),
-              total: data.count,
-              text
-            });
-          }
+        // Count occurrences of each unique text
+        const textCounts = new Map<string, number>();
+        categoryVotes.forEach(vote => {
+          const count = textCounts.get(vote.text) || 0;
+          textCounts.set(vote.text, count + 1);
+        });
+        
+        // Convert to results array
+        const results: Array<{ optionNumber: string; total: number; text: string }> = [];
+        textCounts.forEach((count, text) => {
+          // Find the first occurrence to get the option number
+          const firstOccurrence = categoryVotes.find(vote => vote.text === text);
+          results.push({
+            optionNumber: String(firstOccurrence?.optionNumber || 1),
+            total: count,
+            text
+          });
         });
         
         // Sort by total votes descending
