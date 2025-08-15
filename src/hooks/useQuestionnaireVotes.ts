@@ -105,32 +105,29 @@ export const useQuestionnaireVotes = (selectedDimension: string) => {
 
       console.log("Final vote counters:", voteCounters);
 
-      // Format final results - aggregate by text content, not just option number
-      const aggregateByText = (category: string) => {
-        const textMap = new Map<string, { total: number, optionNumber: string }>();
+      // Format final results - don't aggregate, show each option with its individual count
+      const formatResults = (category: string) => {
+        const results: Array<{ optionNumber: string; total: number; text: string }> = [];
         
         Object.entries(voteCounters[category]).forEach(([optionNumber, data]) => {
           const text = data.text.trim();
-          if (text) {
-            if (textMap.has(text)) {
-              textMap.get(text)!.total += data.count;
-            } else {
-              textMap.set(text, { total: data.count, optionNumber: String(optionNumber) });
-            }
+          if (text && data.count > 0) {
+            results.push({
+              optionNumber: String(optionNumber),
+              total: data.count,
+              text
+            });
           }
         });
         
-        return Array.from(textMap.entries()).map(([text, data]) => ({
-          optionNumber: data.optionNumber,
-          total: data.total,
-          text
-        }));
+        // Sort by total votes descending
+        return results.sort((a, b) => b.total - a.total);
       };
 
       const results = {
-        strengths: aggregateByText('strengths'),
-        challenges: aggregateByText('challenges'),
-        opportunities: aggregateByText('opportunities')
+        strengths: formatResults('strengths'),
+        challenges: formatResults('challenges'),
+        opportunities: formatResults('opportunities')
       };
 
       console.log("Processed vote data:", results);
