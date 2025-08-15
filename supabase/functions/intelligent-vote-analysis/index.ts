@@ -131,14 +131,14 @@ serve(async (req) => {
 
     console.log(`Found ${allQuestionnaires.length} questionnaires and ${allVotes.length} votes`);
 
-    // Extrair textos únicos para análise
-    const optionTexts = {
-      strengths: new Set<string>(),
-      challenges: new Set<string>(),
-      opportunities: new Set<string>()
+    // Extrair todas as opções como votos individuais
+    const allOptions = {
+      strengths: [] as string[],
+      challenges: [] as string[],
+      opportunities: [] as string[]
     };
 
-    // Coletar todos os textos das opções
+    // Coletar todas as opções de todos os questionários (cada opção = 1 voto)
     for (const questionnaire of allQuestionnaires) {
       const splitOptions = (content: string) => {
         if (!content) return [];
@@ -152,16 +152,25 @@ serve(async (req) => {
       const challengesOptions = splitOptions(questionnaire.challenges || '');
       const opportunitiesOptions = splitOptions(questionnaire.opportunities || '');
 
-      strengthsOptions.forEach(text => optionTexts.strengths.add(text));
-      challengesOptions.forEach(text => optionTexts.challenges.add(text));
-      opportunitiesOptions.forEach(text => optionTexts.opportunities.add(text));
+      // Adicionar todas as opções (cada uma é um voto)
+      allOptions.strengths.push(...strengthsOptions);
+      allOptions.challenges.push(...challengesOptions);
+      allOptions.opportunities.push(...opportunitiesOptions);
     }
 
-    console.log('Unique texts found:', {
-      strengths: optionTexts.strengths.size,
-      challenges: optionTexts.challenges.size,
-      opportunities: optionTexts.opportunities.size
+    console.log('Total options found (each option = 1 vote):', {
+      strengths: allOptions.strengths.length,
+      challenges: allOptions.challenges.length,
+      opportunities: allOptions.opportunities.length,
+      total: allOptions.strengths.length + allOptions.challenges.length + allOptions.opportunities.length
     });
+
+    // Para o agrupamento por IA, usar opções únicas
+    const uniqueTexts = {
+      strengths: [...new Set(allOptions.strengths)],
+      challenges: [...new Set(allOptions.challenges)],
+      opportunities: [...new Set(allOptions.opportunities)]
+    };
 
     // Usar IA para agrupar textos similares
     const groupSimilarTexts = async (texts: string[], category: string) => {
@@ -226,18 +235,25 @@ IMPORTANTE:
       }
     };
 
-    // Agrupar textos por categoria
+    // Agrupar textos por categoria usando textos únicos
     const [groupedStrengths, groupedChallenges, groupedOpportunities] = await Promise.all([
-      groupSimilarTexts(Array.from(optionTexts.strengths), 'Pontos Fortes'),
-      groupSimilarTexts(Array.from(optionTexts.challenges), 'Desafios'),
-      groupSimilarTexts(Array.from(optionTexts.opportunities), 'Oportunidades')
+      groupSimilarTexts(uniqueTexts.strengths, 'Pontos Fortes'),
+      groupSimilarTexts(uniqueTexts.challenges, 'Desafios'),
+      groupSimilarTexts(uniqueTexts.opportunities, 'Oportunidades')
     ]);
 
-    // Contar votos para cada grupo - cada variação original representa um voto
-    const countVotesForGroup = (group: any, category: string) => {
-      // Cada variação original conta como 1 voto
-      // As variações são os textos originais agrupados pela IA
-      const totalVotes = group.variations.length;
+    // Contar votos para cada grupo baseado nas variações originais encontradas
+    const countVotesForGroup = (group: any, category: string, allOptionsForCategory: string[]) => {
+      // Contar quantas vezes cada variação do grupo aparece nas opções originais
+      let totalVotes = 0;
+      
+      for (const variation of group.variations) {
+        // Contar todas as ocorrências desta variação nas opções originais
+        const occurrences = allOptionsForCategory.filter(option => 
+          option.trim().toLowerCase() === variation.trim().toLowerCase()
+        ).length;
+        totalVotes += occurrences;
+      }
 
       console.log(`Group "${group.mainText}" (${category}): ${totalVotes} votes from ${group.variations.length} variations`);
       console.log(`Variations: ${group.variations.join(', ')}`);
@@ -266,9 +282,9 @@ IMPORTANTE:
       return total + strengthsCount + challengesCount + opportunitiesCount;
     }, 0);
 
-    const strengthsResults = groupedStrengths.map(group => countVotesForGroup(group, 'strengths'));
-    const challengesResults = groupedChallenges.map(group => countVotesForGroup(group, 'challenges'));
-    const opportunitiesResults = groupedOpportunities.map(group => countVotesForGroup(group, 'opportunities'));
+    const strengthsResults = groupedStrengths.map(group => countVotesForGroup(group, 'strengths', allOptions.strengths));
+    const challengesResults = groupedChallenges.map(group => countVotesForGroup(group, 'challenges', allOptions.challenges));
+    const opportunitiesResults = groupedOpportunities.map(group => countVotesForGroup(group, 'opportunities', allOptions.opportunities));
 
     // Verificar se a soma dos votos agrupados bate com o total
     const groupedVotesSum = 
