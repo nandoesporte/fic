@@ -111,6 +111,7 @@ export const QuestionnaireVoting: React.FC = () => {
       selectedDimension={selectedDimension}
       onDimensionChange={setSelectedDimension}
       dimensions={dimensions || []}
+      isSubmitting={voteSubmission.isPending}
     />
   );
 };

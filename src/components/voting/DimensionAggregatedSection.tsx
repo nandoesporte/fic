@@ -2,6 +2,7 @@ import { QuestionnaireOption } from "@/components/questionnaire/QuestionnaireOpt
 import { splitOptions } from "@/lib/splitOptions";
 import { Button } from "@/components/ui/button";
 import { votingToasts } from "./VotingToast";
+import { Loader2 } from "lucide-react";
 
 interface DimensionAggregatedSectionProps {
   dimension: string;
@@ -20,6 +21,7 @@ interface DimensionAggregatedSectionProps {
   ) => void;
   onConfirmVotes: (dimension: string) => void;
   hasVotedInDimension: (dimension: string) => boolean;
+  isSubmitting?: boolean;
 }
 
 const MAX_SELECTIONS = 3;
@@ -39,6 +41,7 @@ export const DimensionAggregatedSection = ({
   onVote,
   onConfirmVotes,
   hasVotedInDimension,
+  isSubmitting = false,
 }: DimensionAggregatedSectionProps) => {
   const isSelected = (questionnaireId: string, type: SectionType, optionNumber: number) => {
     const qSel = selections[questionnaireId];
@@ -148,10 +151,13 @@ export const DimensionAggregatedSection = ({
                   onConfirmVotes(dimension);
                 }
               }} 
-              disabled={!isComplete || hasVoted}
+              disabled={!isComplete || hasVoted || isSubmitting}
               className={hasVoted ? "opacity-50" : ""}
             >
-              {hasVoted ? "Já Votado" : "Confirmar Votos da Dimensão"}
+              {isSubmitting && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              {isSubmitting ? "Enviando..." : hasVoted ? "Já Votado" : "Confirmar Votos da Dimensão"}
             </Button>
           );
         })()}

@@ -20,6 +20,7 @@ interface VotingSectionProps {
   selectedDimension: string;
   onDimensionChange: (dimension: string) => void;
   dimensions: Array<{ id: string; identifier: string; label: string; }>;
+  isSubmitting?: boolean;
 }
 
 export const VotingSection = ({
@@ -32,7 +33,8 @@ export const VotingSection = ({
   hasVotedInDimension,
   selectedDimension,
   onDimensionChange,
-  dimensions
+  dimensions,
+  isSubmitting = false
 }: VotingSectionProps) => {
   const groupQuestionnairesByDimension = (questionnaires: any[]): { [key: string]: any[] } => {
     return questionnaires.reduce((acc, curr) => {
@@ -121,6 +123,7 @@ export const VotingSection = ({
                       onVote={onVote}
                       onConfirmVotes={onConfirmVotes}
                       hasVotedInDimension={hasVotedInDimension}
+                      isSubmitting={isSubmitting}
                     />
                   )}
                 </div>
