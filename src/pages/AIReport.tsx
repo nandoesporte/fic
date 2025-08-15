@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileSpreadsheet, FileText, Brain, RefreshCw } from "lucide-react";
+import { Loader2, FileSpreadsheet, FileText, Brain, RefreshCw, Database } from "lucide-react";
 import { toast } from "sonner";
 import {
   Table,
@@ -21,6 +21,7 @@ import autoTable from 'jspdf-autotable';
 import { AIVotingMetrics } from "@/components/analytics/AIVotingMetrics";
 import { AIVotingResults } from "@/components/analytics/AIVotingResults";
 import { DimensionFilter } from "@/components/analytics/DimensionFilter";
+import { useBackupOperations } from "@/components/backup/BackupOperations";
 
 interface ReportMetrics {
   total_votos: number;
@@ -65,6 +66,9 @@ export default function AIReport() {
   const [progress, setProgress] = useState(0);
   const [voteAnalysis, setVoteAnalysis] = useState<VoteAnalysis | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
+  const [selectedBackup, setSelectedBackup] = useState<string>("");
+  
+  const { backups, fetchBackups } = useBackupOperations();
 
   const { data: dimensions, isLoading } = useQuery({
     queryKey: ['dimensions'],
@@ -77,6 +81,11 @@ export default function AIReport() {
       return data;
     },
   });
+
+  // Carregar backups quando o componente monta
+  useEffect(() => {
+    fetchBackups();
+  }, []);
 
   const { data: reports, isLoading: isLoadingReports } = useQuery({
     queryKey: ['ai-reports'],
@@ -111,22 +120,110 @@ export default function AIReport() {
     }
   };
 
-  const handleIntelligentAnalysis = async () => {
+  const handleAnalyzeBackup = async () => {
+    if (!selectedBackup) {
+      toast.error("Selecione um backup para analisar");
+      return;
+    }
+
     setIsLoadingAnalysis(true);
     try {
-      const response = await supabase.functions.invoke('intelligent-vote-analysis', {
-        body: { dimension: selectedDimension },
-      });
+      // Buscar os dados do backup selecionado
+      const { data, error } = await supabase
+        .from('data_backups')
+        .select('data')
+        .eq('id', selectedBackup)
+        .single();
 
-      if (response.error) throw response.error;
-      setVoteAnalysis(response.data);
-      toast.success("Análise inteligente concluída!");
+      if (error) throw error;
+
+      const backupData = data.data as any;
+      if (!backupData?.questionnaire_votes || !backupData?.questionnaires) {
+        toast.error("Backup não contém dados de votos válidos");
+        return;
+      }
+
+      // Processar dados do backup para análise
+      const votes = backupData.questionnaire_votes;
+      const questionnaires = backupData.questionnaires;
+
+      // Filtrar por dimensão se necessário
+      const filteredQuestionnaires = selectedDimension === "all" 
+        ? questionnaires 
+        : questionnaires.filter((q: any) => q.dimension === selectedDimension);
+
+      const filteredVotes = votes.filter((vote: any) => 
+        filteredQuestionnaires.some((q: any) => q.id === vote.questionnaire_id)
+      );
+
+      // Processar análise
+      const analysisData = processVoteAnalysis(filteredVotes, filteredQuestionnaires);
+      setVoteAnalysis(analysisData);
+      
+      toast.success("Análise do backup concluída!");
     } catch (error) {
       console.error('Error:', error);
-      toast.error("Erro ao gerar análise inteligente");
+      toast.error("Erro ao analisar backup");
     } finally {
       setIsLoadingAnalysis(false);
     }
+  };
+
+  const processVoteAnalysis = (votes: any[], questionnaires: any[]): VoteAnalysis => {
+    const voteGroups: { [key: string]: VoteGroup[] } = {
+      strengths: [],
+      challenges: [],
+      opportunities: []
+    };
+
+    const sectionMap = {
+      'strengths': 'strengths',
+      'challenges': 'challenges', 
+      'opportunities': 'opportunities'
+    };
+
+    // Processar votos por seção
+    Object.keys(sectionMap).forEach(sectionKey => {
+      const sectionVotes = votes.filter(v => v.option_type === sectionKey);
+      const textCounts: { [key: string]: { count: number, text: string } } = {};
+
+      sectionVotes.forEach(vote => {
+        const questionnaire = questionnaires.find(q => q.id === vote.questionnaire_id);
+        if (questionnaire) {
+          const sectionText = questionnaire[sectionKey];
+          if (sectionText) {
+            const options = sectionText.split('\n\n').filter((opt: string) => opt.trim());
+            const optionText = options[vote.option_number - 1]?.trim();
+            if (optionText) {
+              if (!textCounts[optionText]) {
+                textCounts[optionText] = { count: 0, text: optionText };
+              }
+              textCounts[optionText].count++;
+            }
+          }
+        }
+      });
+
+      voteGroups[sectionKey as keyof typeof voteGroups] = Object.values(textCounts).map(item => ({
+        text: item.text,
+        votes: item.count,
+        variations: [item.text]
+      })).sort((a, b) => b.votes - a.votes);
+    });
+
+    const uniqueVoters = new Set(votes.map(v => v.email)).size;
+    const totalVotes = votes.length;
+    const participationRate = totalVotes > 0 ? (uniqueVoters / totalVotes) * 100 : 0;
+
+    return {
+      dimension: selectedDimension === "all" ? "Todas as Dimensões" : selectedDimension,
+      totalVotes,
+      uniqueVoters,
+      participationRate,
+      strengths: voteGroups.strengths,
+      challenges: voteGroups.challenges,
+      opportunities: voteGroups.opportunities
+    };
   };
 
   const handleExport = async (format: 'excel' | 'pdf') => {
@@ -201,11 +298,11 @@ export default function AIReport() {
         </p>
       </div>
 
-      {/* Seção de Análise Inteligente de Votos */}
+      {/* Seção de Análise de Backup */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Brain className="h-5 w-5 text-blue-600" />
-          <h2 className="text-xl font-semibold">Análise Inteligente de Votos</h2>
+          <Database className="h-5 w-5 text-blue-600" />
+          <h2 className="text-xl font-semibold">Análise de Backup Excel</h2>
         </div>
         
         <div className="space-y-4">
@@ -215,20 +312,36 @@ export default function AIReport() {
             dimensions={dimensions}
           />
 
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Selecionar Backup:</label>
+            <select
+              value={selectedBackup}
+              onChange={(e) => setSelectedBackup(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            >
+              <option value="">Escolha um backup...</option>
+              {backups.map((backup) => (
+                <option key={backup.id} value={backup.id}>
+                  {backup.filename} - {new Date(backup.created_at).toLocaleDateString('pt-BR')}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <Button
-            onClick={handleIntelligentAnalysis}
-            disabled={isLoadingAnalysis}
+            onClick={handleAnalyzeBackup}
+            disabled={isLoadingAnalysis || !selectedBackup}
             className="w-full"
           >
             {isLoadingAnalysis ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processando arquivos de backup...
+                Processando backup Excel...
               </>
             ) : (
               <>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Analisar Votos dos Arquivos de Backup
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Analisar Dados do Backup Excel
               </>
             )}
           </Button>
