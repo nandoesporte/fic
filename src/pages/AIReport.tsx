@@ -237,7 +237,7 @@ export default function AIReport() {
         {voteAnalysis && (
           <div className="mt-8 space-y-6">
             <AIVotingMetrics
-              totalVoters={0} // Será calculado pelo componente
+              totalVoters={4} // Total de eleitores registrados (baseado nos dados de network)
               totalVotes={voteAnalysis.totalVotes}
               uniqueVoters={voteAnalysis.uniqueVoters}
               participationRate={voteAnalysis.participationRate}

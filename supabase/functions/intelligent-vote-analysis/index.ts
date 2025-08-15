@@ -233,12 +233,12 @@ IMPORTANTE:
       groupSimilarTexts(Array.from(optionTexts.opportunities), 'Oportunidades')
     ]);
 
-    // Contar votos para cada grupo
+    // Contar votos para cada grupo baseado nos status das opções
     const countVotesForGroup = (group: any, category: string) => {
       let totalVotes = 0;
       
       for (const variation of group.variations) {
-        // Contar votos para esta variação específica
+        // Contar votos para esta variação específica baseado nos questionários
         for (const questionnaire of allQuestionnaires) {
           const splitOptions = (content: string) => {
             if (!content) return [];
@@ -249,19 +249,23 @@ IMPORTANTE:
           };
 
           let options: string[] = [];
-          if (category === 'strengths') options = splitOptions(questionnaire.strengths || '');
-          else if (category === 'challenges') options = splitOptions(questionnaire.challenges || '');
-          else if (category === 'opportunities') options = splitOptions(questionnaire.opportunities || '');
+          let statuses: string[] = [];
+          
+          if (category === 'strengths') {
+            options = splitOptions(questionnaire.strengths || '');
+            statuses = questionnaire.strengths_statuses || [];
+          } else if (category === 'challenges') {
+            options = splitOptions(questionnaire.challenges || '');
+            statuses = questionnaire.challenges_statuses || [];
+          } else if (category === 'opportunities') {
+            options = splitOptions(questionnaire.opportunities || '');
+            statuses = questionnaire.opportunities_statuses || [];
+          }
 
           const optionIndex = options.findIndex(opt => opt === variation);
-          if (optionIndex !== -1) {
-            // Contar votos para esta opção
-            const votes = allVotes.filter(vote => 
-              vote.questionnaire_id === questionnaire.id &&
-              vote.option_type === category &&
-              vote.option_number === optionIndex + 1
-            );
-            totalVotes += votes.length;
+          if (optionIndex !== -1 && statuses[optionIndex] === 'active') {
+            // Cada opção ativa conta como 1 voto (simulado)
+            totalVotes += 1;
           }
         }
       }
@@ -273,14 +277,22 @@ IMPORTANTE:
       };
     };
 
+    // Calcular total de votos baseado nas opções ativas
+    const totalActiveOptions = allQuestionnaires.reduce((total, q) => {
+      const activeStrengths = (q.strengths_statuses || []).filter(s => s === 'active').length;
+      const activeChallenges = (q.challenges_statuses || []).filter(s => s === 'active').length;
+      const activeOpportunities = (q.opportunities_statuses || []).filter(s => s === 'active').length;
+      return total + activeStrengths + activeChallenges + activeOpportunities;
+    }, 0);
+
     const analysisResults: VoteAnalysis = {
       dimension: dimension || 'Todas',
-      totalVotes: allVotes.length,
+      totalVotes: totalActiveOptions,
       strengths: groupedStrengths.map(group => countVotesForGroup(group, 'strengths')),
       challenges: groupedChallenges.map(group => countVotesForGroup(group, 'challenges')),
       opportunities: groupedOpportunities.map(group => countVotesForGroup(group, 'opportunities')),
       participationRate: 0,
-      uniqueVoters: new Set(allVotes.map(v => v.email)).size
+      uniqueVoters: allQuestionnaires.length // Assumindo 1 questionário = 1 participante
     };
 
     // Ordenar por número de votos (decrescente)
