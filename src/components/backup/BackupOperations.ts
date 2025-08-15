@@ -154,8 +154,60 @@ export const useBackupOperations = () => {
       // Criar workbook
       const wb = XLSX.utils.book_new();
 
+      // Se for o formato novo (com votos)
+      if (backupData.questionnaires) {
+        const questionnaires = Array.isArray(backupData.questionnaires) ? backupData.questionnaires : [];
+        const questionnaireVotes = Array.isArray(backupData.questionnaire_votes) ? backupData.questionnaire_votes : [];
+        
+        if (questionnaireVotes.length > 0) {
+          const questionnaireVoteData = questionnaireVotes.map((v: any) => {
+            // Encontrar o questionário correspondente para obter o texto da opção
+            const questionnaire = questionnaires.find((q: any) => q.id === v.questionnaire_id);
+            
+            let optionText = 'Texto não encontrado';
+            if (questionnaire && v.option_type && v.option_number) {
+              const sectionText = questionnaire[v.option_type];
+              if (sectionText) {
+                // Dividir as opções por \n\n e pegar a opção correta
+                const options = sectionText.split('\n\n').filter((opt: string) => opt.trim());
+                if (options[v.option_number - 1]) {
+                  optionText = options[v.option_number - 1].trim();
+                }
+              }
+            }
+            
+            const sectionMap = {
+              'strengths': 'Pontos Fortes',
+              'challenges': 'Desafios', 
+              'opportunities': 'Oportunidades'
+            };
+            
+            return {
+              'Email do Votante': v.email,
+              'Dimensão': questionnaire?.dimension || 'N/A',
+              'Grupo do Questionário': questionnaire?.group || questionnaire?.group_name || '-',
+              'Seção Votada': sectionMap[v.option_type as keyof typeof sectionMap] || v.option_type,
+              'Texto Completo da Opção': optionText,
+              'Data do Voto': new Date(v.created_at).toLocaleDateString('pt-BR') + ' ' + new Date(v.created_at).toLocaleTimeString('pt-BR'),
+              'ID do Questionário': v.questionnaire_id?.substring(0, 8) + '...'
+            };
+          });
+
+          const voteWs = XLSX.utils.json_to_sheet(questionnaireVoteData);
+          voteWs['!cols'] = [
+            { wch: 30 }, // Email
+            { wch: 20 }, // Dimensão
+            { wch: 20 }, // Grupo
+            { wch: 20 }, // Seção
+            { wch: 60 }, // Texto da Opção (mais largo)
+            { wch: 20 }, // Data
+            { wch: 15 }  // ID Questionário
+          ];
+          XLSX.utils.book_append_sheet(wb, voteWs, "🗳️ Votos Detalhados");
+        }
+      }
       // Se for o formato antigo (apenas questionários)
-      if (Array.isArray(backupData)) {
+      else if (Array.isArray(backupData)) {
         const questionnaireData = backupData.map((q: any) => ({
           'ID do Questionário': q.id?.substring(0, 8) + '...',
           'Dimensão': q.dimension,
@@ -179,162 +231,6 @@ export const useBackupOperations = () => {
           { wch: 50 }  // Oportunidades
         ];
         XLSX.utils.book_append_sheet(wb, ws, "Questionários");
-      } 
-      // Se for o formato novo (com votos)
-      else if (backupData.questionnaires) {
-        const metadata = backupData.export_metadata || {};
-        
-        // 1. ABA RESUMO GERAL
-        const resumoData = [{
-          'Total de Questionários': metadata.total_questionnaires || 0,
-          'Total de Votos em Questionários': metadata.total_questionnaire_votes || 0,
-          'Total de Votos por Dimensão': metadata.total_dimension_votes || 0,
-          'Total de Votos Gerais': metadata.total_votes || 0,
-          'Data do Backup': metadata.timestamp ? new Date(metadata.timestamp).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR'),
-          'Descrição': backup.description || 'Backup completo do sistema'
-        }];
-        const resumoWs = XLSX.utils.json_to_sheet(resumoData);
-        resumoWs['!cols'] = [
-          { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 15 }, { wch: 40 }
-        ];
-        XLSX.utils.book_append_sheet(wb, resumoWs, "📊 Resumo");
-
-        // 2. ABA QUESTIONÁRIOS
-        const questionnaires = Array.isArray(backupData.questionnaires) ? backupData.questionnaires : [];
-        if (questionnaires.length > 0) {
-          const questionnaireData = questionnaires.map((q: any) => ({
-            'ID do Questionário': q.id?.substring(0, 8) + '...',
-            'Dimensão': q.dimension,
-            'Grupo': q.group || q.group_name || '-',
-            'Data de Criação': new Date(q.created_at).toLocaleDateString('pt-BR') + ' ' + new Date(q.created_at).toLocaleTimeString('pt-BR'),
-            'Status': q.status || 'N/A',
-            'Pontos Fortes (3 opções)': q.strengths?.replace(/\n\n/g, ' | ') || '',
-            'Desafios (3 opções)': q.challenges?.replace(/\n\n/g, ' | ') || '',
-            'Oportunidades (3 opções)': q.opportunities?.replace(/\n\n/g, ' | ') || ''
-          }));
-
-          const questionnaireWs = XLSX.utils.json_to_sheet(questionnaireData);
-          questionnaireWs['!cols'] = [
-            { wch: 15 }, // ID
-            { wch: 20 }, // Dimensão
-            { wch: 15 }, // Grupo
-            { wch: 20 }, // Data
-            { wch: 12 }, // Status
-            { wch: 60 }, // Pontos Fortes
-            { wch: 60 }, // Desafios
-            { wch: 60 }  // Oportunidades
-          ];
-          XLSX.utils.book_append_sheet(wb, questionnaireWs, "📝 Questionários");
-        }
-
-        // 3. ABA VOTOS EM QUESTIONÁRIOS (mais detalhada)
-        const questionnaireVotes = Array.isArray(backupData.questionnaire_votes) ? backupData.questionnaire_votes : [];
-        if (questionnaireVotes.length > 0) {
-          const questionnaireVoteData = questionnaireVotes.map((v: any) => {
-            // Encontrar o questionário correspondente para obter mais contexto
-            const questionnaire = questionnaires.find((q: any) => q.id === v.questionnaire_id);
-            const sectionMap = {
-              'strengths': 'Pontos Fortes',
-              'challenges': 'Desafios', 
-              'opportunities': 'Oportunidades'
-            };
-            
-            return {
-              'Email do Votante': v.email,
-              'Dimensão': questionnaire?.dimension || 'N/A',
-              'Grupo do Questionário': questionnaire?.group || questionnaire?.group_name || '-',
-              'Seção Votada': sectionMap[v.option_type as keyof typeof sectionMap] || v.option_type,
-              'Opção Escolhida': `Opção ${v.option_number}`,
-              'Data do Voto': new Date(v.created_at).toLocaleDateString('pt-BR') + ' ' + new Date(v.created_at).toLocaleTimeString('pt-BR'),
-              'Tipo de Voto': v.vote_type || 'padrão',
-              'ID do Questionário': v.questionnaire_id?.substring(0, 8) + '...'
-            };
-          });
-
-          const voteWs = XLSX.utils.json_to_sheet(questionnaireVoteData);
-          voteWs['!cols'] = [
-            { wch: 30 }, // Email
-            { wch: 20 }, // Dimensão
-            { wch: 15 }, // Grupo
-            { wch: 20 }, // Seção
-            { wch: 15 }, // Opção
-            { wch: 20 }, // Data
-            { wch: 12 }, // Tipo
-            { wch: 15 }  // ID Questionário
-          ];
-          XLSX.utils.book_append_sheet(wb, voteWs, "🗳️ Votos Detalhados");
-        }
-
-        // 4. ABA ANÁLISE DE VOTOS POR DIMENSÃO
-        const dimensionVotes = Array.isArray(backupData.dimension_votes) ? backupData.dimension_votes : [];
-        if (dimensionVotes.length > 0) {
-          const dimensionVoteData = dimensionVotes.map((v: any) => ({
-            'Email do Votante': v.email,
-            'Dimensão Escolhida': v.dimension,
-            'Data da Escolha': new Date(v.created_at).toLocaleDateString('pt-BR') + ' ' + new Date(v.created_at).toLocaleTimeString('pt-BR'),
-            'ID do Voto': v.id?.substring(0, 8) + '...'
-          }));
-
-          const dimVoteWs = XLSX.utils.json_to_sheet(dimensionVoteData);
-          dimVoteWs['!cols'] = [
-            { wch: 30 }, // Email
-            { wch: 25 }, // Dimensão
-            { wch: 20 }, // Data
-            { wch: 15 }  // ID
-          ];
-          XLSX.utils.book_append_sheet(wb, dimVoteWs, "📊 Votos por Dimensão");
-        }
-
-        // 5. ABA ESTATÍSTICAS DE PARTICIPAÇÃO
-        if (questionnaireVotes.length > 0) {
-          // Calcular estatísticas
-          const emailVotes = questionnaireVotes.reduce((acc: any, vote: any) => {
-            acc[vote.email] = (acc[vote.email] || 0) + 1;
-            return acc;
-          }, {});
-
-          const sectionVotes = questionnaireVotes.reduce((acc: any, vote: any) => {
-            const section = vote.option_type;
-            acc[section] = (acc[section] || 0) + 1;
-            return acc;
-          }, {});
-
-          const participationData = Object.entries(emailVotes).map(([email, count]) => ({
-            'Email': email,
-            'Total de Votos': count,
-            'Participação': (count as number) > 5 ? 'Alta' : (count as number) > 2 ? 'Média' : 'Baixa'
-          }));
-
-          const participationWs = XLSX.utils.json_to_sheet(participationData);
-          participationWs['!cols'] = [
-            { wch: 30 }, // Email
-            { wch: 15 }, // Total
-            { wch: 15 }  // Participação
-          ];
-          XLSX.utils.book_append_sheet(wb, participationWs, "📈 Participação");
-
-          // Adicionar estatísticas por seção
-          const sectionStatsData = Object.entries(sectionVotes).map(([section, count]) => {
-            const sectionMap = {
-              'strengths': 'Pontos Fortes',
-              'challenges': 'Desafios',
-              'opportunities': 'Oportunidades'
-            };
-            return {
-              'Seção': sectionMap[section as keyof typeof sectionMap] || section,
-              'Total de Votos': count,
-              'Porcentagem': `${Math.round((count as number / questionnaireVotes.length) * 100)}%`
-            };
-          });
-
-          const sectionStatsWs = XLSX.utils.json_to_sheet(sectionStatsData);
-          sectionStatsWs['!cols'] = [
-            { wch: 20 }, // Seção
-            { wch: 15 }, // Total
-            { wch: 15 }  // Porcentagem
-          ];
-          XLSX.utils.book_append_sheet(wb, sectionStatsWs, "📊 Stats por Seção");
-        }
       }
       
       // Download do arquivo com nome mais descritivo
