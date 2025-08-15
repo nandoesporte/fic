@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useIndividualVotes } from '@/hooks/useIndividualVotes';
+import { useQuestionnaireVotes } from '@/hooks/useQuestionnaireVotes';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DimensionFilter } from './DimensionFilter';
 import { VotingMetrics } from './VotingMetrics';
-import { IndividualVotesList } from './IndividualVotesList';
+import { VotingResults } from './VotingResults';
 import { AnalyticsHeader } from './AnalyticsHeader';
 import { Loader2 } from 'lucide-react';
 
@@ -25,16 +25,16 @@ interface Dimension {
   background_color: string;
 }
 
-interface IndividualVote {
-  id: string;
-  email: string;
-  questionnaire_id: string;
-  option_type: string;
-  option_number: number;
-  vote_type: string;
-  created_at: string;
-  dimension: string;
-  option_text: string;
+interface VoteOption {
+  optionNumber: string;
+  total: number;
+  text: string;
+}
+
+interface VotingData {
+  strengths: VoteOption[];
+  challenges: VoteOption[];
+  opportunities: VoteOption[];
 }
 
 export const AnalyticsContainer = () => {
@@ -90,7 +90,7 @@ export const AnalyticsContainer = () => {
     },
   });
 
-  const { data: votingData, isLoading } = useIndividualVotes(selectedDimension);
+  const { data: votingData, isLoading } = useQuestionnaireVotes(selectedDimension);
 
   if (isLoading) {
     return (
@@ -102,10 +102,16 @@ export const AnalyticsContainer = () => {
 
   const totalVoters = registeredVoters?.length || 0;
   
-  const totalVotes = votingData ? 
-    votingData.strengths.length +
-    votingData.challenges.length +
-    votingData.opportunities.length : 0;
+  const calculateTotalVotes = (data: VotingData | undefined): number => {
+    if (!data) return 0;
+    
+    return Object.values(data).reduce((acc: number, categoryVotes: VoteOption[]) => {
+      if (!Array.isArray(categoryVotes)) return acc;
+      return acc + categoryVotes.reduce((sum: number, vote: VoteOption) => sum + (vote.total || 0), 0);
+    }, 0);
+  };
+
+  const totalVotes = calculateTotalVotes(votingData);
   
   // Contar participantes únicos por email
   const uniqueParticipants = dimensionVotes 
@@ -142,20 +148,11 @@ export const AnalyticsContainer = () => {
         />
       </div>
 
-      <div className="grid gap-6">
-        <IndividualVotesList
-          type="strengths"
-          data={votingData?.strengths || []}
-        />
-        <IndividualVotesList
-          type="challenges"
-          data={votingData?.challenges || []}
-        />
-        <IndividualVotesList
-          type="opportunities"
-          data={votingData?.opportunities || []}
-        />
-      </div>
+      <VotingResults
+        strengths={votingData?.strengths || []}
+        challenges={votingData?.challenges || []}
+        opportunities={votingData?.opportunities || []}
+      />
     </div>
   );
 };
