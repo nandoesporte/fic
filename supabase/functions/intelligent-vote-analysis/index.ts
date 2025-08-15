@@ -233,12 +233,12 @@ IMPORTANTE:
       groupSimilarTexts(Array.from(optionTexts.opportunities), 'Oportunidades')
     ]);
 
-    // Contar votos para cada grupo baseado nos status das opções
+    // Contar votos para cada grupo - cada opção representa um voto
     const countVotesForGroup = (group: any, category: string) => {
       let totalVotes = 0;
       
       for (const variation of group.variations) {
-        // Contar votos para esta variação específica baseado nos questionários
+        // Contar quantas vezes esta variação aparece nos questionários
         for (const questionnaire of allQuestionnaires) {
           const splitOptions = (content: string) => {
             if (!content) return [];
@@ -249,22 +249,18 @@ IMPORTANTE:
           };
 
           let options: string[] = [];
-          let statuses: string[] = [];
           
           if (category === 'strengths') {
             options = splitOptions(questionnaire.strengths || '');
-            statuses = questionnaire.strengths_statuses || [];
           } else if (category === 'challenges') {
             options = splitOptions(questionnaire.challenges || '');
-            statuses = questionnaire.challenges_statuses || [];
           } else if (category === 'opportunities') {
             options = splitOptions(questionnaire.opportunities || '');
-            statuses = questionnaire.opportunities_statuses || [];
           }
 
+          // Cada vez que encontramos esta variação, conta como 1 voto
           const optionIndex = options.findIndex(opt => opt === variation);
-          if (optionIndex !== -1 && statuses[optionIndex] === 'active') {
-            // Cada opção ativa conta como 1 voto (simulado)
+          if (optionIndex !== -1) {
             totalVotes += 1;
           }
         }
@@ -277,17 +273,26 @@ IMPORTANTE:
       };
     };
 
-    // Calcular total de votos baseado nas opções ativas
-    const totalActiveOptions = allQuestionnaires.reduce((total, q) => {
-      const activeStrengths = (q.strengths_statuses || []).filter(s => s === 'active').length;
-      const activeChallenges = (q.challenges_statuses || []).filter(s => s === 'active').length;
-      const activeOpportunities = (q.opportunities_statuses || []).filter(s => s === 'active').length;
-      return total + activeStrengths + activeChallenges + activeOpportunities;
+    // Calcular total de votos baseado no número total de opções
+    const totalVotes = allQuestionnaires.reduce((total, q) => {
+      const splitOptions = (content: string) => {
+        if (!content) return [];
+        const normalized = content.replace(/\r\n/g, "\n").trim();
+        const hasBlankLines = /\n{2,}/.test(normalized);
+        const parts = hasBlankLines ? normalized.split(/\n{2,}/) : normalized.split(/\n/);
+        return parts.map(p => p.trim()).filter(p => p.length > 0);
+      };
+
+      const strengthsCount = splitOptions(q.strengths || '').length;
+      const challengesCount = splitOptions(q.challenges || '').length;
+      const opportunitiesCount = splitOptions(q.opportunities || '').length;
+      
+      return total + strengthsCount + challengesCount + opportunitiesCount;
     }, 0);
 
     const analysisResults: VoteAnalysis = {
       dimension: dimension || 'Todas',
-      totalVotes: totalActiveOptions,
+      totalVotes: totalVotes,
       strengths: groupedStrengths.map(group => countVotesForGroup(group, 'strengths')),
       challenges: groupedChallenges.map(group => countVotesForGroup(group, 'challenges')),
       opportunities: groupedOpportunities.map(group => countVotesForGroup(group, 'opportunities')),
