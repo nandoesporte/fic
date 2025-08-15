@@ -258,13 +258,19 @@ IMPORTANTE:
             options = splitOptions(questionnaire.opportunities || '');
           }
 
-          // Cada vez que encontramos esta variação, conta como 1 voto
-          const optionIndex = options.findIndex(opt => opt === variation);
-          if (optionIndex !== -1) {
+          // Buscar pela variação exata ou similar
+          const foundVariation = options.find(opt => 
+            opt.trim() === variation.trim() || 
+            opt.trim().toLowerCase() === variation.trim().toLowerCase()
+          );
+          
+          if (foundVariation) {
             totalVotes += 1;
           }
         }
       }
+
+      console.log(`Group "${group.mainText}" (${category}): ${totalVotes} votes from ${group.variations.length} variations`);
 
       return {
         text: group.mainText,
@@ -290,12 +296,30 @@ IMPORTANTE:
       return total + strengthsCount + challengesCount + opportunitiesCount;
     }, 0);
 
+    const strengthsResults = groupedStrengths.map(group => countVotesForGroup(group, 'strengths'));
+    const challengesResults = groupedChallenges.map(group => countVotesForGroup(group, 'challenges'));
+    const opportunitiesResults = groupedOpportunities.map(group => countVotesForGroup(group, 'opportunities'));
+
+    // Verificar se a soma dos votos agrupados bate com o total
+    const groupedVotesSum = 
+      strengthsResults.reduce((sum, item) => sum + item.votes, 0) +
+      challengesResults.reduce((sum, item) => sum + item.votes, 0) +
+      opportunitiesResults.reduce((sum, item) => sum + item.votes, 0);
+
+    console.log('Vote count verification:', {
+      totalVotesCalculated: totalVotes,
+      groupedVotesSum: groupedVotesSum,
+      strengthsVotes: strengthsResults.reduce((sum, item) => sum + item.votes, 0),
+      challengesVotes: challengesResults.reduce((sum, item) => sum + item.votes, 0),
+      opportunitiesVotes: opportunitiesResults.reduce((sum, item) => sum + item.votes, 0)
+    });
+
     const analysisResults: VoteAnalysis = {
       dimension: dimension || 'Todas',
       totalVotes: totalVotes,
-      strengths: groupedStrengths.map(group => countVotesForGroup(group, 'strengths')),
-      challenges: groupedChallenges.map(group => countVotesForGroup(group, 'challenges')),
-      opportunities: groupedOpportunities.map(group => countVotesForGroup(group, 'opportunities')),
+      strengths: strengthsResults,
+      challenges: challengesResults,
+      opportunities: opportunitiesResults,
       participationRate: 0,
       uniqueVoters: allQuestionnaires.length // Assumindo 1 questionário = 1 participante
     };
