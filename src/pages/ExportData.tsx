@@ -10,7 +10,7 @@ export default function ExportData() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [backupName, setBackupName] = useState("");
   const [backupType, setBackupType] = useState<string>("");
-  const { isExporting, backups, fetchBackups, handleExportAndClear, downloadBackup, deleteBackup } = useBackupOperations();
+  const { isExporting, backups, fetchBackups, handleExportAndClear, downloadBackup, exportBackupToExcel, deleteBackup } = useBackupOperations();
 
   useEffect(() => {
     fetchBackups();
@@ -50,6 +50,7 @@ export default function ExportData() {
       <BackupList
         backups={backups}
         onDownload={downloadBackup}
+        onExportExcel={exportBackupToExcel}
         onDelete={deleteBackup}
       />
     </div>

@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Trash2, Database } from "lucide-react";
+import { Download, Trash2, Database, FileSpreadsheet } from "lucide-react";
+import * as XLSX from 'xlsx';
 
 interface Backup {
   id: string;
@@ -13,9 +14,10 @@ interface BackupListProps {
   backups: Backup[];
   onDownload: (backup: Backup) => void;
   onDelete: (backupId: string) => void;
+  onExportExcel: (backup: Backup) => void;
 }
 
-export const BackupList = ({ backups, onDownload, onDelete }: BackupListProps) => {
+export const BackupList = ({ backups, onDownload, onDelete, onExportExcel }: BackupListProps) => {
   return (
     <Card className="p-6">
       <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
@@ -51,7 +53,16 @@ export const BackupList = ({ backups, onDownload, onDelete }: BackupListProps) =
                   className="flex items-center gap-2"
                 >
                   <Download className="h-4 w-4" />
-                  Download
+                  JSON
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onExportExcel(backup)}
+                  className="flex items-center gap-2 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  Excel
                 </Button>
                 <Button
                   variant="destructive"
