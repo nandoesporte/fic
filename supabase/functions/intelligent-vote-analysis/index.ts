@@ -55,34 +55,70 @@ serve(async (req) => {
     let allQuestionnaires: any[] = [];
 
     for (const backup of backups || []) {
+      console.log('Processing backup:', backup.id, 'Type:', backup.type);
+      
       if (backup.data && typeof backup.data === 'object') {
-        // Verificar diferentes estruturas possíveis dos backups
         const data = backup.data;
+        console.log('Backup data keys:', Object.keys(data));
         
-        // Se tem questionnaires diretamente
+        // Verificar diferentes estruturas possíveis dos backups
+        
+        // Estrutura 1: dados diretos no root
         if (data.questionnaires && Array.isArray(data.questionnaires)) {
+          console.log('Found questionnaires in root:', data.questionnaires.length);
           allQuestionnaires.push(...data.questionnaires);
         }
         
-        // Se tem votes diretamente
         if (data.votes && Array.isArray(data.votes)) {
+          console.log('Found votes in root:', data.votes.length);
           allVotes.push(...data.votes);
         }
         
-        // Se tem uma estrutura aninhada (como exportData)
+        // Estrutura 2: dados em exportData
         if (data.exportData) {
-          if (data.exportData.questionnaires) {
+          if (data.exportData.questionnaires && Array.isArray(data.exportData.questionnaires)) {
+            console.log('Found questionnaires in exportData:', data.exportData.questionnaires.length);
             allQuestionnaires.push(...data.exportData.questionnaires);
           }
-          if (data.exportData.votes) {
+          if (data.exportData.votes && Array.isArray(data.exportData.votes)) {
+            console.log('Found votes in exportData:', data.exportData.votes.length);
             allVotes.push(...data.exportData.votes);
           }
         }
         
-        // Se o backup é diretamente um array de questionnaires
+        // Estrutura 3: dados em tables
+        if (data.tables) {
+          if (data.tables.fic_questionnaires && Array.isArray(data.tables.fic_questionnaires)) {
+            console.log('Found questionnaires in tables:', data.tables.fic_questionnaires.length);
+            allQuestionnaires.push(...data.tables.fic_questionnaires);
+          }
+          if (data.tables.questionnaire_votes && Array.isArray(data.tables.questionnaire_votes)) {
+            console.log('Found votes in tables:', data.tables.questionnaire_votes.length);
+            allVotes.push(...data.tables.questionnaire_votes);
+          }
+          if (data.tables.votes && Array.isArray(data.tables.votes)) {
+            console.log('Found votes in tables.votes:', data.tables.votes.length);
+            allVotes.push(...data.tables.votes);
+          }
+        }
+        
+        // Estrutura 4: o backup é diretamente um array de questionnaires
         if (Array.isArray(data) && data.length > 0 && data[0].strengths !== undefined) {
+          console.log('Backup is array of questionnaires:', data.length);
           allQuestionnaires.push(...data);
         }
+        
+        // Estrutura 5: verificar se há chaves que contêm questionnaires
+        Object.keys(data).forEach(key => {
+          if (key.includes('questionnaire') && Array.isArray(data[key])) {
+            console.log(`Found questionnaires in ${key}:`, data[key].length);
+            allQuestionnaires.push(...data[key]);
+          }
+          if (key.includes('vote') && Array.isArray(data[key])) {
+            console.log(`Found votes in ${key}:`, data[key].length);
+            allVotes.push(...data[key]);
+          }
+        });
       }
     }
 
@@ -130,17 +166,24 @@ serve(async (req) => {
     // Usar IA para agrupar textos similares
     const groupSimilarTexts = async (texts: string[], category: string) => {
       if (texts.length === 0) return [];
+      if (texts.length === 1) return [{ mainText: texts[0], variations: [texts[0]] }];
 
-      const prompt = `
-Analise os seguintes textos da categoria "${category}" e agrupe aqueles que têm o mesmo significado ou são sinônimos/variações. 
-Retorne apenas um JSON válido com a estrutura: [{"mainText": "texto principal", "variations": ["variação1", "variação2"]}]
+      console.log(`Grouping ${texts.length} texts for category: ${category}`);
+
+      try {
+        const prompt = `
+Analise os seguintes textos da categoria "${category}" e agrupe aqueles que têm significado similar ou são variações da mesma ideia. 
+Retorne APENAS um JSON válido com a estrutura: [{"mainText": "texto principal representativo", "variations": ["variação1", "variação2"]}]
 
 Textos para analisar:
 ${texts.map((text, i) => `${i + 1}. ${text}`).join('\n')}
 
-IMPORTANTE: Retorne APENAS o JSON, sem texto adicional.`;
+IMPORTANTE: 
+- Agrupe textos que tenham o mesmo significado, mesmo com palavras diferentes
+- O mainText deve ser o mais representativo do grupo
+- Retorne APENAS o JSON, sem texto adicional
+- Se um texto não tem similares, ele forma um grupo sozinho`;
 
-      try {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -148,7 +191,7 @@ IMPORTANTE: Retorne APENAS o JSON, sem texto adicional.`;
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model: 'gpt-5-mini-2025-08-07',
             messages: [
               {
                 role: 'system',
@@ -159,13 +202,22 @@ IMPORTANTE: Retorne APENAS o JSON, sem texto adicional.`;
                 content: prompt
               }
             ],
-            max_tokens: 2000,
-            temperature: 0.1,
+            max_completion_tokens: 2000,
           }),
         });
 
+        if (!response.ok) {
+          throw new Error(`OpenAI API error: ${response.status}`);
+        }
+
         const aiResult = await response.json();
-        const groupedTexts = JSON.parse(aiResult.choices[0].message.content);
+        const content = aiResult.choices[0].message.content.trim();
+        
+        // Limpar possível markdown
+        const jsonContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const groupedTexts = JSON.parse(jsonContent);
+        
+        console.log(`Successfully grouped ${texts.length} texts into ${groupedTexts.length} groups`);
         return groupedTexts;
       } catch (error) {
         console.error(`Error grouping texts for ${category}:`, error);
