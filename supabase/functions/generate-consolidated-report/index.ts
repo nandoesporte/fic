@@ -130,6 +130,46 @@ serve(async (req) => {
             }
           }
         }
+
+        // NOVO: Processar questionários mesmo sem votos registrados para incluir todas as opções
+        for (const questionnaire of questionnaires) {
+          // Adicionar todas as opções de pontos fortes
+          if (questionnaire.strengths) {
+            const strengthOptions = questionnaire.strengths.split(/\n{2,}|\n/).filter((s: string) => s.trim());
+            strengthOptions.forEach((option: string) => {
+              const trimmedOption = option.trim();
+              if (trimmedOption && !allVotes.strengths.some(v => v.text === trimmedOption)) {
+                // Se a opção não existe ainda nos votos, adiciona com 1 voto mínimo
+                allVotes.strengths.push({ text: trimmedOption, voter: 'sistema' });
+                totalVotes++;
+              }
+            });
+          }
+
+          // Adicionar todas as opções de desafios
+          if (questionnaire.challenges) {
+            const challengeOptions = questionnaire.challenges.split(/\n{2,}|\n/).filter((s: string) => s.trim());
+            challengeOptions.forEach((option: string) => {
+              const trimmedOption = option.trim();
+              if (trimmedOption && !allVotes.challenges.some(v => v.text === trimmedOption)) {
+                allVotes.challenges.push({ text: trimmedOption, voter: 'sistema' });
+                totalVotes++;
+              }
+            });
+          }
+
+          // Adicionar todas as opções de oportunidades
+          if (questionnaire.opportunities) {
+            const opportunityOptions = questionnaire.opportunities.split(/\n{2,}|\n/).filter((s: string) => s.trim());
+            opportunityOptions.forEach((option: string) => {
+              const trimmedOption = option.trim();
+              if (trimmedOption && !allVotes.opportunities.some(v => v.text === trimmedOption)) {
+                allVotes.opportunities.push({ text: trimmedOption, voter: 'sistema' });
+                totalVotes++;
+              }
+            });
+          }
+        }
       } catch (error) {
         console.error('Erro processando backup:', error);
       }
