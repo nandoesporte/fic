@@ -56,11 +56,32 @@ serve(async (req) => {
 
     for (const backup of backups || []) {
       if (backup.data && typeof backup.data === 'object') {
-        if (backup.data.questionnaires) {
-          allQuestionnaires.push(...backup.data.questionnaires);
+        // Verificar diferentes estruturas possíveis dos backups
+        const data = backup.data;
+        
+        // Se tem questionnaires diretamente
+        if (data.questionnaires && Array.isArray(data.questionnaires)) {
+          allQuestionnaires.push(...data.questionnaires);
         }
-        if (backup.data.votes) {
-          allVotes.push(...backup.data.votes);
+        
+        // Se tem votes diretamente
+        if (data.votes && Array.isArray(data.votes)) {
+          allVotes.push(...data.votes);
+        }
+        
+        // Se tem uma estrutura aninhada (como exportData)
+        if (data.exportData) {
+          if (data.exportData.questionnaires) {
+            allQuestionnaires.push(...data.exportData.questionnaires);
+          }
+          if (data.exportData.votes) {
+            allVotes.push(...data.exportData.votes);
+          }
+        }
+        
+        // Se o backup é diretamente um array de questionnaires
+        if (Array.isArray(data) && data.length > 0 && data[0].strengths !== undefined) {
+          allQuestionnaires.push(...data);
         }
       }
     }
