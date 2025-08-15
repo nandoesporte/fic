@@ -56,7 +56,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        <SidebarGroup>
+        <SidebarGroup className="mt-8">
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
