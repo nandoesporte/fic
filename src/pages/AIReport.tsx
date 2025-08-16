@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileSpreadsheet, FileText, Brain, RefreshCw, Database, History, Download } from "lucide-react";
+import { Loader2, FileSpreadsheet, FileText, Brain, RefreshCw, Database, History, Download, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Table,
@@ -306,6 +306,27 @@ export default function AIReport() {
     }
   };
 
+  const deleteReport = async (reportId: string) => {
+    if (!confirm('Tem certeza que deseja excluir este relatório?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('ai_report_history')
+        .delete()
+        .eq('id', reportId);
+
+      if (error) throw error;
+      
+      refetchHistory();
+      toast.success('Relatório excluído com sucesso!');
+    } catch (error) {
+      console.error('Erro ao excluir relatório:', error);
+      toast.error('Erro ao excluir relatório');
+    }
+  };
+
   const downloadReportPDF = (report: any) => {
     try {
       const doc = new jsPDF();
@@ -559,15 +580,26 @@ export default function AIReport() {
                       {(report.analysis_data as any)?.totalVotes || 0} votos • {(report.analysis_data as any)?.uniqueVoters || 0} votantes únicos
                     </p>
                   </div>
-                  <Button
-                    onClick={() => downloadReportPDF(report)}
-                    size="sm"
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    <Download className="h-4 w-4" />
-                    PDF
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={() => downloadReportPDF(report)}
+                      size="sm"
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      PDF
+                    </Button>
+                    <Button
+                      onClick={() => deleteReport(report.id)}
+                      size="sm"
+                      variant="outline"
+                      className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Excluir
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
