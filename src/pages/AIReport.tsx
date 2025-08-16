@@ -66,7 +66,8 @@ export default function AIReport() {
   const [progress, setProgress] = useState(0);
   const [voteAnalysis, setVoteAnalysis] = useState<VoteAnalysis | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
-  const [dateFilter, setDateFilter] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   
   const { backups, fetchBackups } = useBackupOperations();
 
@@ -137,18 +138,32 @@ export default function AIReport() {
   const handleAnalyzeBackup = async () => {
     setIsLoadingAnalysis(true);
     try {
-      // Filtrar backups por data se especificado
+      // Filtrar backups por período se especificado
       let filteredBackups = backups;
-      if (dateFilter) {
-        const filterDate = new Date(dateFilter);
+      if (startDate || endDate) {
         filteredBackups = backups.filter(backup => {
           const backupDate = new Date(backup.created_at);
-          return backupDate >= filterDate;
+          
+          if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999); // Incluir o dia final completo
+            return backupDate >= start && backupDate <= end;
+          } else if (startDate) {
+            const start = new Date(startDate);
+            return backupDate >= start;
+          } else if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            return backupDate <= end;
+          }
+          
+          return true;
         });
       }
 
       if (filteredBackups.length === 0) {
-        toast.error("Nenhum backup encontrado para a data especificada");
+        toast.error("Nenhum backup encontrado para o período especificado");
         return;
       }
 
@@ -454,14 +469,27 @@ export default function AIReport() {
           />
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Filtro por Data (opcional):</label>
-            <input
-              type="date"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-              placeholder="Selecionar data mínima..."
-            />
+            <label className="text-sm font-medium">Filtro por Período (opcional):</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Data Inicial:</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Data Final:</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+            </div>
             <p className="text-xs text-gray-500">
               Deixe vazio para analisar todos os backups disponíveis ({backups.length} encontrados)
             </p>
