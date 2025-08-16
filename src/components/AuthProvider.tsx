@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -17,8 +16,6 @@ const PUBLIC_ROUTES = ['/voting', '/formulario', '/login', '/vote-success'];
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-  const location = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -31,8 +28,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (error) {
           console.error("Session initialization error:", error);
-          if (!PUBLIC_ROUTES.includes(location.pathname)) {
-            navigate('/login');
+          if (!PUBLIC_ROUTES.includes(window.location.pathname)) {
+            window.location.href = '/login';
           }
           return;
         }
@@ -41,8 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(initialSession);
           
           // Only redirect to login if not on a public route and no session exists
-          if (!initialSession && !PUBLIC_ROUTES.includes(location.pathname)) {
-            navigate('/login');
+          if (!initialSession && !PUBLIC_ROUTES.includes(window.location.pathname)) {
+            window.location.href = '/login';
           }
         }
       } catch (error) {
@@ -71,14 +68,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(currentSession);
       } else if (event === 'SIGNED_IN') {
         setSession(currentSession);
-        if (location.pathname === '/login') {
-          navigate('/');
+        if (window.location.pathname === '/login') {
+          window.location.href = '/';
         }
       } else if (event === 'SIGNED_OUT') {
         setSession(null);
         // Only redirect to login if not on a public route
-        if (!PUBLIC_ROUTES.includes(location.pathname)) {
-          navigate('/login');
+        if (!PUBLIC_ROUTES.includes(window.location.pathname)) {
+          window.location.href = '/login';
         }
       }
       
@@ -89,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [navigate, location.pathname]);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ session, loading }}>
