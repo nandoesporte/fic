@@ -66,7 +66,7 @@ export default function AIReport() {
   const [progress, setProgress] = useState(0);
   const [voteAnalysis, setVoteAnalysis] = useState<VoteAnalysis | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
-  const [selectedBackup, setSelectedBackup] = useState<string>("");
+  const [dateFilter, setDateFilter] = useState<string>("");
   
   const { backups, fetchBackups } = useBackupOperations();
 
@@ -135,38 +135,62 @@ export default function AIReport() {
   };
 
   const handleAnalyzeBackup = async () => {
-    if (!selectedBackup) {
-      toast.error("Selecione um backup para analisar");
-      return;
-    }
-
     setIsLoadingAnalysis(true);
     try {
-      // Buscar os dados do backup selecionado
-      const { data, error } = await supabase
-        .from('data_backups')
-        .select('data')
-        .eq('id', selectedBackup)
-        .single();
+      // Filtrar backups por data se especificado
+      let filteredBackups = backups;
+      if (dateFilter) {
+        const filterDate = new Date(dateFilter);
+        filteredBackups = backups.filter(backup => {
+          const backupDate = new Date(backup.created_at);
+          return backupDate >= filterDate;
+        });
+      }
 
-      if (error) throw error;
-
-      const backupData = data.data as any;
-      if (!backupData?.questionnaire_votes || !backupData?.questionnaires) {
-        toast.error("Backup não contém dados de votos válidos");
+      if (filteredBackups.length === 0) {
+        toast.error("Nenhum backup encontrado para a data especificada");
         return;
       }
 
-      // Processar dados do backup para análise
-      const votes = backupData.questionnaire_votes;
-      const questionnaires = backupData.questionnaires;
+      // Buscar dados de todos os backups filtrados
+      const allVotes: any[] = [];
+      const allQuestionnaires: any[] = [];
+
+      for (const backup of filteredBackups) {
+        const { data, error } = await supabase
+          .from('data_backups')
+          .select('data')
+          .eq('id', backup.id)
+          .single();
+
+        if (error) {
+          console.error(`Erro ao buscar backup ${backup.id}:`, error);
+          continue;
+        }
+
+        const backupData = data.data as any;
+        if (backupData?.questionnaire_votes && backupData?.questionnaires) {
+          allVotes.push(...backupData.questionnaire_votes);
+          allQuestionnaires.push(...backupData.questionnaires);
+        }
+      }
+
+      if (allVotes.length === 0 || allQuestionnaires.length === 0) {
+        toast.error("Nenhum dado de votos válido encontrado nos backups");
+        return;
+      }
+
+      // Remover duplicatas dos questionários
+      const uniqueQuestionnaires = allQuestionnaires.filter((questionnaire, index, self) =>
+        index === self.findIndex(q => q.id === questionnaire.id)
+      );
 
       // Filtrar por dimensão se necessário
       const filteredQuestionnaires = selectedDimension === "all" 
-        ? questionnaires 
-        : questionnaires.filter((q: any) => q.dimension === selectedDimension);
+        ? uniqueQuestionnaires 
+        : uniqueQuestionnaires.filter((q: any) => q.dimension === selectedDimension);
 
-      const filteredVotes = votes.filter((vote: any) => 
+      const filteredVotes = allVotes.filter((vote: any) => 
         filteredQuestionnaires.some((q: any) => q.id === vote.questionnaire_id)
       );
 
@@ -174,13 +198,13 @@ export default function AIReport() {
       const analysisData = processVoteAnalysis(filteredVotes, filteredQuestionnaires);
       setVoteAnalysis(analysisData);
       
-      // Salvar no histórico
-      await saveReportToHistory(analysisData, selectedBackup);
+      // Salvar no histórico com identificação dos backups usados
+      await saveReportToHistory(analysisData, filteredBackups.map(b => b.id).join(','));
       
-      toast.success("Análise do backup concluída!");
+      toast.success(`Análise concluída usando ${filteredBackups.length} backup(s)!`);
     } catch (error) {
       console.error('Error:', error);
-      toast.error("Erro ao analisar backup");
+      toast.error("Erro ao analisar backups");
     } finally {
       setIsLoadingAnalysis(false);
     }
@@ -430,35 +454,33 @@ export default function AIReport() {
           />
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Selecionar Backup:</label>
-            <select
-              value={selectedBackup}
-              onChange={(e) => setSelectedBackup(e.target.value)}
+            <label className="text-sm font-medium">Filtro por Data (opcional):</label>
+            <input
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md"
-            >
-              <option value="">Escolha um backup...</option>
-              {backups.map((backup) => (
-                <option key={backup.id} value={backup.id}>
-                  {backup.filename} - {new Date(backup.created_at).toLocaleDateString('pt-BR')}
-                </option>
-              ))}
-            </select>
+              placeholder="Selecionar data mínima..."
+            />
+            <p className="text-xs text-gray-500">
+              Deixe vazio para analisar todos os backups disponíveis ({backups.length} encontrados)
+            </p>
           </div>
 
           <Button
             onClick={handleAnalyzeBackup}
-            disabled={isLoadingAnalysis || !selectedBackup}
+            disabled={isLoadingAnalysis || backups.length === 0}
             className="w-full"
           >
             {isLoadingAnalysis ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processando backup Excel...
+                Processando backups Excel...
               </>
             ) : (
               <>
                 <FileSpreadsheet className="mr-2 h-4 w-4" />
-                Analisar Dados do Backup Excel
+                Analisar Todos os Backups Excel
               </>
             )}
           </Button>
