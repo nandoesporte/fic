@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileSpreadsheet, FileText, Brain, RefreshCw, Database } from "lucide-react";
+import { Loader2, FileSpreadsheet, FileText, Brain, RefreshCw, Database, History, Download } from "lucide-react";
 import { toast } from "sonner";
 import {
   Table,
@@ -69,6 +69,20 @@ export default function AIReport() {
   const [selectedBackup, setSelectedBackup] = useState<string>("");
   
   const { backups, fetchBackups } = useBackupOperations();
+
+  // Query para histórico de relatórios
+  const { data: reportHistory, isLoading: isLoadingHistory, refetch: refetchHistory } = useQuery({
+    queryKey: ['ai-report-history'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ai_report_history')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const { data: dimensions, isLoading } = useQuery({
     queryKey: ['dimensions'],
@@ -160,6 +174,9 @@ export default function AIReport() {
       const analysisData = processVoteAnalysis(filteredVotes, filteredQuestionnaires);
       setVoteAnalysis(analysisData);
       
+      // Salvar no histórico
+      await saveReportToHistory(analysisData, selectedBackup);
+      
       toast.success("Análise do backup concluída!");
     } catch (error) {
       console.error('Error:', error);
@@ -224,6 +241,106 @@ export default function AIReport() {
       challenges: voteGroups.challenges,
       opportunities: voteGroups.opportunities
     };
+  };
+
+  const saveReportToHistory = async (analysisData: VoteAnalysis, backupId: string) => {
+    try {
+      const selectedBackupData = backups.find(b => b.id === backupId);
+      const title = `Relatório ${analysisData.dimension} - ${new Date().toLocaleDateString('pt-BR')}`;
+      
+      const { error } = await supabase
+        .from('ai_report_history')
+        .insert({
+          title,
+          dimension: analysisData.dimension,
+          backup_id: backupId,
+          analysis_data: analysisData as any
+        });
+
+      if (error) throw error;
+      
+      // Atualizar lista de histórico
+      refetchHistory();
+    } catch (error) {
+      console.error('Erro ao salvar relatório:', error);
+      toast.error('Erro ao salvar relatório no histórico');
+    }
+  };
+
+  const downloadReportPDF = (report: any) => {
+    try {
+      const doc = new jsPDF();
+      
+      // Título do relatório
+      doc.setFontSize(18);
+      doc.text(report.title, 14, 20);
+      
+      // Informações do relatório
+      doc.setFontSize(12);
+      doc.text(`Dimensão: ${report.dimension}`, 14, 35);
+      doc.text(`Data: ${new Date(report.created_at).toLocaleDateString('pt-BR')}`, 14, 45);
+      
+      // Métricas
+      const analysisData = report.analysis_data;
+      doc.text(`Total de Votos: ${analysisData.totalVotes}`, 14, 60);
+      doc.text(`Votantes Únicos: ${analysisData.uniqueVoters}`, 14, 70);
+      doc.text(`Taxa de Participação: ${analysisData.participationRate.toFixed(1)}%`, 14, 80);
+      
+      let yPosition = 100;
+      
+      // Pontos Fortes
+      if (analysisData.strengths && analysisData.strengths.length > 0) {
+        doc.setFontSize(14);
+        doc.text('Pontos Fortes:', 14, yPosition);
+        yPosition += 10;
+        
+        doc.setFontSize(10);
+        analysisData.strengths.forEach((strength: any, index: number) => {
+          const text = `${index + 1}. ${strength.text} (${strength.votes} votos)`;
+          const splitText = doc.splitTextToSize(text, 180);
+          doc.text(splitText, 14, yPosition);
+          yPosition += splitText.length * 5 + 5;
+        });
+        yPosition += 10;
+      }
+      
+      // Desafios
+      if (analysisData.challenges && analysisData.challenges.length > 0) {
+        doc.setFontSize(14);
+        doc.text('Desafios:', 14, yPosition);
+        yPosition += 10;
+        
+        doc.setFontSize(10);
+        analysisData.challenges.forEach((challenge: any, index: number) => {
+          const text = `${index + 1}. ${challenge.text} (${challenge.votes} votos)`;
+          const splitText = doc.splitTextToSize(text, 180);
+          doc.text(splitText, 14, yPosition);
+          yPosition += splitText.length * 5 + 5;
+        });
+        yPosition += 10;
+      }
+      
+      // Oportunidades
+      if (analysisData.opportunities && analysisData.opportunities.length > 0) {
+        doc.setFontSize(14);
+        doc.text('Oportunidades:', 14, yPosition);
+        yPosition += 10;
+        
+        doc.setFontSize(10);
+        analysisData.opportunities.forEach((opportunity: any, index: number) => {
+          const text = `${index + 1}. ${opportunity.text} (${opportunity.votes} votos)`;
+          const splitText = doc.splitTextToSize(text, 180);
+          doc.text(splitText, 14, yPosition);
+          yPosition += splitText.length * 5 + 5;
+        });
+      }
+      
+      doc.save(`${report.title}.pdf`);
+      toast.success('PDF baixado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar PDF');
+    }
   };
 
   const handleExport = async (format: 'excel' | 'pdf') => {
@@ -362,6 +479,53 @@ export default function AIReport() {
               opportunities={voteAnalysis.opportunities}
             />
           </div>
+        )}
+      </Card>
+
+      {/* Seção de Histórico de Relatórios */}
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <History className="h-5 w-5 text-green-600" />
+          <h2 className="text-xl font-semibold">Histórico de Relatórios</h2>
+        </div>
+        
+        {isLoadingHistory ? (
+          <div className="flex items-center justify-center p-8">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span className="ml-2">Carregando histórico...</span>
+          </div>
+        ) : reportHistory && reportHistory.length > 0 ? (
+          <div className="space-y-4">
+            {reportHistory.map((report) => (
+              <div key={report.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">{report.title}</h3>
+                    <p className="text-sm text-gray-500">
+                      Dimensão: {report.dimension} | 
+                      Criado em: {new Date(report.created_at).toLocaleDateString('pt-BR')}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {(report.analysis_data as any)?.totalVotes || 0} votos • {(report.analysis_data as any)?.uniqueVoters || 0} votantes únicos
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => downloadReportPDF(report)}
+                    size="sm"
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    PDF
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500 text-center py-8">
+            Nenhum relatório foi gerado ainda. Analyze um backup para criar seu primeiro relatório.
+          </p>
         )}
       </Card>
 
