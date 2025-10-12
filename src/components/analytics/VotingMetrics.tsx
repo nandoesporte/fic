@@ -15,12 +15,12 @@ export const VotingMetrics = ({ totalVoters, totalVotes, participationRate }: Vo
   const estimatedParticipants = totalVotes > 0 ? Math.ceil(totalVotes / 9) : 0;
   
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2">
       <MetricCard
         icon={Users}
         title="Participantes Estimados"
         value={estimatedParticipants}
-        description={`De ${totalVoters} eleitores registrados`}
+        description=""
         iconClassName="bg-blue-100 text-blue-600"
       />
       <MetricCard
@@ -29,13 +29,6 @@ export const VotingMetrics = ({ totalVoters, totalVotes, participationRate }: Vo
         value={totalVotes}
         description="Soma de todos os votos realizados"
         iconClassName="bg-green-100 text-green-600"
-      />
-      <MetricCard
-        icon={ChartBar}
-        title="Taxa de Participação"
-        value={`${participationRate}%`}
-        description="Baseado no total de votos esperados"
-        iconClassName="bg-purple-100 text-purple-600"
       />
     </div>
   );
