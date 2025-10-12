@@ -18,7 +18,7 @@ export const VotingMetrics = ({ totalVoters, totalVotes, participationRate }: Vo
     <div className="grid gap-4 md:grid-cols-2">
       <MetricCard
         icon={Users}
-        title="Participantes Estimados"
+        title="Total de Participantes"
         value={estimatedParticipants}
         description=""
         iconClassName="bg-blue-100 text-blue-600"
@@ -27,7 +27,7 @@ export const VotingMetrics = ({ totalVoters, totalVotes, participationRate }: Vo
         icon={Vote}
         title="Total de Votos"
         value={totalVotes}
-        description="Soma de todos os votos realizados"
+        description=""
         iconClassName="bg-green-100 text-green-600"
       />
     </div>
