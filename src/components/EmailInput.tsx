@@ -10,7 +10,7 @@ export const EmailInput = ({ email, onChange }: EmailInputProps) => {
     <div className="mb-6">
       <Input
         type="email"
-        placeholder="Digite seu email para votar"
+        placeholder="Digite seu e-mail para acessar"
         value={email}
         onChange={(e) => onChange(e.target.value)}
         className="max-w-full"
