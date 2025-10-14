@@ -115,33 +115,55 @@ export function DimensionManager() {
         .from('fic_dimensions')
         .select('identifier')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (!dimension) {
         throw new Error('Dimensão não encontrada');
       }
 
-      // Verificar se há questionários associados
-      const { count: questionnaireCount } = await supabase
-        .from('fic_questionnaires')
-        .select('*', { count: 'exact', head: true })
-        .eq('dimension', dimension.identifier);
-
-      if (questionnaireCount && questionnaireCount > 0) {
-        throw new Error(`Não é possível excluir a dimensão pois existem ${questionnaireCount} questionário(s) associado(s).`);
-      }
-
-      // Verificar se há relatórios associados
-      const { count: reportCount } = await supabase
+      // Deletar relatórios associados primeiro
+      const { error: reportError } = await supabase
         .from('fic_reports')
-        .select('*', { count: 'exact', head: true })
+        .delete()
         .eq('dimension', dimension.identifier);
 
-      if (reportCount && reportCount > 0) {
-        throw new Error(`Não é possível excluir a dimensão pois existem ${reportCount} relatório(s) associado(s).`);
+      if (reportError) {
+        console.error("Error deleting reports:", reportError);
+        throw new Error('Erro ao excluir relatórios associados');
       }
 
-      // Se não há dados associados, pode excluir
+      // Deletar histórico de relatórios AI associados
+      const { error: aiReportError } = await supabase
+        .from('ai_report_history')
+        .delete()
+        .eq('dimension', dimension.identifier);
+
+      if (aiReportError) {
+        console.error("Error deleting AI report history:", aiReportError);
+      }
+
+      // Deletar questionários associados
+      const { error: questionnaireError } = await supabase
+        .from('fic_questionnaires')
+        .delete()
+        .eq('dimension', dimension.identifier);
+
+      if (questionnaireError) {
+        console.error("Error deleting questionnaires:", questionnaireError);
+        throw new Error('Erro ao excluir questionários associados');
+      }
+
+      // Deletar performance da dimensão
+      const { error: performanceError } = await supabase
+        .from('dimension_performance')
+        .delete()
+        .eq('dimension', dimension.identifier);
+
+      if (performanceError) {
+        console.error("Error deleting dimension performance:", performanceError);
+      }
+
+      // Finalmente, deletar a dimensão
       const { error } = await supabase
         .from('fic_dimensions')
         .delete()
@@ -154,7 +176,7 @@ export function DimensionManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dimensions'] });
-      toast.success('Dimensão excluída com sucesso');
+      toast.success('Dimensão e todos os dados relacionados foram excluídos com sucesso');
     },
     onError: (error: any) => {
       console.error("Error in delete mutation:", error);
