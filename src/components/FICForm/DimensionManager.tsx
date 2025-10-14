@@ -110,6 +110,38 @@ export function DimensionManager() {
 
   const deleteDimensionMutation = useMutation({
     mutationFn: async (id: string) => {
+      // Buscar o identifier da dimensão
+      const { data: dimension } = await supabase
+        .from('fic_dimensions')
+        .select('identifier')
+        .eq('id', id)
+        .single();
+
+      if (!dimension) {
+        throw new Error('Dimensão não encontrada');
+      }
+
+      // Verificar se há questionários associados
+      const { count: questionnaireCount } = await supabase
+        .from('fic_questionnaires')
+        .select('*', { count: 'exact', head: true })
+        .eq('dimension', dimension.identifier);
+
+      if (questionnaireCount && questionnaireCount > 0) {
+        throw new Error(`Não é possível excluir a dimensão pois existem ${questionnaireCount} questionário(s) associado(s).`);
+      }
+
+      // Verificar se há relatórios associados
+      const { count: reportCount } = await supabase
+        .from('fic_reports')
+        .select('*', { count: 'exact', head: true })
+        .eq('dimension', dimension.identifier);
+
+      if (reportCount && reportCount > 0) {
+        throw new Error(`Não é possível excluir a dimensão pois existem ${reportCount} relatório(s) associado(s).`);
+      }
+
+      // Se não há dados associados, pode excluir
       const { error } = await supabase
         .from('fic_dimensions')
         .delete()
@@ -126,7 +158,7 @@ export function DimensionManager() {
     },
     onError: (error: any) => {
       console.error("Error in delete mutation:", error);
-      toast.error('Erro ao excluir dimensão');
+      toast.error(error.message || 'Erro ao excluir dimensão');
     },
   });
 
