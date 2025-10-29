@@ -155,6 +155,7 @@ serve(async (req) => {
       if (texts.length === 0) return [];
 
       const uniqueTexts = [...new Set(texts.map(t => t.text))];
+      const categoryTotal = texts.length; // Total de votos da categoria específica
       
       const prompt = `
 Você é um especialista em análise de dados qualitativos de cooperativas. Analise as seguintes respostas da categoria "${category}" e:
@@ -211,6 +212,7 @@ IMPORTANTE:
         const groups = JSON.parse(jsonContent);
 
         return groups.map((group: any) => {
+          // Conta quantos votos originais estão neste grupo
           const voteCount = group.originalTexts.reduce((sum: number, text: string) => 
             sum + texts.filter(t => t.text === text).length, 0);
           
@@ -218,7 +220,7 @@ IMPORTANTE:
             groupName: group.groupName,
             originalTexts: group.originalTexts,
             votes: voteCount,
-            percentage: totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0
+            percentage: categoryTotal > 0 ? (voteCount / categoryTotal) * 100 : 0
           };
         });
 
@@ -229,7 +231,7 @@ IMPORTANTE:
           groupName: text,
           originalTexts: [text],
           votes: texts.filter(t => t.text === text).length,
-          percentage: totalVotes > 0 ? (texts.filter(t => t.text === text).length / totalVotes) * 100 : 0
+          percentage: categoryTotal > 0 ? (texts.filter(t => t.text === text).length / categoryTotal) * 100 : 0
         }));
       }
     };
