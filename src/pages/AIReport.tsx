@@ -16,6 +16,7 @@ interface VoteOption {
   optionNumber: string;
   total: number;
   text: string;
+  dimension?: string;
 }
 
 interface VotingData {
@@ -33,6 +34,7 @@ interface Dimension {
 
 const AIReport = () => {
   const [selectedDimension, setSelectedDimension] = useState("all");
+  const [displayDimension, setDisplayDimension] = useState("all");
   const [votingData, setVotingData] = useState<VotingData | null>(null);
   const [totalParticipants, setTotalParticipants] = useState(0);
   const [reportTitle, setReportTitle] = useState('');
@@ -132,7 +134,7 @@ const AIReport = () => {
     try {
       console.log('Iniciando processamento de', files.length, 'arquivo(s)...');
       
-      const allVotes: { [key: string]: Map<string, { text: string; count: number }> } = {
+      const allVotes: { [key: string]: Map<string, { text: string; count: number; dimensions: Set<string> }> } = {
         strengths: new Map(),
         challenges: new Map(),
         opportunities: new Map(),
@@ -162,11 +164,6 @@ const AIReport = () => {
 
             // Get dimension from the row
             const dimension = row['Dimensão'] || row['Dimension'] || row['dimension'];
-            
-            // Only skip if we're filtering AND it doesn't match
-            if (selectedDimension !== 'all' && dimension && dimension !== selectedDimension) {
-              continue;
-            }
 
             // Get the section type (Pontos Fortes, Desafios, Oportunidades)
             const sectionType = row['Seção Votada'] || row['Section'] || row['section'];
@@ -197,8 +194,15 @@ const AIReport = () => {
             const existing = allVotes[categoryKey].get(cleanText);
             if (existing) {
               existing.count++;
+              if (dimension) {
+                existing.dimensions.add(dimension);
+              }
             } else {
-              allVotes[categoryKey].set(cleanText, { text: cleanText, count: 1 });
+              const dimensions = new Set<string>();
+              if (dimension) {
+                dimensions.add(dimension);
+              }
+              allVotes[categoryKey].set(cleanText, { text: cleanText, count: 1, dimensions });
             }
           }
         }
@@ -219,6 +223,7 @@ const AIReport = () => {
             optionNumber: String(i + 1),
             total: v.count,
             text: v.text,
+            dimension: Array.from(v.dimensions).join(', ') || undefined,
           })),
         challenges: Array.from(allVotes.challenges.values())
           .sort((a, b) => b.count - a.count)
@@ -226,6 +231,7 @@ const AIReport = () => {
             optionNumber: String(i + 1),
             total: v.count,
             text: v.text,
+            dimension: Array.from(v.dimensions).join(', ') || undefined,
           })),
         opportunities: Array.from(allVotes.opportunities.values())
           .sort((a, b) => b.count - a.count)
@@ -233,11 +239,13 @@ const AIReport = () => {
             optionNumber: String(i + 1),
             total: v.count,
             text: v.text,
+            dimension: Array.from(v.dimensions).join(', ') || undefined,
           })),
       };
 
       setVotingData(processedData);
       setTotalParticipants(participantsSet.size);
+      setDisplayDimension('all');
 
       toast({
         title: "Arquivos processados com sucesso",
@@ -262,6 +270,27 @@ const AIReport = () => {
 
   const totalVotes = calculateTotalVotes();
 
+  // Filter voting data based on selected dimension for display only
+  const getFilteredVotingData = (): VotingData | null => {
+    if (!votingData) return null;
+    
+    if (displayDimension === 'all') return votingData;
+    
+    return {
+      strengths: votingData.strengths.filter(v => 
+        !v.dimension || v.dimension.includes(displayDimension)
+      ),
+      challenges: votingData.challenges.filter(v => 
+        !v.dimension || v.dimension.includes(displayDimension)
+      ),
+      opportunities: votingData.opportunities.filter(v => 
+        !v.dimension || v.dimension.includes(displayDimension)
+      ),
+    };
+  };
+
+  const filteredData = getFilteredVotingData();
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between mb-6">
@@ -283,37 +312,29 @@ const AIReport = () => {
 
       <Card className="p-6">
         <div className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Dimensão</label>
-              <DimensionFilter
-                selectedDimension={selectedDimension}
-                onDimensionChange={setSelectedDimension}
-                dimensions={dimensions}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Upload de Arquivos XLS</label>
+            <div className="flex gap-2">
+              <input
+                type="file"
+                accept=".xls,.xlsx"
+                multiple
+                onChange={handleFileUpload}
+                className="hidden"
+                id="file-upload"
               />
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => document.getElementById('file-upload')?.click()}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Selecionar Arquivos
+              </Button>
             </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Upload de Arquivos XLS</label>
-              <div className="flex gap-2">
-                <input
-                  type="file"
-                  accept=".xls,.xlsx"
-                  multiple
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  id="file-upload"
-                />
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => document.getElementById('file-upload')?.click()}
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  Selecionar Arquivos
-                </Button>
-              </div>
-            </div>
+            <p className="text-xs text-muted-foreground">
+              Os arquivos serão processados e você poderá filtrar por dimensão após o upload
+            </p>
           </div>
         </div>
       </Card>
@@ -334,9 +355,23 @@ const AIReport = () => {
                     disabled={!reportTitle.trim() || saveReportMutation.isPending}
                   >
                     <Save className="mr-2 h-4 w-4" />
-                    Salvar
+                    {saveReportMutation.isPending ? 'Salvando...' : 'Salvar'}
                   </Button>
                 </div>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Filtrar Visualização por Dimensão</label>
+                <DimensionFilter
+                  selectedDimension={displayDimension}
+                  onDimensionChange={setDisplayDimension}
+                  dimensions={dimensions}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Este filtro aplica-se apenas à visualização dos dados já processados
+                </p>
               </div>
             </Card>
 
@@ -347,9 +382,9 @@ const AIReport = () => {
             />
 
             <VotingResults
-              strengths={votingData.strengths || []}
-              challenges={votingData.challenges || []}
-              opportunities={votingData.opportunities || []}
+              strengths={filteredData?.strengths || []}
+              challenges={filteredData?.challenges || []}
+              opportunities={filteredData?.opportunities || []}
             />
           </>
         )}
@@ -395,6 +430,7 @@ const AIReport = () => {
                       });
                       setTotalParticipants(data.totalParticipants || 0);
                       setSelectedDimension(report.dimension);
+                      setDisplayDimension('all');
                       setActiveTab('upload');
                       toast({
                         title: "Relatório carregado",
