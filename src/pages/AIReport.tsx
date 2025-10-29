@@ -139,72 +139,52 @@ const AIReport = () => {
           console.log('Linhas encontradas:', jsonData.length);
 
           for (const row of jsonData) {
-            // Log primeira linha para debug de colunas
-            if (jsonData.indexOf(row) === 0) {
-              console.log('Primeira linha (colunas):', Object.keys(row));
-              console.log('Dados primeira linha:', row);
-            }
-
-            // Extract email for participant counting (try multiple column name variations)
-            const email = row['Email'] || row['email'] || row['E-mail'] || row['e-mail'] || row['EMAIL'];
+            // Extract email for participant counting
+            const email = row['Email do Votante'] || row['Email'] || row['email'];
             if (email) {
               participantsSet.add(String(email).trim());
             }
 
-            // Try to identify dimension (multiple variations)
-            const dimension = row['Dimensão'] || row['Dimension'] || row['dimension'] || row['DIMENSÃO'];
+            // Get dimension from the row
+            const dimension = row['Dimensão'] || row['Dimension'] || row['dimension'];
             
             // Only skip if we're filtering AND it doesn't match
             if (selectedDimension !== 'all' && dimension && dimension !== selectedDimension) {
               continue;
             }
 
-            // Process strengths, challenges, opportunities with multiple column name variations
-            const categoryMappings = [
-              { 
-                key: 'strengths', 
-                names: ['Pontos Fortes', 'Forças', 'Strengths', 'strengths', 'PONTOS FORTES', 'forças']
-              },
-              { 
-                key: 'challenges', 
-                names: ['Desafios', 'Challenges', 'challenges', 'DESAFIOS', 'desafios']
-              },
-              { 
-                key: 'opportunities', 
-                names: ['Oportunidades', 'Opportunities', 'opportunities', 'OPORTUNIDADES', 'oportunidades']
-              }
-            ];
+            // Get the section type (Pontos Fortes, Desafios, Oportunidades)
+            const sectionType = row['Seção Votada'] || row['Section'] || row['section'];
+            const optionText = row['Texto Completo da Opção'] || row['Option Text'] || row['text'];
 
-            categoryMappings.forEach(({ key, names }) => {
-              let content = null;
-              
-              // Try each possible column name
-              for (const name of names) {
-                if (row[name]) {
-                  content = row[name];
-                  break;
-                }
-              }
-              
-              if (content && typeof content === 'string' && content.trim().length > 0) {
-                // Split content by common delimiters and clean
-                const options = content
-                  .split(/[\n;|]/)
-                  .map(opt => opt.trim())
-                  .filter(opt => opt.length > 0);
-                
-                console.log(`Encontrados ${options.length} itens em ${key}:`, options);
-                
-                options.forEach(option => {
-                  const existing = allVotes[key].get(option);
-                  if (existing) {
-                    existing.count++;
-                  } else {
-                    allVotes[key].set(option, { text: option, count: 1 });
-                  }
-                });
-              }
-            });
+            if (!sectionType || !optionText || typeof optionText !== 'string' || optionText.trim().length === 0) {
+              continue;
+            }
+
+            // Map section type to category key
+            let categoryKey: 'strengths' | 'challenges' | 'opportunities' | null = null;
+            
+            const sectionLower = sectionType.toLowerCase().trim();
+            if (sectionLower.includes('pontos fortes') || sectionLower.includes('forças') || sectionLower.includes('strengths')) {
+              categoryKey = 'strengths';
+            } else if (sectionLower.includes('desafios') || sectionLower.includes('challenges')) {
+              categoryKey = 'challenges';
+            } else if (sectionLower.includes('oportunidades') || sectionLower.includes('opportunities')) {
+              categoryKey = 'opportunities';
+            }
+
+            if (!categoryKey) {
+              continue;
+            }
+
+            // Add the vote to the appropriate category
+            const cleanText = optionText.trim();
+            const existing = allVotes[categoryKey].get(cleanText);
+            if (existing) {
+              existing.count++;
+            } else {
+              allVotes[categoryKey].set(cleanText, { text: cleanText, count: 1 });
+            }
           }
         }
       }
