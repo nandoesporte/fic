@@ -139,6 +139,12 @@ const AIReport = () => {
           console.log('Linhas encontradas:', jsonData.length);
 
           for (const row of jsonData) {
+            // Log primeira linha para debug de colunas
+            if (jsonData.indexOf(row) === 0) {
+              console.log('Primeira linha (colunas):', Object.keys(row));
+              console.log('Dados primeira linha:', row);
+            }
+
             // Extract email for participant counting (try multiple column name variations)
             const email = row['Email'] || row['email'] || row['E-mail'] || row['e-mail'] || row['EMAIL'];
             if (email) {
