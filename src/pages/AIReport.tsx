@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Brain, Download, FileSpreadsheet } from "lucide-react";
+import { Loader2, Brain, Download, FileSpreadsheet, History, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import * as XLSX from 'xlsx';
@@ -11,6 +11,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { DimensionFilter } from "@/components/analytics/DimensionFilter";
 import { ConsolidatedReportView } from "@/components/analytics/ConsolidatedReportView";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface VoteGroup {
   groupName: string;
@@ -39,6 +40,7 @@ export default function AIReport() {
   const [report, setReport] = useState<ConsolidatedReport | null>(null);
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  const [viewingHistoryReport, setViewingHistoryReport] = useState<ConsolidatedReport | null>(null);
 
   const { data: dimensions, isLoading } = useQuery({
     queryKey: ['dimensions'],
@@ -46,6 +48,19 @@ export default function AIReport() {
       const { data, error } = await supabase
         .from('fic_dimensions')
         .select('identifier, label');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: reportHistory, refetch: refetchHistory } = useQuery({
+    queryKey: ['ai-report-history'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ai_report_history')
+        .select('*')
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data;
@@ -84,6 +99,24 @@ export default function AIReport() {
       }
 
       setReport(response.data);
+      
+      // Salvar no histórico
+      const reportTitle = `Relatório ${response.data.dimension} - ${new Date().toLocaleDateString('pt-BR')}`;
+      const { error: saveError } = await supabase
+        .from('ai_report_history')
+        .insert({
+          dimension: response.data.dimension,
+          title: reportTitle,
+          analysis_data: response.data,
+          backup_id: '00000000-0000-0000-0000-000000000000' // UUID placeholder
+        });
+
+      if (saveError) {
+        console.error('Erro ao salvar no histórico:', saveError);
+      } else {
+        await refetchHistory();
+      }
+
       toast.success("Relatório consolidado gerado com sucesso!");
     } catch (error: any) {
       console.error('Error:', error);
@@ -259,6 +292,10 @@ export default function AIReport() {
     }
   };
 
+  const handleViewHistoryReport = (historyItem: any) => {
+    setViewingHistoryReport(historyItem.analysis_data);
+  };
+
   return (
     <div className="space-y-6 p-6">
       <div className="mb-8">
@@ -267,6 +304,20 @@ export default function AIReport() {
           Análise inteligente de todos os arquivos exportados, com agrupamento semântico e insights estratégicos
         </p>
       </div>
+
+      <Tabs defaultValue="generate" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="generate">
+            <Brain className="h-4 w-4 mr-2" />
+            Gerar Relatório
+          </TabsTrigger>
+          <TabsTrigger value="history">
+            <History className="h-4 w-4 mr-2" />
+            Histórico
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="generate" className="space-y-6 mt-6">
 
       {/* Card de Geração */}
       <Card className="p-8">
@@ -364,6 +415,77 @@ export default function AIReport() {
           <ConsolidatedReportView {...report} />
         </div>
       )}
+        </TabsContent>
+
+        <TabsContent value="history" className="space-y-6 mt-6">
+          <Card className="p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <History className="h-6 w-6 text-primary" />
+              <h2 className="text-2xl font-semibold">Histórico de Relatórios</h2>
+            </div>
+
+            {!reportHistory || reportHistory.length === 0 ? (
+              <div className="text-center p-8 text-muted-foreground">
+                Nenhum relatório gerado ainda. Gere seu primeiro relatório na aba "Gerar Relatório".
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {reportHistory.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors"
+                  >
+                    <div className="flex-1">
+                      <h3 className="font-semibold">{item.title}</h3>
+                      <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                        <span>Dimensão: {item.dimension}</span>
+                        <span>•</span>
+                        <span>{new Date(item.created_at).toLocaleString('pt-BR')}</span>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => handleViewHistoryReport(item)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Visualizar
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          {viewingHistoryReport && (
+            <div className="space-y-6">
+              <Card className="p-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold">Relatório Visualizado</h3>
+                  <div className="flex gap-3">
+                    <Button onClick={() => {
+                      setReport(viewingHistoryReport);
+                      handleExportPDF();
+                    }} variant="outline" className="flex items-center gap-2">
+                      <Download className="h-4 w-4" />
+                      Baixar PDF
+                    </Button>
+                    <Button onClick={() => {
+                      setReport(viewingHistoryReport);
+                      handleExportExcel();
+                    }} variant="outline" className="flex items-center gap-2">
+                      <FileSpreadsheet className="h-4 w-4" />
+                      Baixar Excel
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+
+              <ConsolidatedReportView {...viewingHistoryReport} />
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
