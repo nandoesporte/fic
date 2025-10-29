@@ -41,18 +41,18 @@ const CategoryCard = ({
   title, 
   icon: Icon, 
   items, 
-  colorClass 
+  bgColorClass 
 }: { 
   title: string; 
   icon: any; 
   items: VoteGroup[]; 
-  colorClass: string;
+  bgColorClass: string;
 }) => {
   if (items.length === 0) {
     return (
       <Card className="p-6">
         <div className="flex items-center gap-3 mb-4">
-          <Icon className={`h-6 w-6 ${colorClass}`} />
+          <Icon className={`h-6 w-6`} />
           <h3 className="text-xl font-semibold">{title}</h3>
         </div>
         <p className="text-muted-foreground">Nenhum dado disponível nesta categoria.</p>
@@ -60,56 +60,56 @@ const CategoryCard = ({
     );
   }
 
+  // Sort items by votes (descending)
+  const sortedItems = [...items].sort((a, b) => b.votes - a.votes);
+
   return (
     <Card className="p-6">
       <div className="flex items-center gap-3 mb-6">
-        <Icon className={`h-6 w-6 ${colorClass}`} />
+        <Icon className={`h-6 w-6`} />
         <h3 className="text-xl font-semibold">{title}</h3>
         <Badge variant="secondary" className="ml-auto">
           {items.length} grupos
         </Badge>
       </div>
       
-      <Accordion type="single" collapsible className="space-y-2">
-        {items.map((item, index) => (
-          <AccordionItem 
-            key={index} 
-            value={`item-${index}`}
-            className="border rounded-lg px-4"
+      <div className="space-y-3">
+        {sortedItems.map((item, index) => (
+          <div
+            key={index}
+            className={`p-5 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ${bgColorClass}`}
           >
-            <AccordionTrigger className="hover:no-underline">
-              <div className="flex items-center gap-4 w-full text-left">
-                <span className="font-medium text-lg">{index + 1}.</span>
-                <div className="flex-1">
-                  <p className="font-medium">{item.groupName}</p>
-                  <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Hash className="h-3 w-3" />
-                      {item.votes} votos
-                    </span>
-                    <span>•</span>
-                    <span>{item.percentage.toFixed(1)}%</span>
-                  </div>
-                </div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex-1">
+                <span className="text-sm font-medium">{item.groupName}</span>
               </div>
-            </AccordionTrigger>
-            <AccordionContent className="pt-4">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground mb-2">
-                  Variações incluídas neste grupo:
-                </p>
-                <ul className="space-y-1 ml-4">
-                  {item.originalTexts.map((text, idx) => (
-                    <li key={idx} className="text-sm list-disc">
-                      {text}
-                    </li>
-                  ))}
-                </ul>
+              <div className="text-right">
+                <span className="text-xs opacity-75">Total de votos</span>
+                <p className="font-bold">{item.percentage.toFixed(1)}% ({item.votes})</p>
               </div>
-            </AccordionContent>
-          </AccordionItem>
+            </div>
+            
+            {item.originalTexts.length > 0 && (
+              <Accordion type="single" collapsible>
+                <AccordionItem value="details" className="border-none">
+                  <AccordionTrigger className="py-2 text-xs opacity-75 hover:no-underline">
+                    Ver {item.originalTexts.length} variações agrupadas
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-2">
+                    <ul className="space-y-1 text-xs opacity-90">
+                      {item.originalTexts.map((text, idx) => (
+                        <li key={idx} className="list-disc ml-4">
+                          {text}
+                        </li>
+                      ))}
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            )}
+          </div>
         ))}
-      </Accordion>
+      </div>
     </Card>
   );
 };
@@ -221,7 +221,7 @@ export const ConsolidatedReportView = (props: ConsolidatedReportProps) => {
         title="Pontos Fortes Consolidados"
         icon={TrendingUp}
         items={props.strengths}
-        colorClass="text-green-600"
+        bgColorClass="bg-[#2F855A] text-white"
       />
 
       {/* Desafios */}
@@ -229,7 +229,7 @@ export const ConsolidatedReportView = (props: ConsolidatedReportProps) => {
         title="Desafios Consolidados"
         icon={AlertTriangle}
         items={props.challenges}
-        colorClass="text-orange-600"
+        bgColorClass="bg-[#FFD700] text-gray-900"
       />
 
       {/* Oportunidades */}
@@ -237,7 +237,7 @@ export const ConsolidatedReportView = (props: ConsolidatedReportProps) => {
         title="Oportunidades Consolidadas"
         icon={Lightbulb}
         items={props.opportunities}
-        colorClass="text-blue-600"
+        bgColorClass="bg-[#000080] text-white"
       />
     </div>
   );
