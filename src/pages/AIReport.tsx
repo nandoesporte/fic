@@ -36,6 +36,7 @@ const AIReport = () => {
   const [votingData, setVotingData] = useState<VotingData | null>(null);
   const [totalParticipants, setTotalParticipants] = useState(0);
   const [reportTitle, setReportTitle] = useState('');
+  const [activeTab, setActiveTab] = useState("upload");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -71,22 +72,34 @@ const AIReport = () => {
         throw new Error('Dados do relatório ou título ausentes');
       }
 
+      console.log('Salvando relatório:', {
+        title: reportTitle,
+        dimension: selectedDimension,
+        totalParticipants,
+        totalVotes: calculateTotalVotes(),
+      });
+
       const { error } = await supabase
         .from('ai_report_history')
         .insert({
-          title: reportTitle,
-          dimension: selectedDimension,
+          backup_id: crypto.randomUUID(),
           analysis_data: {
             strengths: votingData.strengths,
             challenges: votingData.challenges,
             opportunities: votingData.opportunities,
             totalParticipants,
             totalVotes: calculateTotalVotes(),
-          } as any,
-          backup_id: crypto.randomUUID(),
-        });
+          },
+          dimension: selectedDimension,
+          title: reportTitle.trim(),
+        } as any);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao salvar relatório:', error);
+        throw error;
+      }
+
+      console.log('Relatório salvo com sucesso');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ai-report-history'] });
@@ -95,8 +108,10 @@ const AIReport = () => {
         description: "O relatório foi adicionado ao histórico.",
       });
       setReportTitle('');
+      setActiveTab('history');
     },
     onError: (error) => {
+      console.error('Erro no mutation:', error);
       toast({
         title: "Erro ao salvar relatório",
         description: error.message,
@@ -258,7 +273,7 @@ const AIReport = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="upload" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
           <TabsTrigger value="upload">Upload de Arquivos</TabsTrigger>
           <TabsTrigger value="history">Histórico</TabsTrigger>
@@ -379,6 +394,12 @@ const AIReport = () => {
                         opportunities: data.opportunities || [],
                       });
                       setTotalParticipants(data.totalParticipants || 0);
+                      setSelectedDimension(report.dimension);
+                      setActiveTab('upload');
+                      toast({
+                        title: "Relatório carregado",
+                        description: `Visualizando: ${report.title}`,
+                      });
                     }}
                   >
                     <Eye className="mr-2 h-4 w-4" />
