@@ -1,89 +1,44 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileSpreadsheet, FileText, Brain, RefreshCw, Database, History, Download, Trash2 } from "lucide-react";
+import { Loader2, Brain, Download, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { Json } from "@/integrations/supabase/types";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { AIVotingMetrics } from "@/components/analytics/AIVotingMetrics";
-import { AIVotingResults } from "@/components/analytics/AIVotingResults";
 import { DimensionFilter } from "@/components/analytics/DimensionFilter";
-import { useBackupOperations } from "@/components/backup/BackupOperations";
-
-interface ReportMetrics {
-  total_votos: number;
-  pontos_fortes: number;
-  desafios: number;
-  oportunidades: number;
-}
+import { ConsolidatedReportView } from "@/components/analytics/ConsolidatedReportView";
 
 interface VoteGroup {
-  text: string;
+  groupName: string;
+  originalTexts: string[];
   votes: number;
-  variations: string[];
+  percentage: number;
 }
 
-interface VoteAnalysis {
+interface ConsolidatedReport {
   dimension: string;
   totalVotes: number;
+  uniqueVoters: number;
   strengths: VoteGroup[];
   challenges: VoteGroup[];
   opportunities: VoteGroup[];
-  participationRate: number;
-  uniqueVoters: number;
-}
-
-function isReportMetrics(metrics: Json): metrics is { [key: string]: Json } & ReportMetrics {
-  if (typeof metrics !== 'object' || metrics === null || Array.isArray(metrics)) {
-    return false;
-  }
-  
-  return (
-    'total_votos' in metrics &&
-    'pontos_fortes' in metrics &&
-    'desafios' in metrics &&
-    'oportunidades' in metrics
-  );
+  summary: string;
+  insights: string[];
+  keywords: string[];
+  topDimensions?: { dimension: string; count: number }[];
 }
 
 export default function AIReport() {
   const [selectedDimension, setSelectedDimension] = useState<string>("all");
-  const [analysis, setAnalysis] = useState<string>("");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [voteAnalysis, setVoteAnalysis] = useState<VoteAnalysis | null>(null);
-  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
+  const [report, setReport] = useState<ConsolidatedReport | null>(null);
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
-  
-  const { backups, fetchBackups } = useBackupOperations();
-
-  // Query para histórico de relatórios
-  const { data: reportHistory, isLoading: isLoadingHistory, refetch: refetchHistory } = useQuery({
-    queryKey: ['ai-report-history'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('ai_report_history')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data;
-    },
-  });
 
   const { data: dimensions, isLoading } = useQuery({
     queryKey: ['dimensions'],
@@ -97,305 +52,129 @@ export default function AIReport() {
     },
   });
 
-  // Carregar backups quando o componente monta
-  useEffect(() => {
-    fetchBackups();
-  }, []);
-
-  const { data: reports, isLoading: isLoadingReports } = useQuery({
-    queryKey: ['ai-reports'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('fic_reports')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const handleAnalyze = async () => {
-    setIsAnalyzing(true);
+  const handleGenerateReport = async () => {
+    setIsGenerating(true);
     setProgress(0);
+    setReport(null);
+    
     try {
-      const response = await supabase.functions.invoke('analyze-vote-backups', {
-        body: { dimension: selectedDimension },
+      // Simular progresso
+      const progressInterval = setInterval(() => {
+        setProgress(prev => Math.min(prev + 10, 90));
+      }, 500);
+
+      const response = await supabase.functions.invoke('generate-ai-consolidated-report', {
+        body: { 
+          dimension: selectedDimension,
+          startDate: startDate || null,
+          endDate: endDate || null
+        },
       });
 
-      if (response.error) throw response.error;
-      setAnalysis(response.data.analysis);
+      clearInterval(progressInterval);
       setProgress(100);
-      toast.success("Análise de IA concluída com sucesso!");
-    } catch (error) {
+
+      if (response.error) {
+        console.error('Erro na função:', response.error);
+        throw response.error;
+      }
+
+      if (response.data.error) {
+        throw new Error(response.data.details || response.data.error);
+      }
+
+      setReport(response.data);
+      toast.success("Relatório consolidado gerado com sucesso!");
+    } catch (error: any) {
       console.error('Error:', error);
-      toast.error("Erro ao gerar análise de IA");
+      toast.error(`Erro ao gerar relatório: ${error.message}`);
+      setProgress(0);
     } finally {
-      setIsAnalyzing(false);
+      setIsGenerating(false);
     }
   };
 
-  const handleAnalyzeBackup = async () => {
-    setIsLoadingAnalysis(true);
-    try {
-      // Filtrar backups por período se especificado
-      let filteredBackups = backups;
-      if (startDate || endDate) {
-        filteredBackups = backups.filter(backup => {
-          const backupDate = new Date(backup.created_at);
-          
-          if (startDate && endDate) {
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            end.setHours(23, 59, 59, 999); // Incluir o dia final completo
-            return backupDate >= start && backupDate <= end;
-          } else if (startDate) {
-            const start = new Date(startDate);
-            return backupDate >= start;
-          } else if (endDate) {
-            const end = new Date(endDate);
-            end.setHours(23, 59, 59, 999);
-            return backupDate <= end;
-          }
-          
-          return true;
-        });
-      }
+  const handleExportPDF = () => {
+    if (!report) return;
 
-      if (filteredBackups.length === 0) {
-        toast.error("Nenhum backup encontrado para o período especificado");
-        return;
-      }
-
-      // Buscar dados de todos os backups filtrados
-      const allVotes: any[] = [];
-      const allQuestionnaires: any[] = [];
-
-      for (const backup of filteredBackups) {
-        const { data, error } = await supabase
-          .from('data_backups')
-          .select('data')
-          .eq('id', backup.id)
-          .single();
-
-        if (error) {
-          console.error(`Erro ao buscar backup ${backup.id}:`, error);
-          continue;
-        }
-
-        const backupData = data.data as any;
-        if (backupData?.questionnaire_votes && backupData?.questionnaires) {
-          allVotes.push(...backupData.questionnaire_votes);
-          allQuestionnaires.push(...backupData.questionnaires);
-        }
-      }
-
-      if (allVotes.length === 0 || allQuestionnaires.length === 0) {
-        toast.error("Nenhum dado de votos válido encontrado nos backups");
-        return;
-      }
-
-      // Remover duplicatas dos questionários
-      const uniqueQuestionnaires = allQuestionnaires.filter((questionnaire, index, self) =>
-        index === self.findIndex(q => q.id === questionnaire.id)
-      );
-
-      // Filtrar por dimensão se necessário
-      const filteredQuestionnaires = selectedDimension === "all" 
-        ? uniqueQuestionnaires 
-        : uniqueQuestionnaires.filter((q: any) => q.dimension === selectedDimension);
-
-      const filteredVotes = allVotes.filter((vote: any) => 
-        filteredQuestionnaires.some((q: any) => q.id === vote.questionnaire_id)
-      );
-
-      // Processar análise
-      const analysisData = processVoteAnalysis(filteredVotes, filteredQuestionnaires);
-      setVoteAnalysis(analysisData);
-      
-      // Salvar no histórico com identificação dos backups usados
-      await saveReportToHistory(analysisData, filteredBackups.map(b => b.id).join(','));
-      
-      toast.success(`Análise concluída usando ${filteredBackups.length} backup(s)!`);
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error("Erro ao analisar backups");
-    } finally {
-      setIsLoadingAnalysis(false);
-    }
-  };
-
-  const processVoteAnalysis = (votes: any[], questionnaires: any[]): VoteAnalysis => {
-    const voteGroups: { [key: string]: VoteGroup[] } = {
-      strengths: [],
-      challenges: [],
-      opportunities: []
-    };
-
-    const sectionMap = {
-      'strengths': 'strengths',
-      'challenges': 'challenges', 
-      'opportunities': 'opportunities'
-    };
-
-    // Processar votos por seção
-    Object.keys(sectionMap).forEach(sectionKey => {
-      const sectionVotes = votes.filter(v => v.option_type === sectionKey);
-      const textCounts: { [key: string]: { count: number, text: string } } = {};
-
-      sectionVotes.forEach(vote => {
-        const questionnaire = questionnaires.find(q => q.id === vote.questionnaire_id);
-        if (questionnaire) {
-          const sectionText = questionnaire[sectionKey];
-          if (sectionText) {
-            const options = sectionText.split('\n\n').filter((opt: string) => opt.trim());
-            const optionText = options[vote.option_number - 1]?.trim();
-            if (optionText) {
-              if (!textCounts[optionText]) {
-                textCounts[optionText] = { count: 0, text: optionText };
-              }
-              textCounts[optionText].count++;
-            }
-          }
-        }
-      });
-
-      voteGroups[sectionKey as keyof typeof voteGroups] = Object.values(textCounts).map(item => ({
-        text: item.text,
-        votes: item.count,
-        variations: [item.text]
-      })).sort((a, b) => b.votes - a.votes);
-    });
-
-    const uniqueVoters = new Set(votes.map(v => v.email)).size;
-    const totalVotes = votes.length;
-    const participationRate = totalVotes > 0 ? (uniqueVoters / totalVotes) * 100 : 0;
-
-    return {
-      dimension: selectedDimension === "all" ? "Todas as Dimensões" : selectedDimension,
-      totalVotes,
-      uniqueVoters,
-      participationRate,
-      strengths: voteGroups.strengths,
-      challenges: voteGroups.challenges,
-      opportunities: voteGroups.opportunities
-    };
-  };
-
-  const saveReportToHistory = async (analysisData: VoteAnalysis, backupId: string) => {
-    try {
-      const selectedBackupData = backups.find(b => b.id === backupId);
-      const title = `Relatório ${analysisData.dimension} - ${new Date().toLocaleDateString('pt-BR')}`;
-      
-      const { error } = await supabase
-        .from('ai_report_history')
-        .insert({
-          title,
-          dimension: analysisData.dimension,
-          backup_id: backupId,
-          analysis_data: analysisData as any
-        });
-
-      if (error) throw error;
-      
-      // Atualizar lista de histórico
-      refetchHistory();
-    } catch (error) {
-      console.error('Erro ao salvar relatório:', error);
-      toast.error('Erro ao salvar relatório no histórico');
-    }
-  };
-
-  const deleteReport = async (reportId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este relatório?')) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('ai_report_history')
-        .delete()
-        .eq('id', reportId);
-
-      if (error) throw error;
-      
-      refetchHistory();
-      toast.success('Relatório excluído com sucesso!');
-    } catch (error) {
-      console.error('Erro ao excluir relatório:', error);
-      toast.error('Erro ao excluir relatório');
-    }
-  };
-
-  const downloadReportPDF = (report: any) => {
     try {
       const doc = new jsPDF();
+      let yPosition = 20;
       
-      // Título do relatório
-      doc.setFontSize(18);
-      doc.text(report.title, 14, 20);
+      // Título
+      doc.setFontSize(20);
+      doc.text('Relatório Consolidado de Votos', 14, yPosition);
+      yPosition += 15;
       
-      // Informações do relatório
+      // Informações gerais
       doc.setFontSize(12);
-      doc.text(`Dimensão: ${report.dimension}`, 14, 35);
-      doc.text(`Data: ${new Date(report.created_at).toLocaleDateString('pt-BR')}`, 14, 45);
+      doc.text(`Dimensão: ${report.dimension}`, 14, yPosition);
+      yPosition += 8;
+      doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 14, yPosition);
+      yPosition += 8;
+      doc.text(`Total de Votos: ${report.totalVotes}`, 14, yPosition);
+      yPosition += 8;
+      doc.text(`Votantes Únicos: ${report.uniqueVoters}`, 14, yPosition);
+      yPosition += 15;
       
-      // Métricas
-      const analysisData = report.analysis_data;
-      doc.text(`Total de Votos: ${analysisData.totalVotes}`, 14, 60);
-      doc.text(`Votantes Únicos: ${analysisData.uniqueVoters}`, 14, 70);
-      doc.text(`Taxa de Participação: ${analysisData.participationRate.toFixed(1)}%`, 14, 80);
-      
-      let yPosition = 100;
-      
-      // Pontos Fortes
-      if (analysisData.strengths && analysisData.strengths.length > 0) {
-        doc.setFontSize(14);
-        doc.text('Pontos Fortes:', 14, yPosition);
-        yPosition += 10;
-        
-        doc.setFontSize(10);
-        analysisData.strengths.forEach((strength: any, index: number) => {
-          const text = `${index + 1}. ${strength.text} (${strength.votes} votos)`;
-          const splitText = doc.splitTextToSize(text, 180);
-          doc.text(splitText, 14, yPosition);
-          yPosition += splitText.length * 5 + 5;
-        });
-        yPosition += 10;
+      // Resumo
+      doc.setFontSize(14);
+      doc.text('Resumo Executivo', 14, yPosition);
+      yPosition += 8;
+      doc.setFontSize(10);
+      const summaryLines = doc.splitTextToSize(report.summary, 180);
+      doc.text(summaryLines, 14, yPosition);
+      yPosition += summaryLines.length * 5 + 10;
+
+      // Nova página se necessário
+      if (yPosition > 250) {
+        doc.addPage();
+        yPosition = 20;
       }
-      
-      // Desafios
-      if (analysisData.challenges && analysisData.challenges.length > 0) {
-        doc.setFontSize(14);
-        doc.text('Desafios:', 14, yPosition);
-        yPosition += 10;
+
+      // Insights
+      doc.setFontSize(14);
+      doc.text('Insights Estratégicos', 14, yPosition);
+      yPosition += 8;
+      doc.setFontSize(10);
+      report.insights.forEach((insight, idx) => {
+        if (yPosition > 270) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        const insightText = `${idx + 1}. ${insight}`;
+        const lines = doc.splitTextToSize(insightText, 180);
+        doc.text(lines, 14, yPosition);
+        yPosition += lines.length * 5 + 3;
+      });
+
+      // Adicionar tabelas de dados
+      const addCategoryTable = (title: string, items: VoteGroup[]) => {
+        if (items.length === 0) return;
         
-        doc.setFontSize(10);
-        analysisData.challenges.forEach((challenge: any, index: number) => {
-          const text = `${index + 1}. ${challenge.text} (${challenge.votes} votos)`;
-          const splitText = doc.splitTextToSize(text, 180);
-          doc.text(splitText, 14, yPosition);
-          yPosition += splitText.length * 5 + 5;
-        });
-        yPosition += 10;
-      }
-      
-      // Oportunidades
-      if (analysisData.opportunities && analysisData.opportunities.length > 0) {
+        doc.addPage();
         doc.setFontSize(14);
-        doc.text('Oportunidades:', 14, yPosition);
-        yPosition += 10;
+        doc.text(title, 14, 20);
         
-        doc.setFontSize(10);
-        analysisData.opportunities.forEach((opportunity: any, index: number) => {
-          const text = `${index + 1}. ${opportunity.text} (${opportunity.votes} votos)`;
-          const splitText = doc.splitTextToSize(text, 180);
-          doc.text(splitText, 14, yPosition);
-          yPosition += splitText.length * 5 + 5;
+        autoTable(doc, {
+          head: [['#', 'Grupo', 'Votos', '%']],
+          body: items.map((item, idx) => [
+            (idx + 1).toString(),
+            item.groupName,
+            item.votes.toString(),
+            item.percentage.toFixed(1) + '%'
+          ]),
+          startY: 30,
+          styles: { fontSize: 9 },
+          headStyles: { fillColor: [66, 139, 202] }
         });
-      }
+      };
+
+      addCategoryTable('Pontos Fortes Consolidados', report.strengths);
+      addCategoryTable('Desafios Consolidados', report.challenges);
+      addCategoryTable('Oportunidades Consolidadas', report.opportunities);
       
-      doc.save(`${report.title}.pdf`);
+      doc.save(`relatorio_consolidado_${new Date().getTime()}.pdf`);
       toast.success('PDF baixado com sucesso!');
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
@@ -403,214 +182,188 @@ export default function AIReport() {
     }
   };
 
-  const handleExport = async (format: 'excel' | 'pdf') => {
-    if (!reports || reports.length === 0) {
-      toast.error("Nenhum relatório disponível para exportar");
-      return;
-    }
+  const handleExportExcel = () => {
+    if (!report) return;
 
-    const content = reports.map(report => {
-      const metrics = report.metrics;
-      if (!isReportMetrics(metrics)) {
-        console.error('Invalid metrics format:', metrics);
-        return null;
-      }
-
-      return {
-        dimensao: report.dimension,
-        titulo: report.title,
-        descricao: report.description,
-        total_votos: metrics.total_votos,
-        pontos_fortes: metrics.pontos_fortes,
-        desafios: metrics.desafios,
-        oportunidades: metrics.oportunidades,
-        data_inicio: new Date(report.start_date).toLocaleDateString('pt-BR'),
-        data_fim: new Date(report.end_date).toLocaleDateString('pt-BR'),
-      };
-    }).filter(Boolean);
-
-    if (format === 'excel') {
-      const ws = XLSX.utils.json_to_sheet(content);
+    try {
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Relatório");
-      XLSX.writeFile(wb, "relatorio_ia.xlsx");
-      toast.success('Relatório Excel exportado com sucesso!');
-    } else if (format === 'pdf') {
-      const doc = new jsPDF();
-      
-      // Add title
-      doc.setFontSize(16);
-      doc.text("Relatório de Análise IA", 14, 15);
-      
-      // Add date
-      doc.setFontSize(10);
-      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 14, 25);
-      
-      // Create table
-      autoTable(doc, {
-        head: [['Dimensão', 'Total Votos', 'Pontos Fortes', 'Desafios', 'Oportunidades', 'Data Início', 'Data Fim']],
-        body: content.map(item => [
-          item.dimensao,
-          item.total_votos.toString(),
-          item.pontos_fortes.toString(),
-          item.desafios.toString(),
-          item.oportunidades.toString(),
-          item.data_inicio,
-          item.data_fim
-        ]),
-        startY: 30,
-      });
-      
-      doc.save('relatorio_ia.pdf');
-      toast.success('Relatório PDF exportado com sucesso!');
+
+      // Aba 1: Resumo
+      const summaryData = [
+        ['Relatório Consolidado de Votos'],
+        [''],
+        ['Dimensão', report.dimension],
+        ['Total de Votos', report.totalVotes],
+        ['Votantes Únicos', report.uniqueVoters],
+        ['Data de Geração', new Date().toLocaleDateString('pt-BR')],
+        [''],
+        ['Resumo Executivo'],
+        [report.summary],
+        [''],
+        ['Insights Estratégicos'],
+        ...report.insights.map((insight, idx) => [`${idx + 1}. ${insight}`]),
+        [''],
+        ['Palavras-Chave'],
+        [report.keywords.join(', ')]
+      ];
+      const ws1 = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, ws1, 'Resumo');
+
+      // Aba 2: Pontos Fortes
+      const strengthsData = [
+        ['#', 'Grupo', 'Votos', 'Percentual', 'Variações'],
+        ...report.strengths.map((item, idx) => [
+          idx + 1,
+          item.groupName,
+          item.votes,
+          `${item.percentage.toFixed(1)}%`,
+          item.originalTexts.join('; ')
+        ])
+      ];
+      const ws2 = XLSX.utils.aoa_to_sheet(strengthsData);
+      XLSX.utils.book_append_sheet(wb, ws2, 'Pontos Fortes');
+
+      // Aba 3: Desafios
+      const challengesData = [
+        ['#', 'Grupo', 'Votos', 'Percentual', 'Variações'],
+        ...report.challenges.map((item, idx) => [
+          idx + 1,
+          item.groupName,
+          item.votes,
+          `${item.percentage.toFixed(1)}%`,
+          item.originalTexts.join('; ')
+        ])
+      ];
+      const ws3 = XLSX.utils.aoa_to_sheet(challengesData);
+      XLSX.utils.book_append_sheet(wb, ws3, 'Desafios');
+
+      // Aba 4: Oportunidades
+      const opportunitiesData = [
+        ['#', 'Grupo', 'Votos', 'Percentual', 'Variações'],
+        ...report.opportunities.map((item, idx) => [
+          idx + 1,
+          item.groupName,
+          item.votes,
+          `${item.percentage.toFixed(1)}%`,
+          item.originalTexts.join('; ')
+        ])
+      ];
+      const ws4 = XLSX.utils.aoa_to_sheet(opportunitiesData);
+      XLSX.utils.book_append_sheet(wb, ws4, 'Oportunidades');
+
+      XLSX.writeFile(wb, `relatorio_consolidado_${new Date().getTime()}.xlsx`);
+      toast.success('Excel exportado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar Excel:', error);
+      toast.error('Erro ao exportar Excel');
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Relatório IA</h1>
-        <p className="text-gray-500 mt-2">
-          Análise detalhada dos votos por dimensão usando inteligência artificial
+        <h1 className="text-4xl font-bold">Relatório Consolidado com IA</h1>
+        <p className="text-muted-foreground mt-2 text-lg">
+          Análise inteligente de todos os arquivos exportados, com agrupamento semântico e insights estratégicos
         </p>
       </div>
 
-      {/* Seção de Análise de Backup */}
-      <Card className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Database className="h-5 w-5 text-blue-600" />
-          <h2 className="text-xl font-semibold">Análise de Backup Excel</h2>
+      {/* Card de Geração */}
+      <Card className="p-8">
+        <div className="flex items-center gap-3 mb-6">
+          <Brain className="h-7 w-7 text-primary" />
+          <h2 className="text-2xl font-semibold">Gerar Relatório Consolidado</h2>
         </div>
         
-        <div className="space-y-4">
+        <div className="space-y-6">
           <DimensionFilter
             selectedDimension={selectedDimension}
             onDimensionChange={setSelectedDimension}
             dimensions={dimensions}
           />
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Filtro por Período (opcional):</label>
+          <div className="space-y-3">
+            <label className="text-sm font-semibold">Filtro por Período (opcional):</label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-gray-500 block mb-1">Data Inicial:</label>
+                <label className="text-xs text-muted-foreground block mb-2">Data Inicial:</label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md"
+                  className="w-full p-2 border rounded-md"
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500 block mb-1">Data Final:</label>
+                <label className="text-xs text-muted-foreground block mb-2">Data Final:</label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md"
+                  className="w-full p-2 border rounded-md"
                 />
               </div>
             </div>
-            <p className="text-xs text-gray-500">
-              Deixe vazio para analisar todos os backups disponíveis ({backups.length} encontrados)
+            <p className="text-xs text-muted-foreground">
+              Deixe vazio para analisar todos os backups disponíveis
             </p>
           </div>
 
+          {isGenerating && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span>Analisando votos com IA...</span>
+                <span>{progress}%</span>
+              </div>
+              <Progress value={progress} className="w-full" />
+            </div>
+          )}
+
           <Button
-            onClick={handleAnalyzeBackup}
-            disabled={isLoadingAnalysis || backups.length === 0}
+            onClick={handleGenerateReport}
+            disabled={isGenerating}
             className="w-full"
+            size="lg"
           >
-            {isLoadingAnalysis ? (
+            {isGenerating ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processando backups Excel...
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Processando backups Excel com IA...
               </>
             ) : (
               <>
-                <FileSpreadsheet className="mr-2 h-4 w-4" />
-                Analisar Todos os Backups Excel
+                <Brain className="mr-2 h-5 w-5" />
+                Gerar Relatório Consolidado
               </>
             )}
           </Button>
         </div>
-
-        {voteAnalysis && (
-          <div className="mt-8 space-y-6">
-            <AIVotingMetrics
-              totalVoters={4} // Total de eleitores registrados (baseado nos dados de network)
-              totalVotes={voteAnalysis.totalVotes}
-              uniqueVoters={voteAnalysis.uniqueVoters}
-              participationRate={voteAnalysis.participationRate}
-            />
-
-            <AIVotingResults
-              strengths={voteAnalysis.strengths}
-              challenges={voteAnalysis.challenges}
-              opportunities={voteAnalysis.opportunities}
-            />
-          </div>
-        )}
       </Card>
 
-      {/* Seção de Histórico de Relatórios */}
-      <Card className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <History className="h-5 w-5 text-green-600" />
-          <h2 className="text-xl font-semibold">Histórico de Relatórios</h2>
-        </div>
-        
-        {isLoadingHistory ? (
-          <div className="flex items-center justify-center p-8">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span className="ml-2">Carregando histórico...</span>
-          </div>
-        ) : reportHistory && reportHistory.length > 0 ? (
-          <div className="space-y-4">
-            {reportHistory.map((report) => (
-              <div key={report.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium">{report.title}</h3>
-                    <p className="text-sm text-gray-500">
-                      Dimensão: {report.dimension} | 
-                      Criado em: {new Date(report.created_at).toLocaleDateString('pt-BR')}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {(report.analysis_data as any)?.totalVotes || 0} votos • {(report.analysis_data as any)?.uniqueVoters || 0} votantes únicos
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      onClick={() => downloadReportPDF(report)}
-                      size="sm"
-                      variant="outline"
-                      className="flex items-center gap-2"
-                    >
-                      <Download className="h-4 w-4" />
-                      PDF
-                    </Button>
-                    <Button
-                      onClick={() => deleteReport(report.id)}
-                      size="sm"
-                      variant="outline"
-                      className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Excluir
-                    </Button>
-                  </div>
-                </div>
+      {/* Resultados do Relatório */}
+      {report && (
+        <div className="space-y-6">
+          {/* Botões de Exportação */}
+          <Card className="p-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-semibold">Exportar Relatório</h3>
+              <div className="flex gap-3">
+                <Button onClick={handleExportPDF} variant="outline" className="flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  Baixar PDF
+                </Button>
+                <Button onClick={handleExportExcel} variant="outline" className="flex items-center gap-2">
+                  <FileSpreadsheet className="h-4 w-4" />
+                  Baixar Excel
+                </Button>
               </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500 text-center py-8">
-            Nenhum relatório foi gerado ainda. Analyze um backup para criar seu primeiro relatório.
-          </p>
-        )}
-      </Card>
+            </div>
+          </Card>
 
+          {/* Visualização do Relatório */}
+          <ConsolidatedReportView {...report} />
+        </div>
+      )}
     </div>
   );
 }

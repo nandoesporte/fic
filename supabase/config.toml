@@ -68,6 +68,9 @@ ip_version = "ipv4"
 [functions.get-weather]
 verify_jwt = false
 
+[functions.generate-ai-consolidated-report]
+verify_jwt = false
+
 [functions.analyze-vote-backups]
 verify_jwt = false
 
