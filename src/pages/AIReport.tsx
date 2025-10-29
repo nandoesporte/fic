@@ -107,10 +107,15 @@ const AIReport = () => {
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files || files.length === 0) return;
+    console.log('handleFileUpload chamado, files:', files);
+    
+    if (!files || files.length === 0) {
+      console.log('Nenhum arquivo selecionado');
+      return;
+    }
 
     try {
-      console.log('Processando', files.length, 'arquivo(s)...');
+      console.log('Iniciando processamento de', files.length, 'arquivo(s)...');
       
       const allVotes: { [key: string]: Map<string, { text: string; count: number }> } = {
         strengths: new Map(),
@@ -298,14 +303,14 @@ const AIReport = () => {
                   className="hidden"
                   id="file-upload"
                 />
-                <label htmlFor="file-upload" className="flex-1">
-                  <Button variant="outline" className="w-full" asChild>
-                    <span>
-                      <Upload className="mr-2 h-4 w-4" />
-                      Selecionar Arquivos
-                    </span>
-                  </Button>
-                </label>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Selecionar Arquivos
+                </Button>
               </div>
             </div>
           </div>
