@@ -4,13 +4,15 @@ import { VotingMetrics } from '@/components/analytics/VotingMetrics';
 import { VotingResults } from '@/components/analytics/VotingResults';
 import { DimensionFilter } from '@/components/analytics/DimensionFilter';
 import { Button } from '@/components/ui/button';
-import { Upload, FileSpreadsheet, Save, History, Eye } from 'lucide-react';
+import { Upload, FileSpreadsheet, Save, History, Eye, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import ReactMarkdown from 'react-markdown';
 
 interface VoteOption {
   optionNumber: string;
@@ -39,6 +41,9 @@ const AIReport = () => {
   const [totalParticipants, setTotalParticipants] = useState(0);
   const [reportTitle, setReportTitle] = useState('');
   const [activeTab, setActiveTab] = useState("upload");
+  const [semanticReport, setSemanticReport] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<'strengths' | 'challenges' | 'opportunities'>('strengths');
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -291,6 +296,48 @@ const AIReport = () => {
 
   const filteredData = getFilteredVotingData();
 
+  const generateSemanticReport = async () => {
+    if (!votingData) return;
+
+    setIsGeneratingReport(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-semantic-report', {
+        body: {
+          votingData: {
+            strengths: votingData.strengths,
+            challenges: votingData.challenges,
+            opportunities: votingData.opportunities,
+            totalParticipants,
+          },
+          category: selectedCategory,
+        },
+      });
+
+      if (error) throw error;
+
+      setSemanticReport(data.report);
+      toast({
+        title: "Relatório gerado com sucesso",
+        description: "O relatório semântico foi criado pela IA.",
+      });
+    } catch (error) {
+      console.error('Error generating semantic report:', error);
+      toast({
+        title: "Erro ao gerar relatório",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao gerar o relatório.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
+  const categoryLabels = {
+    strengths: 'Pontos Fortes',
+    challenges: 'Desafios',
+    opportunities: 'Oportunidades',
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between mb-6">
@@ -386,6 +433,45 @@ const AIReport = () => {
               challenges={filteredData?.challenges || []}
               opportunities={filteredData?.opportunities || []}
             />
+
+            <Card className="p-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Sparkles className="h-5 w-5" />
+                  Gerar Relatório Semântico com IA
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  A IA irá agrupar os votos em temas principais, calcular porcentagens e criar um relatório executivo estruturado.
+                </p>
+                <div className="flex gap-2">
+                  <Select value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as any)}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="strengths">{categoryLabels.strengths}</SelectItem>
+                      <SelectItem value="challenges">{categoryLabels.challenges}</SelectItem>
+                      <SelectItem value="opportunities">{categoryLabels.opportunities}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={generateSemanticReport}
+                    disabled={isGeneratingReport}
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    {isGeneratingReport ? 'Gerando...' : 'Gerar Relatório'}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            {semanticReport && (
+              <Card className="p-6">
+                <div className="prose prose-sm max-w-none dark:prose-invert">
+                  <ReactMarkdown>{semanticReport}</ReactMarkdown>
+                </div>
+              </Card>
+            )}
           </>
         )}
 
