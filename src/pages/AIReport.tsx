@@ -4,7 +4,7 @@ import { VotingMetrics } from '@/components/analytics/VotingMetrics';
 import { VotingResults } from '@/components/analytics/VotingResults';
 import { DimensionFilter } from '@/components/analytics/DimensionFilter';
 import { Button } from '@/components/ui/button';
-import { Upload, FileSpreadsheet, Save, History, Eye, Sparkles } from 'lucide-react';
+import { Upload, FileSpreadsheet, Save, History, Eye, Sparkles, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -43,6 +43,7 @@ const AIReport = () => {
   const [activeTab, setActiveTab] = useState("upload");
   const [semanticReport, setSemanticReport] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<'strengths' | 'challenges' | 'opportunities'>('strengths');
+  const [selectedSemanticDimension, setSelectedSemanticDimension] = useState("all");
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -296,20 +297,99 @@ const AIReport = () => {
 
   const filteredData = getFilteredVotingData();
 
+  const downloadExcelReport = () => {
+    if (!votingData) return;
+
+    const workbook = XLSX.utils.book_new();
+
+    // Create sheets for each category
+    const strengthsData = votingData.strengths.map(v => ({
+      'Número': v.optionNumber,
+      'Texto': v.text,
+      'Votos': v.total,
+      'Dimensão': v.dimension || 'N/A'
+    }));
+    const strengthsSheet = XLSX.utils.json_to_sheet(strengthsData);
+    XLSX.utils.book_append_sheet(workbook, strengthsSheet, 'Pontos Fortes');
+
+    const challengesData = votingData.challenges.map(v => ({
+      'Número': v.optionNumber,
+      'Texto': v.text,
+      'Votos': v.total,
+      'Dimensão': v.dimension || 'N/A'
+    }));
+    const challengesSheet = XLSX.utils.json_to_sheet(challengesData);
+    XLSX.utils.book_append_sheet(workbook, challengesSheet, 'Desafios');
+
+    const opportunitiesData = votingData.opportunities.map(v => ({
+      'Número': v.optionNumber,
+      'Texto': v.text,
+      'Votos': v.total,
+      'Dimensão': v.dimension || 'N/A'
+    }));
+    const opportunitiesSheet = XLSX.utils.json_to_sheet(opportunitiesData);
+    XLSX.utils.book_append_sheet(workbook, opportunitiesSheet, 'Oportunidades');
+
+    XLSX.writeFile(workbook, `relatorio-votos-${new Date().toISOString().split('T')[0]}.xlsx`);
+
+    toast({
+      title: "Relatório baixado",
+      description: "O arquivo Excel foi gerado com sucesso.",
+    });
+  };
+
+  const downloadSemanticExcel = () => {
+    if (!semanticReport) return;
+
+    const workbook = XLSX.utils.book_new();
+    
+    // Convert markdown report to plain text for Excel
+    const plainTextReport = semanticReport
+      .replace(/[#*_~`]/g, '')
+      .split('\n')
+      .map(line => ({ 'Conteúdo': line }));
+
+    const sheet = XLSX.utils.json_to_sheet(plainTextReport);
+    XLSX.utils.book_append_sheet(workbook, sheet, 'Relatório Semântico');
+
+    XLSX.writeFile(workbook, `relatorio-semantico-${selectedCategory}-${new Date().toISOString().split('T')[0]}.xlsx`);
+
+    toast({
+      title: "Relatório semântico baixado",
+      description: "O arquivo Excel foi gerado com sucesso.",
+    });
+  };
+
   const generateSemanticReport = async () => {
     if (!votingData) return;
 
     setIsGeneratingReport(true);
     try {
+      // Filter data by selected dimension for semantic report
+      const dataToAnalyze = selectedSemanticDimension === 'all' 
+        ? votingData 
+        : {
+            strengths: votingData.strengths.filter(v => 
+              !v.dimension || v.dimension.includes(selectedSemanticDimension)
+            ),
+            challenges: votingData.challenges.filter(v => 
+              !v.dimension || v.dimension.includes(selectedSemanticDimension)
+            ),
+            opportunities: votingData.opportunities.filter(v => 
+              !v.dimension || v.dimension.includes(selectedSemanticDimension)
+            ),
+          };
+
       const { data, error } = await supabase.functions.invoke('generate-semantic-report', {
         body: {
           votingData: {
-            strengths: votingData.strengths,
-            challenges: votingData.challenges,
-            opportunities: votingData.opportunities,
+            strengths: dataToAnalyze.strengths,
+            challenges: dataToAnalyze.challenges,
+            opportunities: dataToAnalyze.opportunities,
             totalParticipants,
           },
           category: selectedCategory,
+          dimension: selectedSemanticDimension,
         },
       });
 
@@ -435,6 +515,16 @@ const AIReport = () => {
             />
 
             <Card className="p-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Exportar Relatório</h3>
+                <Button onClick={downloadExcelReport} variant="outline">
+                  <Download className="mr-2 h-4 w-4" />
+                  Baixar Excel
+                </Button>
+              </div>
+            </Card>
+
+            <Card className="p-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <Sparkles className="h-5 w-5" />
@@ -443,15 +533,28 @@ const AIReport = () => {
                 <p className="text-sm text-muted-foreground">
                   A IA irá agrupar os votos em temas principais, calcular porcentagens e criar um relatório executivo estruturado.
                 </p>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Select value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as any)}>
                     <SelectTrigger className="w-[200px]">
-                      <SelectValue />
+                      <SelectValue placeholder="Selecione a categoria" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="strengths">{categoryLabels.strengths}</SelectItem>
                       <SelectItem value="challenges">{categoryLabels.challenges}</SelectItem>
                       <SelectItem value="opportunities">{categoryLabels.opportunities}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={selectedSemanticDimension} onValueChange={setSelectedSemanticDimension}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Selecione a dimensão" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as Dimensões</SelectItem>
+                      {dimensions?.map((dim) => (
+                        <SelectItem key={dim.id} value={dim.identifier}>
+                          {dim.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <Button
@@ -467,6 +570,13 @@ const AIReport = () => {
 
             {semanticReport && (
               <Card className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Relatório Semântico Gerado</h3>
+                  <Button onClick={downloadSemanticExcel} variant="outline">
+                    <Download className="mr-2 h-4 w-4" />
+                    Baixar Excel
+                  </Button>
+                </div>
                 <div className="prose prose-sm max-w-none dark:prose-invert">
                   <ReactMarkdown>{semanticReport}</ReactMarkdown>
                 </div>
