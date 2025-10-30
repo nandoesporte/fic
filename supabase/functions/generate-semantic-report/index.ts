@@ -28,42 +28,50 @@ serve(async (req) => {
   }
 
   try {
-    const { votingData, category } = await req.json() as { votingData: VotingData; category: 'strengths' | 'challenges' | 'opportunities' };
+    const { votingData, dimension } = await req.json() as { votingData: VotingData; dimension?: string };
 
     if (!openAIApiKey) {
       throw new Error('OPENAI_API_KEY not configured');
     }
 
-    const categoryData = votingData[category];
-    const totalVotes = categoryData.reduce((sum, item) => sum + item.total, 0);
+    // Calculate total votes across all categories
+    const totalVotes = 
+      votingData.strengths.reduce((sum, item) => sum + item.total, 0) +
+      votingData.challenges.reduce((sum, item) => sum + item.total, 0) +
+      votingData.opportunities.reduce((sum, item) => sum + item.total, 0);
 
-    const categoryTitles = {
-      strengths: 'Pontos Fortes',
-      challenges: 'Desafios',
-      opportunities: 'Oportunidades'
-    };
+    const dimensionLabel = dimension === 'all' ? 'Todas as Dimensões' : dimension || 'Todas as Dimensões';
 
-    const prompt = `Analise os seguintes itens votados e gere um **Relatório Semântico** completo e estruturado.
+    const prompt = `Analise os seguintes itens votados em três categorias e gere um **Relatório Semântico** completo e estruturado.
 
-Dados recebidos:
-${categoryData.map(item => `- "${item.text}" (${item.total} votos)`).join('\n')}
+**PONTOS FORTES** (${votingData.strengths.reduce((s, i) => s + i.total, 0)} votos):
+${votingData.strengths.map(item => `- "${item.text}" (${item.total} votos)`).join('\n')}
 
-Total de votos: ${totalVotes}
+**DESAFIOS** (${votingData.challenges.reduce((s, i) => s + i.total, 0)} votos):
+${votingData.challenges.map(item => `- "${item.text}" (${item.total} votos)`).join('\n')}
+
+**OPORTUNIDADES** (${votingData.opportunities.reduce((s, i) => s + i.total, 0)} votos):
+${votingData.opportunities.map(item => `- "${item.text}" (${item.total} votos)`).join('\n')}
+
+Total geral de votos: ${totalVotes}
 Total de participantes: ${votingData.totalParticipants}
+Dimensão analisada: ${dimensionLabel}
 
 **Sua tarefa:**
-1. Agrupe os itens em **temas principais** por semelhança semântica
+1. Para CADA categoria (Pontos Fortes, Desafios, Oportunidades), agrupe os itens em **temas principais** por semelhança semântica
 2. Para cada tema, calcule:
    - Total de votos do tema (soma dos itens)
-   - Porcentagem sobre o total de votos
+   - Porcentagem sobre o total de votos DA CATEGORIA
 3. Ordene os temas por número de votos (decrescente)
 4. Para cada tema, liste os itens principais (top 3-5)
 
 **Formato de saída esperado:**
 
-# 🗂 Relatório Semântico – ${categoryTitles[category]} (${totalVotes} votos)
+# 🗂 Relatório Semântico – ${dimensionLabel} (${totalVotes} votos totais)
 
 ---
+
+## 💪 PONTOS FORTES
 
 ### **1️⃣ [Nome do Tema Principal]** — [X] votos ([Y]%)
 
@@ -86,7 +94,27 @@ Total de participantes: ${votingData.totalParticipants}
 
 ---
 
-(Continue para todos os temas identificados)
+## 🚧 DESAFIOS
+
+### **1️⃣ [Nome do Tema Principal]** — [X] votos ([Y]%)
+
+*[Resumo executivo do tema em uma frase]*
+
+**Itens destacados:**
+• [Item 1] — [votos]
+• [Item 2] — [votos]
+
+---
+
+## 🌟 OPORTUNIDADES
+
+### **1️⃣ [Nome do Tema Principal]** — [X] votos ([Y]%)
+
+*[Resumo executivo do tema em uma frase]*
+
+**Itens destacados:**
+• [Item 1] — [votos]
+• [Item 2] — [votos]
 
 ---
 
@@ -94,22 +122,22 @@ Total de participantes: ${votingData.totalParticipants}
 
 * **Total de votos considerados:** ${totalVotes}
 * **Total de participantes:** ${votingData.totalParticipants}
-* **Principais temas:**
-  1. [Tema 1] — [X]%
-  2. [Tema 2] — [Y]%
-  3. [Tema 3] — [Z]%
-  (... até cobrir pelo menos 80% dos votos)
+* **Dimensão:** ${dimensionLabel}
+* **Distribuição por categoria:**
+  - Pontos Fortes: [X]%
+  - Desafios: [Y]%
+  - Oportunidades: [Z]%
 
 ---
 
 **Instruções:**
 - Use linguagem executiva e sintética
-- Agrupe semanticamente itens similares
+- Agrupe semanticamente itens similares dentro de cada categoria
 - Calcule porcentagens com precisão
 - Mantenha formatação markdown clara
-- Ordene por relevância (mais votos primeiro)`;
+- Ordene por relevância (mais votos primeiro) em cada categoria`;
 
-    console.log('Calling OpenAI API...');
+    console.log('Calling OpenAI API for full semantic report...');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -122,12 +150,12 @@ Total de participantes: ${votingData.totalParticipants}
         messages: [
           { 
             role: 'system', 
-            content: 'Você é um analista de dados especializado em criar relatórios executivos semânticos. Agrupe itens por similaridade temática e apresente insights claros e estruturados.' 
+            content: 'Você é um analista de dados especializado em criar relatórios executivos semânticos. Agrupe itens por similaridade temática dentro de cada categoria (Pontos Fortes, Desafios, Oportunidades) e apresente insights claros e estruturados para cada uma.' 
           },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: 3000,
+        max_tokens: 4000,
       }),
     });
 
@@ -143,7 +171,7 @@ Total de participantes: ${votingData.totalParticipants}
     console.log('Report generated successfully');
 
     return new Response(
-      JSON.stringify({ report, totalVotes, category: categoryTitles[category] }), 
+      JSON.stringify({ report, totalVotes, dimension: dimensionLabel }), 
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }

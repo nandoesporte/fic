@@ -42,7 +42,6 @@ const AIReport = () => {
   const [reportTitle, setReportTitle] = useState('');
   const [activeTab, setActiveTab] = useState("upload");
   const [semanticReport, setSemanticReport] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<'strengths' | 'challenges' | 'opportunities'>('strengths');
   const [selectedSemanticDimension, setSelectedSemanticDimension] = useState("all");
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const { toast } = useToast();
@@ -298,43 +297,118 @@ const AIReport = () => {
   const filteredData = getFilteredVotingData();
 
   const downloadExcelReport = () => {
-    if (!votingData) return;
+    if (!votingData || !dimensions) return;
 
     const workbook = XLSX.utils.book_new();
 
-    // Create sheets for each category
-    const strengthsData = votingData.strengths.map(v => ({
-      'Número': v.optionNumber,
-      'Texto': v.text,
-      'Votos': v.total,
-      'Dimensão': v.dimension || 'N/A'
-    }));
-    const strengthsSheet = XLSX.utils.json_to_sheet(strengthsData);
-    XLSX.utils.book_append_sheet(workbook, strengthsSheet, 'Pontos Fortes');
+    // Get all unique dimensions from the data
+    const allDimensionsSet = new Set<string>();
+    [...votingData.strengths, ...votingData.challenges, ...votingData.opportunities].forEach(v => {
+      if (v.dimension) {
+        v.dimension.split(',').forEach(d => allDimensionsSet.add(d.trim()));
+      }
+    });
 
-    const challengesData = votingData.challenges.map(v => ({
-      'Número': v.optionNumber,
-      'Texto': v.text,
-      'Votos': v.total,
-      'Dimensão': v.dimension || 'N/A'
-    }));
-    const challengesSheet = XLSX.utils.json_to_sheet(challengesData);
-    XLSX.utils.book_append_sheet(workbook, challengesSheet, 'Desafios');
+    const uniqueDimensions = Array.from(allDimensionsSet).sort();
 
-    const opportunitiesData = votingData.opportunities.map(v => ({
-      'Número': v.optionNumber,
-      'Texto': v.text,
-      'Votos': v.total,
-      'Dimensão': v.dimension || 'N/A'
-    }));
-    const opportunitiesSheet = XLSX.utils.json_to_sheet(opportunitiesData);
-    XLSX.utils.book_append_sheet(workbook, opportunitiesSheet, 'Oportunidades');
+    // Create a sheet for each dimension
+    uniqueDimensions.forEach(dimensionName => {
+      const dimensionData: any[] = [];
 
-    XLSX.writeFile(workbook, `relatorio-votos-${new Date().toISOString().split('T')[0]}.xlsx`);
+      // Add strengths for this dimension
+      dimensionData.push({ 'Categoria': 'PONTOS FORTES', 'Número': '', 'Texto': '', 'Votos': '' });
+      votingData.strengths
+        .filter(v => !v.dimension || v.dimension.includes(dimensionName))
+        .forEach(v => {
+          dimensionData.push({
+            'Categoria': '',
+            'Número': v.optionNumber,
+            'Texto': v.text,
+            'Votos': v.total,
+          });
+        });
+
+      dimensionData.push({ 'Categoria': '', 'Número': '', 'Texto': '', 'Votos': '' });
+
+      // Add challenges for this dimension
+      dimensionData.push({ 'Categoria': 'DESAFIOS', 'Número': '', 'Texto': '', 'Votos': '' });
+      votingData.challenges
+        .filter(v => !v.dimension || v.dimension.includes(dimensionName))
+        .forEach(v => {
+          dimensionData.push({
+            'Categoria': '',
+            'Número': v.optionNumber,
+            'Texto': v.text,
+            'Votos': v.total,
+          });
+        });
+
+      dimensionData.push({ 'Categoria': '', 'Número': '', 'Texto': '', 'Votos': '' });
+
+      // Add opportunities for this dimension
+      dimensionData.push({ 'Categoria': 'OPORTUNIDADES', 'Número': '', 'Texto': '', 'Votos': '' });
+      votingData.opportunities
+        .filter(v => !v.dimension || v.dimension.includes(dimensionName))
+        .forEach(v => {
+          dimensionData.push({
+            'Categoria': '',
+            'Número': v.optionNumber,
+            'Texto': v.text,
+            'Votos': v.total,
+          });
+        });
+
+      const sheet = XLSX.utils.json_to_sheet(dimensionData);
+      XLSX.utils.book_append_sheet(workbook, sheet, dimensionName.substring(0, 31)); // Excel sheet names limited to 31 chars
+    });
+
+    // Also create an "all" sheet with all data
+    const allData: any[] = [];
+    allData.push({ 'Categoria': 'PONTOS FORTES', 'Número': '', 'Texto': '', 'Votos': '', 'Dimensão': '' });
+    votingData.strengths.forEach(v => {
+      allData.push({
+        'Categoria': '',
+        'Número': v.optionNumber,
+        'Texto': v.text,
+        'Votos': v.total,
+        'Dimensão': v.dimension || 'N/A',
+      });
+    });
+
+    allData.push({ 'Categoria': '', 'Número': '', 'Texto': '', 'Votos': '', 'Dimensão': '' });
+
+    allData.push({ 'Categoria': 'DESAFIOS', 'Número': '', 'Texto': '', 'Votos': '', 'Dimensão': '' });
+    votingData.challenges.forEach(v => {
+      allData.push({
+        'Categoria': '',
+        'Número': v.optionNumber,
+        'Texto': v.text,
+        'Votos': v.total,
+        'Dimensão': v.dimension || 'N/A',
+      });
+    });
+
+    allData.push({ 'Categoria': '', 'Número': '', 'Texto': '', 'Votos': '', 'Dimensão': '' });
+
+    allData.push({ 'Categoria': 'OPORTUNIDADES', 'Número': '', 'Texto': '', 'Votos': '', 'Dimensão': '' });
+    votingData.opportunities.forEach(v => {
+      allData.push({
+        'Categoria': '',
+        'Número': v.optionNumber,
+        'Texto': v.text,
+        'Votos': v.total,
+        'Dimensão': v.dimension || 'N/A',
+      });
+    });
+
+    const allSheet = XLSX.utils.json_to_sheet(allData);
+    XLSX.utils.book_append_sheet(workbook, allSheet, 'Todas as Dimensões');
+
+    XLSX.writeFile(workbook, `relatorio-votos-dimensoes-${new Date().toISOString().split('T')[0]}.xlsx`);
 
     toast({
       title: "Relatório baixado",
-      description: "O arquivo Excel foi gerado com sucesso.",
+      description: "O arquivo Excel com separação por dimensões foi gerado com sucesso.",
     });
   };
 
@@ -352,7 +426,7 @@ const AIReport = () => {
     const sheet = XLSX.utils.json_to_sheet(plainTextReport);
     XLSX.utils.book_append_sheet(workbook, sheet, 'Relatório Semântico');
 
-    XLSX.writeFile(workbook, `relatorio-semantico-${selectedCategory}-${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.writeFile(workbook, `relatorio-semantico-${selectedSemanticDimension}-${new Date().toISOString().split('T')[0]}.xlsx`);
 
     toast({
       title: "Relatório semântico baixado",
@@ -388,7 +462,6 @@ const AIReport = () => {
             opportunities: dataToAnalyze.opportunities,
             totalParticipants,
           },
-          category: selectedCategory,
           dimension: selectedSemanticDimension,
         },
       });
@@ -412,11 +485,6 @@ const AIReport = () => {
     }
   };
 
-  const categoryLabels = {
-    strengths: 'Pontos Fortes',
-    challenges: 'Desafios',
-    opportunities: 'Oportunidades',
-  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -534,16 +602,6 @@ const AIReport = () => {
                   A IA irá agrupar os votos em temas principais, calcular porcentagens e criar um relatório executivo estruturado.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <Select value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as any)}>
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="Selecione a categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="strengths">{categoryLabels.strengths}</SelectItem>
-                      <SelectItem value="challenges">{categoryLabels.challenges}</SelectItem>
-                      <SelectItem value="opportunities">{categoryLabels.opportunities}</SelectItem>
-                    </SelectContent>
-                  </Select>
                   <Select value={selectedSemanticDimension} onValueChange={setSelectedSemanticDimension}>
                     <SelectTrigger className="w-[200px]">
                       <SelectValue placeholder="Selecione a dimensão" />
