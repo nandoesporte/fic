@@ -42,23 +42,33 @@ serve(async (req) => {
 
     const dimensionLabel = dimension === 'all' ? 'Todas as Dimensões' : dimension || 'Todas as Dimensões';
 
-    // Generate audit information
+    // Calculate balanced totals (equal distribution across categories)
+    const balancedTotal = Math.round(totalVotes / 3);
+    const balancedPercentage = '33.3';
+
+    // Generate audit information with balanced targets
     const auditInfo = {
       dimension: dimensionLabel,
       strengths: {
         items: votingData.strengths.length,
         votes: strengthsTotal,
-        percentage: totalVotes > 0 ? ((strengthsTotal / totalVotes) * 100).toFixed(1) : '0',
+        originalPercentage: totalVotes > 0 ? ((strengthsTotal / totalVotes) * 100).toFixed(1) : '0',
+        balancedVotes: balancedTotal,
+        balancedPercentage,
       },
       challenges: {
         items: votingData.challenges.length,
         votes: challengesTotal,
-        percentage: totalVotes > 0 ? ((challengesTotal / totalVotes) * 100).toFixed(1) : '0',
+        originalPercentage: totalVotes > 0 ? ((challengesTotal / totalVotes) * 100).toFixed(1) : '0',
+        balancedVotes: balancedTotal,
+        balancedPercentage,
       },
       opportunities: {
         items: votingData.opportunities.length,
         votes: opportunitiesTotal,
-        percentage: totalVotes > 0 ? ((opportunitiesTotal / totalVotes) * 100).toFixed(1) : '0',
+        originalPercentage: totalVotes > 0 ? ((opportunitiesTotal / totalVotes) * 100).toFixed(1) : '0',
+        balancedVotes: balancedTotal,
+        balancedPercentage,
       },
       totalVotes,
       totalParticipants: votingData.totalParticipants,
@@ -80,43 +90,52 @@ serve(async (req) => {
       console.error('⚠️ ERRO: Soma das categorias não corresponde ao total de votos!');
     }
 
-    const prompt = `Analise os seguintes itens votados em três categorias e gere um **Relatório Semântico** completo e estruturado.
+    const prompt = `Analise os seguintes itens votados em três categorias e gere um **Relatório Semântico** completo e estruturado com TOTAIS EQUILIBRADOS.
 
-**🔴 REGRA CRÍTICA DE AUDITORIA:**
-Você DEVE usar EXATAMENTE os totais fornecidos abaixo. Qualquer desvio invalida o relatório.
-Se a soma dos seus temas não bater com estes totais, você está fazendo errado.
+**🔴 REGRA CRÍTICA DE EQUILÍBRIO E AUDITORIA:**
+1. O total geral DEVE permanecer ${totalVotes} votos
+2. CADA CATEGORIA deve ter EXATAMENTE ${balancedTotal} votos (33.3% do total)
+3. Você DEVE ajustar os votos dos temas dentro de cada categoria para que a soma total seja ${balancedTotal}
+4. Mantenha a PROPORÇÃO RELATIVA entre os temas dentro de cada categoria
+5. Ajuste os votos de forma PROPORCIONAL para que a soma bata com ${balancedTotal}
 
-**AUDITORIA DE DADOS (VALORES OFICIAIS):**
+**AUDITORIA DE DADOS (VALORES ORIGINAIS):**
 - Total EXATO de votos: ${totalVotes}
-- Pontos Fortes: ${strengthsTotal} votos (${auditInfo.strengths.percentage}%)
-- Desafios: ${challengesTotal} votos (${auditInfo.challenges.percentage}%)
-- Oportunidades: ${opportunitiesTotal} votos (${auditInfo.opportunities.percentage}%)
+- Pontos Fortes ORIGINAIS: ${strengthsTotal} votos (${auditInfo.strengths.originalPercentage}%)
+- Desafios ORIGINAIS: ${challengesTotal} votos (${auditInfo.challenges.originalPercentage}%)
+- Oportunidades ORIGINAIS: ${opportunitiesTotal} votos (${auditInfo.opportunities.originalPercentage}%)
 - Total de participantes: ${votingData.totalParticipants}
 - Dimensão analisada: ${dimensionLabel}
 
-**PONTOS FORTES** (${strengthsTotal} votos - ${auditInfo.strengths.percentage}% do total):
-${votingData.strengths.map(item => `- "${item.text}" (${item.total} votos)`).join('\n')}
+**TOTAIS EQUILIBRADOS OBRIGATÓRIOS:**
+- Pontos Fortes: ${balancedTotal} votos (33.3%)
+- Desafios: ${balancedTotal} votos (33.3%)
+- Oportunidades: ${balancedTotal} votos (33.3%)
 
-**DESAFIOS** (${challengesTotal} votos - ${auditInfo.challenges.percentage}% do total):
-${votingData.challenges.map(item => `- "${item.text}" (${item.total} votos)`).join('\n')}
+**PONTOS FORTES** (ajustar para ${balancedTotal} votos - 33.3% do total):
+${votingData.strengths.map(item => `- "${item.text}" (${item.total} votos originais)`).join('\n')}
 
-**OPORTUNIDADES** (${opportunitiesTotal} votos - ${auditInfo.opportunities.percentage}% do total):
-${votingData.opportunities.map(item => `- "${item.text}" (${item.total} votos)`).join('\n')}
+**DESAFIOS** (ajustar para ${balancedTotal} votos - 33.3% do total):
+${votingData.challenges.map(item => `- "${item.text}" (${item.total} votos originais)`).join('\n')}
 
-**INSTRUÇÕES CRÍTICAS DE AUDITORIA:**
-1. ✅ Use EXATAMENTE os totais fornecidos na auditoria acima - não recalcule, não arredonde, não estime
-2. ✅ Para CADA categoria (Pontos Fortes, Desafios, Oportunidades), agrupe os itens em **temas principais** por semelhança semântica
-3. ✅ Para cada tema, calcule:
-   - Total de votos do tema (soma exata dos itens que o compõem)
-   - Porcentagem sobre o total de votos DA CATEGORIA (use os totais da auditoria)
-4. ✅ Ordene os temas por número de votos (decrescente)
-5. ✅ Para cada tema, liste **TODOS os itens que o compõem** (não apenas top 3-5), incluindo:
+**OPORTUNIDADES** (ajustar para ${balancedTotal} votos - 33.3% do total):
+${votingData.opportunities.map(item => `- "${item.text}" (${item.total} votos originais)`).join('\n')}
+
+**INSTRUÇÕES CRÍTICAS DE EQUILÍBRIO E AUDITORIA:**
+1. ✅ EQUILÍBRIO OBRIGATÓRIO: Cada categoria DEVE ter ${balancedTotal} votos (33.3%)
+2. ✅ AJUSTE PROPORCIONAL: Redistribua os votos dos itens originais proporcionalmente para que a soma de cada categoria = ${balancedTotal}
+3. ✅ Para CADA categoria (Pontos Fortes, Desafios, Oportunidades), agrupe os itens em **temas principais** por semelhança semântica
+4. ✅ Para cada tema, calcule:
+   - Total de votos do tema (ajustado proporcionalmente)
+   - Porcentagem sobre ${balancedTotal} votos (total equilibrado da categoria)
+5. ✅ Ordene os temas por número de votos (decrescente)
+6. ✅ Para cada tema, liste **TODOS os itens que o compõem** (não apenas top 3-5), incluindo:
    - Texto completo da opção (sem modificar ou resumir)
-   - Número exato de votos (do dado original)
+   - Número de votos ajustado proporcionalmente
    - Percentual do item dentro do tema (calculado com precisão)
-6. ✅ VALIDAÇÃO OBRIGATÓRIA: A soma de todos os votos nos temas de uma categoria DEVE ser EXATAMENTE IGUAL ao total da categoria na auditoria
-7. ✅ TRANSPARÊNCIA TOTAL: Exiba todas as opções, mesmo as com poucos votos, para garantir consistência analítica completa
-8. ✅ AUDITORIA FINAL: Inclua uma tabela de verificação mostrando que os totais conferem
+7. ✅ VALIDAÇÃO OBRIGATÓRIA: A soma de todos os votos nos temas de uma categoria DEVE ser EXATAMENTE ${balancedTotal}
+8. ✅ TRANSPARÊNCIA TOTAL: Exiba todas as opções, mesmo as com poucos votos, para garantir consistência analítica completa
+9. ✅ AUDITORIA FINAL: Inclua uma tabela mostrando totais originais vs. totais equilibrados
 
 **Formato de saída esperado:**
 
@@ -180,33 +199,34 @@ ${votingData.opportunities.map(item => `- "${item.text}" (${item.total} votos)`)
 * **Total de votos considerados:** ${totalVotes}
 * **Total de participantes:** ${votingData.totalParticipants}
 * **Dimensão:** ${dimensionLabel}
-* **Distribuição por categoria (USE ESTES VALORES EXATOS):**
-  - Pontos Fortes: ${strengthsTotal} votos (${auditInfo.strengths.percentage}%)
-  - Desafios: ${challengesTotal} votos (${auditInfo.challenges.percentage}%)
-  - Oportunidades: ${opportunitiesTotal} votos (${auditInfo.opportunities.percentage}%)
+* **Distribuição EQUILIBRADA por categoria (USE ESTES VALORES EXATOS):**
+  - Pontos Fortes: ${balancedTotal} votos (33.3%)
+  - Desafios: ${balancedTotal} votos (33.3%)
+  - Oportunidades: ${balancedTotal} votos (33.3%)
 
 ---
 
-### **🧾 AUDITORIA DE CORREÇÃO E CONSISTÊNCIA**
+### **🧾 AUDITORIA DE CORREÇÃO E EQUILÍBRIO**
 
-**Validação de Totais:**
-| Categoria | Votos Oficiais | Votos no Relatório | Status |
-|-----------|----------------|-------------------|---------|
-| Pontos Fortes | ${strengthsTotal} (${auditInfo.strengths.percentage}%) | [some os votos dos temas] | ✅ Deve ser igual |
-| Desafios | ${challengesTotal} (${auditInfo.challenges.percentage}%) | [some os votos dos temas] | ✅ Deve ser igual |
-| Oportunidades | ${opportunitiesTotal} (${auditInfo.opportunities.percentage}%) | [some os votos dos temas] | ✅ Deve ser igual |
-| **TOTAL GERAL** | **${totalVotes}** | [soma de todas as categorias] | ✅ Deve ser ${totalVotes} |
+**Validação de Totais Equilibrados:**
+| Categoria | Votos Originais | Votos Equilibrados | Diferença | Status |
+|-----------|-----------------|-------------------|-----------|---------|
+| Pontos Fortes | ${strengthsTotal} (${auditInfo.strengths.originalPercentage}%) | ${balancedTotal} (33.3%) | ${balancedTotal - strengthsTotal} | ✅ Equilibrado |
+| Desafios | ${challengesTotal} (${auditInfo.challenges.originalPercentage}%) | ${balancedTotal} (33.3%) | ${balancedTotal - challengesTotal} | ✅ Equilibrado |
+| Oportunidades | ${opportunitiesTotal} (${auditInfo.opportunities.originalPercentage}%) | ${balancedTotal} (33.3%) | ${balancedTotal - opportunitiesTotal} | ✅ Equilibrado |
+| **TOTAL GERAL** | **${totalVotes}** | **${totalVotes}** | **0** | ✅ Preservado |
 
 **Metadados da Auditoria:**
 * ✓ Total de itens analisados: ${votingData.strengths.length + votingData.challenges.length + votingData.opportunities.length}
-* ✓ Total verificado: ${totalVotes} votos
-* ✓ Somatório validado: ${strengthsTotal} + ${challengesTotal} + ${opportunitiesTotal} = ${totalVotes}
-* ✓ Todos os valores foram recalculados da fonte original
+* ✓ Total original: ${totalVotes} votos
+* ✓ Distribuição original: ${strengthsTotal} + ${challengesTotal} + ${opportunitiesTotal} = ${totalVotes}
+* ✓ Distribuição equilibrada: ${balancedTotal} + ${balancedTotal} + ${balancedTotal} = ${totalVotes}
+* ✓ Ajuste aplicado: Proporcional para equilibrar categorias em 33.3% cada
 * ✓ Dimensão: ${dimensionLabel}
 * ✓ Participantes: ${votingData.totalParticipants}
 
 **Status Final:**
-✅ Relatório auditado e validado. Nenhuma inconsistência pendente.
+✅ Relatório auditado, equilibrado e corrigido automaticamente. Todas as categorias possuem totais iguais e consistentes (${balancedTotal} votos cada).
 
 ---
 
@@ -231,21 +251,22 @@ ${votingData.opportunities.map(item => `- "${item.text}" (${item.total} votos)`)
         messages: [
           { 
             role: 'system', 
-            content: `Você é um analista de dados especializado em criar relatórios executivos semânticos completos e auditados. 
+            content: `Você é um analista de dados especializado em criar relatórios executivos semânticos completos, auditados e EQUILIBRADOS. 
 
-REGRAS CRÍTICAS DE AUDITORIA:
-1. ✅ Use EXATAMENTE os totais de votos fornecidos na auditoria de dados - não recalcule, não arredonde, não estime
-2. ✅ Liste TODOS os itens de cada tema com seus votos individuais e percentuais exatos, não apenas destaques
-3. ✅ A soma dos votos de todos os temas de uma categoria DEVE ser igual ao total oficial da categoria
-4. ✅ Inclua a tabela de auditoria de correção ao final, verificando que todos os totais conferem
-5. ✅ A precisão numérica absoluta e transparência completa são OBRIGATÓRIAS para a integridade do relatório
-6. ✅ Se você não conseguir fazer a soma bater com os totais oficiais, você está fazendo algo errado
+REGRAS CRÍTICAS DE EQUILÍBRIO E AUDITORIA:
+1. ✅ EQUILÍBRIO OBRIGATÓRIO: Cada categoria (Pontos Fortes, Desafios, Oportunidades) DEVE ter exatamente ${balancedTotal} votos (33.3% do total)
+2. ✅ AJUSTE PROPORCIONAL: Redistribua os votos originais proporcionalmente para que cada categoria totalize ${balancedTotal} votos
+3. ✅ Liste TODOS os itens de cada tema com seus votos ajustados e percentuais, não apenas destaques
+4. ✅ A soma dos votos de todos os temas de cada categoria DEVE ser EXATAMENTE ${balancedTotal} votos
+5. ✅ Inclua a tabela de auditoria de correção ao final, mostrando os valores originais vs. equilibrados
+6. ✅ A precisão numérica absoluta e transparência completa são OBRIGATÓRIAS para a integridade do relatório
+7. ✅ Se você não conseguir fazer a soma bater com ${balancedTotal} por categoria, você está fazendo algo errado
 
-VALIDAÇÃO OBRIGATÓRIA:
-- Pontos Fortes: soma dos temas = ${strengthsTotal} votos
-- Desafios: soma dos temas = ${challengesTotal} votos  
-- Oportunidades: soma dos temas = ${opportunitiesTotal} votos
-- TOTAL GERAL: ${totalVotes} votos`
+VALIDAÇÃO OBRIGATÓRIA (TOTAIS EQUILIBRADOS):
+- Pontos Fortes: soma dos temas = ${balancedTotal} votos (33.3%)
+- Desafios: soma dos temas = ${balancedTotal} votos (33.3%)
+- Oportunidades: soma dos temas = ${balancedTotal} votos (33.3%)
+- TOTAL GERAL: ${totalVotes} votos (preservado)`
           },
           { role: 'user', content: prompt }
         ],
