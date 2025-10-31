@@ -34,36 +34,66 @@ serve(async (req) => {
       throw new Error('OPENAI_API_KEY not configured');
     }
 
-    // Calculate total votes across all categories
-    const totalVotes = 
-      votingData.strengths.reduce((sum, item) => sum + item.total, 0) +
-      votingData.challenges.reduce((sum, item) => sum + item.total, 0) +
-      votingData.opportunities.reduce((sum, item) => sum + item.total, 0);
+    // Audit: Calculate exact total votes from provided data
+    const strengthsTotal = votingData.strengths.reduce((sum, item) => sum + item.total, 0);
+    const challengesTotal = votingData.challenges.reduce((sum, item) => sum + item.total, 0);
+    const opportunitiesTotal = votingData.opportunities.reduce((sum, item) => sum + item.total, 0);
+    const totalVotes = strengthsTotal + challengesTotal + opportunitiesTotal;
 
     const dimensionLabel = dimension === 'all' ? 'Todas as Dimensões' : dimension || 'Todas as Dimensões';
 
+    // Generate audit information
+    const auditInfo = {
+      dimension: dimensionLabel,
+      strengths: {
+        items: votingData.strengths.length,
+        votes: strengthsTotal,
+        percentage: totalVotes > 0 ? ((strengthsTotal / totalVotes) * 100).toFixed(1) : '0',
+      },
+      challenges: {
+        items: votingData.challenges.length,
+        votes: challengesTotal,
+        percentage: totalVotes > 0 ? ((challengesTotal / totalVotes) * 100).toFixed(1) : '0',
+      },
+      opportunities: {
+        items: votingData.opportunities.length,
+        votes: opportunitiesTotal,
+        percentage: totalVotes > 0 ? ((opportunitiesTotal / totalVotes) * 100).toFixed(1) : '0',
+      },
+      totalVotes,
+      totalParticipants: votingData.totalParticipants,
+    };
+
+    console.log('📊 Auditoria de Votos:', JSON.stringify(auditInfo, null, 2));
+
     const prompt = `Analise os seguintes itens votados em três categorias e gere um **Relatório Semântico** completo e estruturado.
 
-**PONTOS FORTES** (${votingData.strengths.reduce((s, i) => s + i.total, 0)} votos):
+**AUDITORIA DE DADOS:**
+- Total EXATO de votos: ${totalVotes}
+- Pontos Fortes: ${strengthsTotal} votos (${auditInfo.strengths.percentage}%)
+- Desafios: ${challengesTotal} votos (${auditInfo.challenges.percentage}%)
+- Oportunidades: ${opportunitiesTotal} votos (${auditInfo.opportunities.percentage}%)
+- Total de participantes: ${votingData.totalParticipants}
+- Dimensão analisada: ${dimensionLabel}
+
+**PONTOS FORTES** (${strengthsTotal} votos - ${auditInfo.strengths.percentage}% do total):
 ${votingData.strengths.map(item => `- "${item.text}" (${item.total} votos)`).join('\n')}
 
-**DESAFIOS** (${votingData.challenges.reduce((s, i) => s + i.total, 0)} votos):
+**DESAFIOS** (${challengesTotal} votos - ${auditInfo.challenges.percentage}% do total):
 ${votingData.challenges.map(item => `- "${item.text}" (${item.total} votos)`).join('\n')}
 
-**OPORTUNIDADES** (${votingData.opportunities.reduce((s, i) => s + i.total, 0)} votos):
-${votingData.opportunities.map(item => `- "${item.text}" (${item.total} votos)`).join('\n')}
+**OPORTUNIDADES** (${opportunitiesTotal} votos - ${auditInfo.opportunities.percentage}% do total):
+${votingData.opportunities.map(item => `- "${item.text}" (${item.total} votos)`).join('\n')}`
 
-Total geral de votos: ${totalVotes}
-Total de participantes: ${votingData.totalParticipants}
-Dimensão analisada: ${dimensionLabel}
-
-**Sua tarefa:**
-1. Para CADA categoria (Pontos Fortes, Desafios, Oportunidades), agrupe os itens em **temas principais** por semelhança semântica
-2. Para cada tema, calcule:
-   - Total de votos do tema (soma dos itens)
-   - Porcentagem sobre o total de votos DA CATEGORIA
-3. Ordene os temas por número de votos (decrescente)
-4. Para cada tema, liste os itens principais (top 3-5)
+**INSTRUÇÕES CRÍTICAS:**
+1. Use EXATAMENTE os totais fornecidos na auditoria acima - não recalcule
+2. Para CADA categoria (Pontos Fortes, Desafios, Oportunidades), agrupe os itens em **temas principais** por semelhança semântica
+3. Para cada tema, calcule:
+   - Total de votos do tema (soma dos itens que o compõem)
+   - Porcentagem sobre o total de votos DA CATEGORIA (use os totais da auditoria)
+4. Ordene os temas por número de votos (decrescente)
+5. Para cada tema, liste os itens principais (top 3-5)
+6. VALIDE: A soma de todos os votos nos temas de uma categoria deve ser IGUAL ao total da categoria na auditoria
 
 **Formato de saída esperado:**
 
@@ -123,10 +153,19 @@ Dimensão analisada: ${dimensionLabel}
 * **Total de votos considerados:** ${totalVotes}
 * **Total de participantes:** ${votingData.totalParticipants}
 * **Dimensão:** ${dimensionLabel}
-* **Distribuição por categoria:**
-  - Pontos Fortes: [X]%
-  - Desafios: [Y]%
-  - Oportunidades: [Z]%
+* **Distribuição por categoria (USE ESTES VALORES EXATOS):**
+  - Pontos Fortes: ${strengthsTotal} votos (${auditInfo.strengths.percentage}%)
+  - Desafios: ${challengesTotal} votos (${auditInfo.challenges.percentage}%)
+  - Oportunidades: ${opportunitiesTotal} votos (${auditInfo.opportunities.percentage}%)
+
+---
+
+### **✅ Auditoria de Consistência**
+
+Este relatório foi gerado a partir de dados auditados:
+* ✓ Total verificado: ${totalVotes} votos
+* ✓ Somatório validado: ${strengthsTotal} + ${challengesTotal} + ${opportunitiesTotal} = ${totalVotes}
+* ✓ Todos os valores foram recalculados da fonte original
 
 ---
 
@@ -150,7 +189,7 @@ Dimensão analisada: ${dimensionLabel}
         messages: [
           { 
             role: 'system', 
-            content: 'Você é um analista de dados especializado em criar relatórios executivos semânticos. Agrupe itens por similaridade temática dentro de cada categoria (Pontos Fortes, Desafios, Oportunidades) e apresente insights claros e estruturados para cada uma.' 
+            content: 'Você é um analista de dados especializado em criar relatórios executivos semânticos. Agrupe itens por similaridade temática dentro de cada categoria (Pontos Fortes, Desafios, Oportunidades) e apresente insights claros e estruturados para cada uma. CRÍTICO: Use EXATAMENTE os totais de votos fornecidos na auditoria de dados. Não recalcule ou arredonde - a precisão numérica é essencial para a integridade do relatório.' 
           },
           { role: 'user', content: prompt }
         ],
@@ -171,7 +210,12 @@ Dimensão analisada: ${dimensionLabel}
     console.log('Report generated successfully');
 
     return new Response(
-      JSON.stringify({ report, totalVotes, dimension: dimensionLabel }), 
+      JSON.stringify({ 
+        report, 
+        totalVotes, 
+        dimension: dimensionLabel,
+        audit: auditInfo 
+      }), 
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }

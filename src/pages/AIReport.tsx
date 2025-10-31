@@ -468,10 +468,24 @@ const AIReport = () => {
 
       if (error) throw error;
 
+      // Log audit information
+      if (data.audit) {
+        console.log('📊 Auditoria de Consistência do Relatório:', {
+          dimensão: data.audit.dimension,
+          totalVotos: data.audit.totalVotes,
+          distribuição: {
+            pontosFortes: `${data.audit.strengths.votes} votos (${data.audit.strengths.percentage}%)`,
+            desafios: `${data.audit.challenges.votes} votos (${data.audit.challenges.percentage}%)`,
+            oportunidades: `${data.audit.opportunities.votes} votos (${data.audit.opportunities.percentage}%)`,
+          },
+          participantes: data.audit.totalParticipants,
+        });
+      }
+
       setSemanticReport(data.report);
       toast({
         title: "Relatório gerado com sucesso",
-        description: "O relatório semântico foi criado pela IA.",
+        description: `Total auditado: ${data.totalVotes} votos | ${data.audit?.totalParticipants || 0} participantes`,
       });
     } catch (error) {
       console.error('Error generating semantic report:', error);
