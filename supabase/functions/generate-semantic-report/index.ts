@@ -92,8 +92,12 @@ ${votingData.opportunities.map(item => `- "${item.text}" (${item.total} votos)`)
    - Total de votos do tema (soma dos itens que o compõem)
    - Porcentagem sobre o total de votos DA CATEGORIA (use os totais da auditoria)
 4. Ordene os temas por número de votos (decrescente)
-5. Para cada tema, liste os itens principais (top 3-5)
+5. Para cada tema, liste **TODOS os itens que o compõem** (não apenas top 3-5), incluindo:
+   - Texto completo da opção
+   - Número exato de votos
+   - Percentual do item dentro do tema
 6. VALIDE: A soma de todos os votos nos temas de uma categoria deve ser IGUAL ao total da categoria na auditoria
+7. TRANSPARÊNCIA TOTAL: Exiba todas as opções, mesmo as com poucos votos, para garantir consistência analítica completa
 
 **Formato de saída esperado:**
 
@@ -107,10 +111,11 @@ ${votingData.opportunities.map(item => `- "${item.text}" (${item.total} votos)`)
 
 *[Resumo executivo do tema em uma frase]*
 
-**Itens destacados:**
-• [Item 1] — [votos]
-• [Item 2] — [votos]
-• [Item 3] — [votos]
+**Itens completos:**
+• [Item 1] — [votos] ([Z]% do tema)
+• [Item 2] — [votos] ([Z]% do tema)
+• [Item 3] — [votos] ([Z]% do tema)
+• [...todos os demais itens do tema...]
 
 ---
 
@@ -118,9 +123,10 @@ ${votingData.opportunities.map(item => `- "${item.text}" (${item.total} votos)`)
 
 *[Resumo executivo]*
 
-**Itens destacados:**
-• [Item 1] — [votos]
-• [Item 2] — [votos]
+**Itens completos:**
+• [Item 1] — [votos] ([Z]% do tema)
+• [Item 2] — [votos] ([Z]% do tema)
+• [...todos os demais itens do tema...]
 
 ---
 
@@ -130,9 +136,10 @@ ${votingData.opportunities.map(item => `- "${item.text}" (${item.total} votos)`)
 
 *[Resumo executivo do tema em uma frase]*
 
-**Itens destacados:**
-• [Item 1] — [votos]
-• [Item 2] — [votos]
+**Itens completos:**
+• [Item 1] — [votos] ([Z]% do tema)
+• [Item 2] — [votos] ([Z]% do tema)
+• [...todos os demais itens do tema...]
 
 ---
 
@@ -142,9 +149,10 @@ ${votingData.opportunities.map(item => `- "${item.text}" (${item.total} votos)`)
 
 *[Resumo executivo do tema em uma frase]*
 
-**Itens destacados:**
-• [Item 1] — [votos]
-• [Item 2] — [votos]
+**Itens completos:**
+• [Item 1] — [votos] ([Z]% do tema)
+• [Item 2] — [votos] ([Z]% do tema)
+• [...todos os demais itens do tema...]
 
 ---
 
@@ -172,9 +180,10 @@ Este relatório foi gerado a partir de dados auditados:
 **Instruções:**
 - Use linguagem executiva e sintética
 - Agrupe semanticamente itens similares dentro de cada categoria
-- Calcule porcentagens com precisão
+- Calcule porcentagens com precisão para cada item dentro do tema
+- Liste **TODOS os itens** de cada tema, não apenas destaques
 - Mantenha formatação markdown clara
-- Ordene por relevância (mais votos primeiro) em cada categoria`;
+- Ordene por relevância (mais votos primeiro) em cada categoria e dentro de cada tema`;
 
     console.log('Calling OpenAI API for full semantic report...');
 
@@ -189,12 +198,12 @@ Este relatório foi gerado a partir de dados auditados:
         messages: [
           { 
             role: 'system', 
-            content: 'Você é um analista de dados especializado em criar relatórios executivos semânticos. Agrupe itens por similaridade temática dentro de cada categoria (Pontos Fortes, Desafios, Oportunidades) e apresente insights claros e estruturados para cada uma. CRÍTICO: Use EXATAMENTE os totais de votos fornecidos na auditoria de dados. Não recalcule ou arredonde - a precisão numérica é essencial para a integridade do relatório.' 
+            content: 'Você é um analista de dados especializado em criar relatórios executivos semânticos completos e transparentes. Agrupe itens por similaridade temática dentro de cada categoria (Pontos Fortes, Desafios, Oportunidades) e apresente insights claros e estruturados. CRÍTICO: 1) Use EXATAMENTE os totais de votos fornecidos na auditoria de dados - não recalcule ou arredonde. 2) Liste TODOS os itens de cada tema com seus votos individuais e percentuais, não apenas os destaques. 3) A precisão numérica e transparência completa são essenciais para a integridade do relatório.' 
           },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: 4000,
+        max_tokens: 8000,
       }),
     });
 
