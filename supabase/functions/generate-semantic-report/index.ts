@@ -83,7 +83,7 @@ ${votingData.strengths.map(item => `- "${item.text}" (${item.total} votos)`).joi
 ${votingData.challenges.map(item => `- "${item.text}" (${item.total} votos)`).join('\n')}
 
 **OPORTUNIDADES** (${opportunitiesTotal} votos - ${auditInfo.opportunities.percentage}% do total):
-${votingData.opportunities.map(item => `- "${item.text}" (${item.total} votos)`).join('\n')}`
+${votingData.opportunities.map(item => `- "${item.text}" (${item.total} votos)`).join('\n')}
 
 **INSTRUÇÕES CRÍTICAS:**
 1. Use EXATAMENTE os totais fornecidos na auditoria acima - não recalcule
