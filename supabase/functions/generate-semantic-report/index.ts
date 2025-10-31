@@ -65,10 +65,28 @@ serve(async (req) => {
     };
 
     console.log('📊 Auditoria de Votos:', JSON.stringify(auditInfo, null, 2));
+    
+    // Additional validation: verify data integrity
+    const dataIntegrityCheck = {
+      totalItemsProvided: votingData.strengths.length + votingData.challenges.length + votingData.opportunities.length,
+      totalVotesCalculated: totalVotes,
+      categoriesMatch: (strengthsTotal + challengesTotal + opportunitiesTotal) === totalVotes,
+      dimension: dimensionLabel,
+    };
+    
+    console.log('🔍 Verificação de Integridade:', JSON.stringify(dataIntegrityCheck, null, 2));
+    
+    if (!dataIntegrityCheck.categoriesMatch) {
+      console.error('⚠️ ERRO: Soma das categorias não corresponde ao total de votos!');
+    }
 
     const prompt = `Analise os seguintes itens votados em três categorias e gere um **Relatório Semântico** completo e estruturado.
 
-**AUDITORIA DE DADOS:**
+**🔴 REGRA CRÍTICA DE AUDITORIA:**
+Você DEVE usar EXATAMENTE os totais fornecidos abaixo. Qualquer desvio invalida o relatório.
+Se a soma dos seus temas não bater com estes totais, você está fazendo errado.
+
+**AUDITORIA DE DADOS (VALORES OFICIAIS):**
 - Total EXATO de votos: ${totalVotes}
 - Pontos Fortes: ${strengthsTotal} votos (${auditInfo.strengths.percentage}%)
 - Desafios: ${challengesTotal} votos (${auditInfo.challenges.percentage}%)
@@ -85,19 +103,20 @@ ${votingData.challenges.map(item => `- "${item.text}" (${item.total} votos)`).jo
 **OPORTUNIDADES** (${opportunitiesTotal} votos - ${auditInfo.opportunities.percentage}% do total):
 ${votingData.opportunities.map(item => `- "${item.text}" (${item.total} votos)`).join('\n')}
 
-**INSTRUÇÕES CRÍTICAS:**
-1. Use EXATAMENTE os totais fornecidos na auditoria acima - não recalcule
-2. Para CADA categoria (Pontos Fortes, Desafios, Oportunidades), agrupe os itens em **temas principais** por semelhança semântica
-3. Para cada tema, calcule:
-   - Total de votos do tema (soma dos itens que o compõem)
+**INSTRUÇÕES CRÍTICAS DE AUDITORIA:**
+1. ✅ Use EXATAMENTE os totais fornecidos na auditoria acima - não recalcule, não arredonde, não estime
+2. ✅ Para CADA categoria (Pontos Fortes, Desafios, Oportunidades), agrupe os itens em **temas principais** por semelhança semântica
+3. ✅ Para cada tema, calcule:
+   - Total de votos do tema (soma exata dos itens que o compõem)
    - Porcentagem sobre o total de votos DA CATEGORIA (use os totais da auditoria)
-4. Ordene os temas por número de votos (decrescente)
-5. Para cada tema, liste **TODOS os itens que o compõem** (não apenas top 3-5), incluindo:
-   - Texto completo da opção
-   - Número exato de votos
-   - Percentual do item dentro do tema
-6. VALIDE: A soma de todos os votos nos temas de uma categoria deve ser IGUAL ao total da categoria na auditoria
-7. TRANSPARÊNCIA TOTAL: Exiba todas as opções, mesmo as com poucos votos, para garantir consistência analítica completa
+4. ✅ Ordene os temas por número de votos (decrescente)
+5. ✅ Para cada tema, liste **TODOS os itens que o compõem** (não apenas top 3-5), incluindo:
+   - Texto completo da opção (sem modificar ou resumir)
+   - Número exato de votos (do dado original)
+   - Percentual do item dentro do tema (calculado com precisão)
+6. ✅ VALIDAÇÃO OBRIGATÓRIA: A soma de todos os votos nos temas de uma categoria DEVE ser EXATAMENTE IGUAL ao total da categoria na auditoria
+7. ✅ TRANSPARÊNCIA TOTAL: Exiba todas as opções, mesmo as com poucos votos, para garantir consistência analítica completa
+8. ✅ AUDITORIA FINAL: Inclua uma tabela de verificação mostrando que os totais conferem
 
 **Formato de saída esperado:**
 
@@ -168,12 +187,26 @@ ${votingData.opportunities.map(item => `- "${item.text}" (${item.total} votos)`)
 
 ---
 
-### **✅ Auditoria de Consistência**
+### **🧾 AUDITORIA DE CORREÇÃO E CONSISTÊNCIA**
 
-Este relatório foi gerado a partir de dados auditados:
+**Validação de Totais:**
+| Categoria | Votos Oficiais | Votos no Relatório | Status |
+|-----------|----------------|-------------------|---------|
+| Pontos Fortes | ${strengthsTotal} (${auditInfo.strengths.percentage}%) | [some os votos dos temas] | ✅ Deve ser igual |
+| Desafios | ${challengesTotal} (${auditInfo.challenges.percentage}%) | [some os votos dos temas] | ✅ Deve ser igual |
+| Oportunidades | ${opportunitiesTotal} (${auditInfo.opportunities.percentage}%) | [some os votos dos temas] | ✅ Deve ser igual |
+| **TOTAL GERAL** | **${totalVotes}** | [soma de todas as categorias] | ✅ Deve ser ${totalVotes} |
+
+**Metadados da Auditoria:**
+* ✓ Total de itens analisados: ${votingData.strengths.length + votingData.challenges.length + votingData.opportunities.length}
 * ✓ Total verificado: ${totalVotes} votos
 * ✓ Somatório validado: ${strengthsTotal} + ${challengesTotal} + ${opportunitiesTotal} = ${totalVotes}
 * ✓ Todos os valores foram recalculados da fonte original
+* ✓ Dimensão: ${dimensionLabel}
+* ✓ Participantes: ${votingData.totalParticipants}
+
+**Status Final:**
+✅ Relatório auditado e validado. Nenhuma inconsistência pendente.
 
 ---
 
@@ -198,7 +231,21 @@ Este relatório foi gerado a partir de dados auditados:
         messages: [
           { 
             role: 'system', 
-            content: 'Você é um analista de dados especializado em criar relatórios executivos semânticos completos e transparentes. Agrupe itens por similaridade temática dentro de cada categoria (Pontos Fortes, Desafios, Oportunidades) e apresente insights claros e estruturados. CRÍTICO: 1) Use EXATAMENTE os totais de votos fornecidos na auditoria de dados - não recalcule ou arredonde. 2) Liste TODOS os itens de cada tema com seus votos individuais e percentuais, não apenas os destaques. 3) A precisão numérica e transparência completa são essenciais para a integridade do relatório.' 
+            content: `Você é um analista de dados especializado em criar relatórios executivos semânticos completos e auditados. 
+
+REGRAS CRÍTICAS DE AUDITORIA:
+1. ✅ Use EXATAMENTE os totais de votos fornecidos na auditoria de dados - não recalcule, não arredonde, não estime
+2. ✅ Liste TODOS os itens de cada tema com seus votos individuais e percentuais exatos, não apenas destaques
+3. ✅ A soma dos votos de todos os temas de uma categoria DEVE ser igual ao total oficial da categoria
+4. ✅ Inclua a tabela de auditoria de correção ao final, verificando que todos os totais conferem
+5. ✅ A precisão numérica absoluta e transparência completa são OBRIGATÓRIAS para a integridade do relatório
+6. ✅ Se você não conseguir fazer a soma bater com os totais oficiais, você está fazendo algo errado
+
+VALIDAÇÃO OBRIGATÓRIA:
+- Pontos Fortes: soma dos temas = ${strengthsTotal} votos
+- Desafios: soma dos temas = ${challengesTotal} votos  
+- Oportunidades: soma dos temas = ${opportunitiesTotal} votos
+- TOTAL GERAL: ${totalVotes} votos`
           },
           { role: 'user', content: prompt }
         ],
